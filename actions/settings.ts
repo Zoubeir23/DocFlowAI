@@ -1,0 +1,133 @@
+"use server";
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { createClient } from "@/lib/supabase/server";
+import { availabilityRuleSchema, blockedDateSchema, clinicSettingsSchema } from "@/lib/validations";
+import type { ApiResponse, AvailabilityRule, BlockedDate, ClinicSettings } from "@/types";
+import type { z } from "zod";
+
+async function getDB() {
+  return (await createClient()) as any;
+}
+
+export async function getAvailabilityRules(clinicId: string): Promise<AvailabilityRule[]> {
+  const db = await getDB();
+  const { data } = await db
+    .from("availability_rules")
+    .select("*")
+    .eq("clinic_id", clinicId)
+    .order("day_of_week");
+  return (data || []) as AvailabilityRule[];
+}
+
+export async function upsertAvailabilityRule(
+  clinicId: string,
+  data: z.infer<typeof availabilityRuleSchema> & { id?: string }
+): Promise<ApiResponse> {
+  const db = await getDB();
+  const validated = availabilityRuleSchema.safeParse(data);
+  if (!validated.success) {
+    console.error("[availability] validation failed:", JSON.stringify(validated.error.errors));
+    console.error("[availability] input data:", JSON.stringify(data));
+    return { success: false, error: validated.error.errors[0].message + " | field: " + validated.error.errors[0].path.join(".") };
+  }
+
+  const payload = {
+    ...validated.data,
+    clinic_id: clinicId,
+    start_time: validated.data.start_time || "09:00",
+    end_time: validated.data.end_time || "17:00",
+    break_start: validated.data.break_start || null,
+    break_end: validated.data.break_end || null,
+    is_active: validated.data.is_active,
+  };
+  console.log("[availability] saving payload:", JSON.stringify(payload));
+
+  let error;
+
+  if (data.id) {
+    // Existing rule — update by id
+    ({ error } = await db.from("availability_rules").update(payload).eq("id", data.id));
+  } else {
+    // Check if rule already exists for this day
+    const { data: existing } = await db
+      .from("availability_rules")
+      .select("id")
+      .eq("clinic_id", clinicId)
+      .eq("day_of_week", data.day_of_week)
+      .single();
+
+    if (existing?.id) {
+      ({ error } = await db.from("availability_rules").update(payload).eq("id", existing.id));
+    } else {
+      ({ error } = await db.from("availability_rules").insert(payload));
+    }
+  }
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+export async function getBlockedDates(clinicId: string): Promise<BlockedDate[]> {
+  const db = await getDB();
+  const { data } = await db
+    .from("blocked_dates")
+    .select("*")
+    .eq("clinic_id", clinicId)
+    .gte("date", new Date().toISOString().split("T")[0])
+    .order("date");
+  return (data || []) as BlockedDate[];
+}
+
+export async function addBlockedDate(
+  clinicId: string,
+  data: z.infer<typeof blockedDateSchema>
+): Promise<ApiResponse> {
+  const db = await getDB();
+  const validated = blockedDateSchema.safeParse(data);
+  if (!validated.success) {
+    return { success: false, error: validated.error.errors[0].message };
+  }
+
+  const { error } = await db
+    .from("blocked_dates")
+    .upsert({ ...validated.data, clinic_id: clinicId }, { onConflict: "clinic_id,date" });
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+export async function removeBlockedDate(blockedDateId: string): Promise<ApiResponse> {
+  const db = await getDB();
+  const { error } = await db.from("blocked_dates").delete().eq("id", blockedDateId);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+export async function getClinicSettings(clinicId: string): Promise<ClinicSettings | null> {
+  const db = await getDB();
+  const { data } = await db
+    .from("clinic_settings")
+    .select("*")
+    .eq("clinic_id", clinicId)
+    .single();
+  return data as ClinicSettings | null;
+}
+
+export async function updateClinicSettings(
+  clinicId: string,
+  data: z.infer<typeof clinicSettingsSchema>
+): Promise<ApiResponse> {
+  const db = await getDB();
+  const validated = clinicSettingsSchema.safeParse(data);
+  if (!validated.success) {
+    return { success: false, error: validated.error.errors[0].message };
+  }
+
+  const { error } = await db
+    .from("clinic_settings")
+    .upsert({ ...validated.data, clinic_id: clinicId }, { onConflict: "clinic_id" });
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}

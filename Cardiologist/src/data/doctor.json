@@ -1,0 +1,75 @@
+{
+  "name": "Dr. Jonathan M. Harrington",
+  "title": "MD, FACC, FSCAI",
+  "specialty": "Interventional Cardiologist",
+  "tagline": "Compassionate Heart Care, Advanced Expertise",
+  "image": "/images/dr-md-faizuddin.jpeg",
+  "experience": "20+ Years",
+  "patientsServed": "12,000+",
+  "successRate": "98.6%",
+  "procedures": "5,000+",
+  "bio": "Dr. Jonathan M. Harrington is a board-certified interventional cardiologist with over two decades of dedicated experience in diagnosing and treating complex cardiovascular conditions. He completed his fellowship training at Johns Hopkins Hospital and has since built a reputation for combining cutting-edge interventional techniques with deeply personalized patient care.",
+  "bioExtended": "Dr. Harrington specializes in minimally invasive cardiac procedures, including coronary angioplasty, stent placement, and transcatheter aortic valve replacement (TAVR). His philosophy centers on empowering patients through education, early prevention, and the most advanced treatment available. He is an active researcher and has published over 40 peer-reviewed articles in leading cardiovascular journals.",
+  "education": [
+    {
+      "degree": "Doctor of Medicine (MD)",
+      "institution": "Harvard Medical School",
+      "year": "2001"
+    },
+    {
+      "degree": "Residency, Internal Medicine",
+      "institution": "Massachusetts General Hospital",
+      "year": "2004"
+    },
+    {
+      "degree": "Fellowship, Cardiology",
+      "institution": "Johns Hopkins Hospital",
+      "year": "2007"
+    },
+    {
+      "degree": "Fellowship, Interventional Cardiology",
+      "institution": "Cleveland Clinic",
+      "year": "2008"
+    }
+  ],
+  "certifications": [
+    "American Board of Internal Medicine – Cardiovascular Disease",
+    "American Board of Internal Medicine – Interventional Cardiology",
+    "Fellow, American College of Cardiology (FACC)",
+    "Fellow, Society for Cardiovascular Angiography and Interventions (FSCAI)",
+    "Advanced Cardiac Life Support (ACLS)"
+  ],
+  "awards": [
+    {
+      "title": "Top Cardiologist – US News & World Report",
+      "year": "2022, 2023, 2024"
+    },
+    {
+      "title": "Excellence in Patient Care Award",
+      "year": "2021"
+    },
+    {
+      "title": "Best Doctor in Cardiology – Castle Connolly",
+      "year": "2019–2024"
+    }
+  ],
+  "hospital": "HeartCare Medical Center",
+  "address": "245 Cardiac Way, Suite 400, Boston, MA 02115",
+  "phone": "(617) 555-0192",
+  "email": "appointments@drharrington.com",
+  "hours": {
+    "monday": "8:00 AM – 5:00 PM",
+    "tuesday": "8:00 AM – 5:00 PM",
+    "wednesday": "8:00 AM – 5:00 PM",
+    "thursday": "8:00 AM – 5:00 PM",
+    "friday": "8:00 AM – 4:00 PM",
+    "saturday": "9:00 AM – 1:00 PM",
+    "sunday": "Closed"
+  },
+  "emergencyLine": "(617) 555-9911",
+  "social": {
+    "linkedin": "https://linkedin.com",
+    "twitter": "https://twitter.com",
+    "researchgate": "https://researchgate.net"
+  }
+}

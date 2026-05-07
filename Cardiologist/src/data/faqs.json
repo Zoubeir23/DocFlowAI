@@ -1,0 +1,39 @@
+{
+  "faqs": [
+    {
+      "id": 1,
+      "question": "What should I expect during my first cardiology appointment?",
+      "answer": "Your initial visit will include a comprehensive review of your medical history, current symptoms, medications, and family history. Dr. Harrington will perform a thorough physical examination and may order diagnostic tests such as an ECG, echocardiogram, or blood work. The appointment typically lasts 60–90 minutes."
+    },
+    {
+      "id": 2,
+      "question": "How do I know if I need to see a cardiologist?",
+      "answer": "You should consider seeing a cardiologist if you experience chest pain or pressure, unexplained shortness of breath, palpitations, dizziness or fainting, swelling in the legs, or if you have risk factors such as high blood pressure, high cholesterol, diabetes, obesity, or a family history of heart disease."
+    },
+    {
+      "id": 3,
+      "question": "Is angioplasty safer than open-heart bypass surgery?",
+      "answer": "Angioplasty (PCI) is a minimally invasive procedure that generally carries fewer risks, requires no general anesthesia, and has a much shorter recovery time compared to open-heart bypass surgery. However, the best approach depends entirely on your specific anatomy, the number of blocked vessels, and overall health. Dr. Harrington will discuss all options and recommend the most appropriate treatment for your situation."
+    },
+    {
+      "id": 4,
+      "question": "What lifestyle changes can help prevent heart disease?",
+      "answer": "Evidence-based lifestyle modifications include maintaining a heart-healthy diet (rich in vegetables, fruits, whole grains, and lean proteins), engaging in at least 150 minutes of moderate aerobic exercise per week, achieving and maintaining a healthy weight, quitting smoking, limiting alcohol consumption, managing stress, and controlling blood pressure, cholesterol, and blood sugar levels."
+    },
+    {
+      "id": 5,
+      "question": "Does Dr. Harrington accept insurance?",
+      "answer": "Dr. Harrington accepts most major insurance plans including Medicare, Blue Cross Blue Shield, Aetna, Cigna, United Healthcare, and others. Please contact our office directly at (617) 555-0192 to verify your specific coverage before your appointment."
+    },
+    {
+      "id": 6,
+      "question": "What is TAVR and who is a candidate?",
+      "answer": "Transcatheter Aortic Valve Replacement (TAVR) is a minimally invasive procedure used to replace a diseased aortic valve without open-heart surgery. Candidates are typically patients with severe aortic stenosis who face high surgical risk due to age or co-existing conditions. Dr. Harrington will evaluate your case thoroughly to determine if TAVR is the right option."
+    },
+    {
+      "id": 7,
+      "question": "How quickly can I get an appointment?",
+      "answer": "For routine consultations, we typically schedule appointments within 5–7 business days. For urgent referrals from primary care physicians or emergency situations, we make every effort to see patients within 24–48 hours. Please call our office or use our online booking form to schedule."
+    }
+  ]
+}

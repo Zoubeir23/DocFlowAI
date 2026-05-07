@@ -9,7 +9,7 @@ import { getLocale, getMessages } from "next-intl/server";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "MedBook AI - Smart Appointment Booking for Clinics",
+  title: "DocFlow IA - Assistant IA pour la gestion de cliniques",
   description:
     "AI-powered appointment booking system for doctors and clinics. Let patients book appointments 24/7 with intelligent automation.",
   keywords: [

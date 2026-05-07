@@ -1,0 +1,127 @@
+import { addMinutes, format, parseISO, isBefore, isAfter, startOfDay } from "date-fns";
+import { formatInTimeZone, toZonedTime } from "date-fns-tz";
+import type { AvailabilityRule, BlockedDate, Appointment } from "@/types";
+import { timeToMinutes, minutesToTime } from "./utils";
+
+export interface SlotInput {
+  date: string;
+  serviceDurationMinutes: number;
+  availabilityRules: AvailabilityRule[];
+  blockedDates: BlockedDate[];
+  existingAppointments: Pick<Appointment, "start_at" | "end_at" | "status">[];
+  timezone: string;
+}
+
+export interface Slot {
+  start: string;
+  end: string;
+  label: string;
+}
+
+export function generateAvailableSlots(input: SlotInput): Slot[] {
+  const {
+    date,
+    serviceDurationMinutes,
+    availabilityRules,
+    blockedDates,
+    existingAppointments,
+    timezone,
+  } = input;
+
+  const dateObj = parseISO(date);
+  const dayOfWeek = dateObj.getDay();
+
+  const isBlocked = blockedDates.some((bd) => bd.date === date);
+  if (isBlocked) return [];
+
+  const rule = availabilityRules.find(
+    (r) => r.day_of_week === dayOfWeek && r.is_active
+  );
+  if (!rule) return [];
+
+  const startMinutes = timeToMinutes(rule.start_time);
+  const endMinutes = timeToMinutes(rule.end_time);
+  const breakStart = rule.break_start ? timeToMinutes(rule.break_start) : null;
+  const breakEnd = rule.break_end ? timeToMinutes(rule.break_end) : null;
+
+  const slots: Slot[] = [];
+  let current = startMinutes;
+
+  const activeAppointments = existingAppointments.filter(
+    (a) => a.status !== "cancelled"
+  );
+
+  while (current + serviceDurationMinutes <= endMinutes) {
+    const slotEnd = current + serviceDurationMinutes;
+
+    const inBreak =
+      breakStart !== null &&
+      breakEnd !== null &&
+      current < breakEnd &&
+      slotEnd > breakStart;
+
+    if (inBreak) {
+      current = breakEnd!;
+      continue;
+    }
+
+    const slotStartTime = `${date}T${minutesToTime(current)}:00`;
+    const slotEndTime = `${date}T${minutesToTime(slotEnd)}:00`;
+
+    const slotStartDate = parseISO(slotStartTime);
+    const slotEndDate = parseISO(slotEndTime);
+
+    const now = new Date();
+    if (isBefore(slotStartDate, now)) {
+      current += 15;
+      continue;
+    }
+
+    const hasConflict = activeAppointments.some((appt) => {
+      const apptStart = parseISO(appt.start_at);
+      const apptEnd = parseISO(appt.end_at);
+      return isBefore(slotStartDate, apptEnd) && isAfter(slotEndDate, apptStart);
+    });
+
+    if (!hasConflict) {
+      const startFormatted = format(slotStartDate, "h:mm a");
+      const endFormatted = format(slotEndDate, "h:mm a");
+      slots.push({
+        start: slotStartTime,
+        end: slotEndTime,
+        label: `${startFormatted} - ${endFormatted}`,
+      });
+    }
+
+    current += 15;
+  }
+
+  return slots;
+}
+
+export function getNextAvailableDates(
+  availabilityRules: AvailabilityRule[],
+  blockedDates: BlockedDate[],
+  daysToCheck = 30
+): string[] {
+  const available: string[] = [];
+  const today = new Date();
+  const activeDays = availabilityRules
+    .filter((r) => r.is_active)
+    .map((r) => r.day_of_week);
+
+  const blockedSet = new Set(blockedDates.map((b) => b.date));
+
+  for (let i = 0; i < daysToCheck; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    const dateStr = format(d, "yyyy-MM-dd");
+    const dow = d.getDay();
+
+    if (activeDays.includes(dow) && !blockedSet.has(dateStr)) {
+      available.push(dateStr);
+    }
+  }
+
+  return available;
+}

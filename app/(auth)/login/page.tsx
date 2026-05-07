@@ -93,7 +93,7 @@ export default function LoginPage() {
         </div>
 
         {/* Bottom */}
-        <p className="relative text-xs text-teal-200/50">© 2024 MedBook AI · All rights reserved</p>
+        <p className="relative text-xs text-teal-200/50">© 2024 DocFlow IA · All rights reserved</p>
       </div>
 
       {/* Right — form panel */}

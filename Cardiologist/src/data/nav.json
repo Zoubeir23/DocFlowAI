@@ -1,0 +1,10 @@
+{
+  "navLinks": [
+    { "label": "Home", "href": "/" },
+    { "label": "About", "href": "/about" },
+    { "label": "Services", "href": "/services" },
+    { "label": "Patient Info", "href": "/patient-info" },
+    { "label": "Testimonials", "href": "/testimonials" },
+    { "label": "Contact", "href": "/contact" }
+  ]
+}

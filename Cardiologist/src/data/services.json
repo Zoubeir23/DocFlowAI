@@ -1,0 +1,85 @@
+{
+  "services": [
+    {
+      "id": "coronary-angiography",
+      "icon": "Heart",
+      "title": "Coronary Angiography",
+      "shortDescription": "Precise imaging of coronary arteries to detect blockages and guide treatment decisions.",
+      "description": "Coronary angiography is a specialized X-ray procedure that uses contrast dye to visualize the coronary arteries in real time. It is the gold standard for diagnosing coronary artery disease and helps determine the extent of arterial blockages before planning intervention.",
+      "duration": "45–90 minutes",
+      "recovery": "Same day / 1 day",
+      "category": "Diagnostic"
+    },
+    {
+      "id": "angioplasty-stenting",
+      "icon": "Activity",
+      "title": "Angioplasty & Stenting",
+      "shortDescription": "Minimally invasive procedure to open narrowed arteries and restore healthy blood flow.",
+      "description": "Percutaneous coronary intervention (PCI), commonly known as angioplasty and stenting, involves threading a thin catheter through the blood vessels to reach a blocked artery. A small balloon inflates to widen the artery, and a metal stent is placed to keep it open permanently.",
+      "duration": "1–3 hours",
+      "recovery": "1–3 days",
+      "category": "Interventional"
+    },
+    {
+      "id": "echocardiography",
+      "icon": "Waves",
+      "title": "Echocardiography",
+      "shortDescription": "Advanced ultrasound imaging to evaluate heart structure, function, and valve performance.",
+      "description": "Echocardiography uses sound waves to produce detailed images of the heart's chambers, valves, and surrounding structures. It provides critical information about cardiac function, wall motion, ejection fraction, and the presence of structural abnormalities.",
+      "duration": "30–60 minutes",
+      "recovery": "None",
+      "category": "Diagnostic"
+    },
+    {
+      "id": "tavr",
+      "icon": "Shield",
+      "title": "TAVR Procedure",
+      "shortDescription": "Transcatheter aortic valve replacement for high-risk surgical patients.",
+      "description": "Transcatheter Aortic Valve Replacement (TAVR) is a revolutionary minimally invasive procedure for patients with severe aortic stenosis who are at high or prohibitive risk for open-heart surgery. A new valve is delivered via catheter and deployed within the diseased valve.",
+      "duration": "2–4 hours",
+      "recovery": "3–5 days",
+      "category": "Interventional"
+    },
+    {
+      "id": "stress-testing",
+      "icon": "TrendingUp",
+      "title": "Cardiac Stress Testing",
+      "shortDescription": "Comprehensive evaluation of heart performance under physical and pharmacological stress.",
+      "description": "Stress testing measures how the heart responds to exertion. It can be performed on a treadmill or using medications that simulate exercise effects. Nuclear stress testing and stress echocardiography add imaging to detect areas of reduced blood flow.",
+      "duration": "1–3 hours",
+      "recovery": "None",
+      "category": "Diagnostic"
+    },
+    {
+      "id": "holter-monitoring",
+      "icon": "RadioTower",
+      "title": "Holter Monitoring",
+      "shortDescription": "Continuous 24–48 hour heart rhythm monitoring to detect arrhythmias.",
+      "description": "A Holter monitor is a portable electrocardiogram device worn for 24 to 48 hours to continuously record the heart's electrical activity. It is used to detect irregular heartbeats, palpitations, and arrhythmias that may not appear during a standard ECG.",
+      "duration": "24–48 hours (wear)",
+      "recovery": "None",
+      "category": "Monitoring"
+    },
+    {
+      "id": "heart-failure-management",
+      "icon": "HeartPulse",
+      "title": "Heart Failure Management",
+      "shortDescription": "Comprehensive long-term programs to optimize quality of life for heart failure patients.",
+      "description": "Our structured heart failure program combines advanced pharmacological therapy, device management, lifestyle coaching, and regular monitoring. We work closely with each patient to optimize medications, manage fluid balance, and prevent hospitalization.",
+      "duration": "Ongoing",
+      "recovery": "N/A",
+      "category": "Management"
+    },
+    {
+      "id": "preventive-cardiology",
+      "icon": "ShieldCheck",
+      "title": "Preventive Cardiology",
+      "shortDescription": "Risk assessment and personalized prevention strategies to protect your heart health.",
+      "description": "Preventive cardiology focuses on identifying and reducing cardiovascular risk factors before disease develops. Services include advanced lipid panels, genetic risk assessments, coronary calcium scoring, and individualized prevention plans targeting diet, exercise, and medication.",
+      "duration": "60 minutes (initial)",
+      "recovery": "None",
+      "category": "Prevention"
+    }
+  ],
+  "categories": ["All", "Diagnostic", "Interventional", "Monitoring", "Management", "Prevention"]
+}

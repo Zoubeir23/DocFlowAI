@@ -1,0 +1,98 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { createAdminClient } from "@/lib/supabase/server";
+import { sendNotification } from "@/lib/notifications";
+
+const bookingSchema = z.object({
+  clinicSlug: z.string(),
+  serviceId: z.string().uuid(),
+  startAt: z.string(),
+  endAt: z.string(),
+  patientName: z.string().min(1),
+  patientPhone: z.string().min(1),
+  patientEmail: z.string().optional(),
+});
+
+export async function POST(req: NextRequest) {
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const parsed = bookingSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 });
+  }
+
+  const { clinicSlug, serviceId, startAt, endAt, patientName, patientPhone, patientEmail } = parsed.data;
+
+  const db = (await createAdminClient()) as any;
+
+  const { data: clinic } = await db
+    .from("clinics")
+    .select("id, name, owner_id")
+    .eq("slug", clinicSlug)
+    .single() as { data: { id: string; name: string; owner_id: string } | null };
+
+  if (!clinic) {
+    return NextResponse.json({ error: "Clinic not found" }, { status: 404 });
+  }
+
+  const { data: service } = await db
+    .from("services")
+    .select("id, name, duration_minutes")
+    .eq("id", serviceId)
+    .eq("clinic_id", clinic.id)
+    .eq("is_active", true)
+    .single() as { data: { id: string; name: string; duration_minutes: number } | null };
+
+  if (!service) {
+    return NextResponse.json({ error: "Service not found" }, { status: 404 });
+  }
+
+  const { data: result, error } = await db.rpc("create_booking_from_widget", {
+    p_clinic_id: clinic.id,
+    p_patient_name: patientName,
+    p_patient_phone: patientPhone,
+    p_patient_email: patientEmail || null,
+    p_service_id: service.id,
+    p_start_at: startAt,
+    p_end_at: endAt,
+    p_notes: null,
+  });
+
+  if (error) {
+    console.error("[book] rpc error:", error);
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  const resultData = result as { appointment_id: string; patient_id: string };
+
+  // Fetch the clinic owner's email dynamically
+  const { data: ownerUser } = await db
+    .from("users")
+    .select("email")
+    .eq("id", clinic.owner_id)
+    .single() as { data: { email: string } | null };
+
+  await sendNotification({
+    type: "appointment_confirmation",
+    appointmentId: resultData.appointment_id,
+    patientName,
+    patientPhone,
+    patientEmail: patientEmail || undefined,
+    clinicName: clinic.name,
+    serviceName: service.name,
+    startAt,
+    doctorEmail: ownerUser?.email || undefined,
+  });
+
+  return NextResponse.json({
+    success: true,
+    appointmentId: resultData.appointment_id,
+    patientId: resultData.patient_id,
+  });
+}

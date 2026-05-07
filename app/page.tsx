@@ -6,6 +6,7 @@ import {
   HeartPulse, ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LanguageSwitcher } from "@/components/layout/language-switcher";
 
 export default function HomePage() {
   return (
@@ -25,6 +26,7 @@ export default function HomePage() {
               <Link href="#testimonials" className="text-slate-500 hover:text-teal-600 text-sm font-medium transition-colors">Reviews</Link>
             </div>
             <div className="flex items-center gap-3">
+              <LanguageSwitcher />
               <Link href="/login">
                 <Button variant="ghost" size="sm" className="text-slate-600 hover:text-teal-700 hover:bg-teal-50 rounded-xl font-semibold">
                   Sign In
@@ -291,7 +293,7 @@ export default function HomePage() {
                 name: "Dr. Sarah Mitchell",
                 role: "Family Practice Physician",
                 rating: 5,
-                review: "MedBook AI reduced our phone calls by 70%. Patients love booking at any hour, and our staff focuses on actual patient care now.",
+                review: "DocFlow IA reduced our phone calls by 70%. Patients love booking at any hour, and our staff focuses on actual patient care now.",
                 initials: "SM",
               },
               {
@@ -367,7 +369,7 @@ export default function HomePage() {
               <Link href="/login" className="hover:text-teal-400 transition-colors">Login</Link>
               <Link href="/signup" className="hover:text-teal-400 transition-colors">Sign Up</Link>
             </div>
-            <p className="text-sm text-slate-500">© 2025 MedBook AI. All rights reserved.</p>
+            <p className="text-sm text-slate-500">© 2025 DocFlow IA. All rights reserved.</p>
           </div>
         </div>
       </footer>

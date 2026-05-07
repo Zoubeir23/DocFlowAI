@@ -1,0 +1,150 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --crimson: #e11d48;
+    --crimson-dark: #be123c;
+    --crimson-light: #fda4af;
+    --slate-dark: #0f172a;
+    --slate-mid: #1e293b;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-slate-950 text-slate-100 font-sans antialiased;
+  }
+
+  * {
+    @apply box-border;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center gap-2 bg-crimson-600 hover:bg-crimson-700 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-crimson-600/30 hover:-translate-y-0.5;
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center gap-2 border border-crimson-500 text-crimson-400 hover:bg-crimson-600 hover:text-white hover:border-crimson-600 font-semibold px-6 py-3 rounded-lg transition-all duration-200;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 text-slate-300 hover:text-white font-medium px-4 py-2 rounded-lg transition-colors duration-200 hover:bg-slate-800;
+  }
+
+  .section-heading {
+    @apply text-3xl md:text-4xl font-bold text-white leading-tight;
+  }
+
+  .section-subheading {
+    @apply text-crimson-400 text-sm font-semibold uppercase tracking-widest mb-3;
+  }
+
+  .card {
+    @apply bg-slate-900 border border-slate-800 rounded-xl p-6 hover:border-crimson-800 transition-all duration-300;
+  }
+
+  .card-hover {
+    @apply card hover:-translate-y-1 hover:shadow-xl hover:shadow-crimson-950/30;
+  }
+
+  .stat-box {
+    @apply flex flex-col items-center justify-center text-center p-6;
+  }
+
+  .stat-number {
+    @apply text-4xl font-bold text-crimson-400;
+  }
+
+  .stat-label {
+    @apply text-slate-400 text-sm mt-1 font-medium;
+  }
+
+  .divider {
+    @apply border-slate-800;
+  }
+
+  .nav-link {
+    @apply text-slate-300 hover:text-white font-medium text-sm transition-colors duration-200 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-crimson-500 hover:after:w-full after:transition-all after:duration-300;
+  }
+
+  .nav-link-active {
+    @apply text-white after:w-full;
+  }
+
+  .input-field {
+    @apply w-full bg-slate-900 border border-slate-700 text-white placeholder-slate-500 rounded-lg px-4 py-3 focus:outline-none focus:border-crimson-500 focus:ring-1 focus:ring-crimson-500 transition-colors duration-200;
+  }
+
+  .label {
+    @apply block text-slate-300 text-sm font-medium mb-2;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium;
+  }
+
+  .badge-diagnostic {
+    @apply badge bg-blue-950 text-blue-400 border border-blue-800;
+  }
+
+  .badge-interventional {
+    @apply badge bg-crimson-950 text-crimson-400 border border-crimson-800;
+  }
+
+  .badge-monitoring {
+    @apply badge bg-purple-950 text-purple-400 border border-purple-800;
+  }
+
+  .badge-management {
+    @apply badge bg-emerald-950 text-emerald-400 border border-emerald-800;
+  }
+
+  .badge-prevention {
+    @apply badge bg-amber-950 text-amber-400 border border-amber-800;
+  }
+
+  .ecg-line {
+    stroke: #e11d48;
+    stroke-width: 2;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-crimson-400 to-rose-300 bg-clip-text text-transparent;
+  }
+
+  .bg-grid {
+    background-image:
+      linear-gradient(rgba(30, 41, 59, 0.5) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(30, 41, 59, 0.5) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .glow-crimson {
+    box-shadow: 0 0 40px rgba(225, 29, 72, 0.15);
+  }
+
+  .glow-crimson-sm {
+    box-shadow: 0 0 20px rgba(225, 29, 72, 0.1);
+  }
+
+  .section-padding {
+    @apply py-20 md:py-28;
+  }
+
+  .container-max {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+}
