@@ -19,6 +19,10 @@ export const metadata: Metadata = {
     "AI booking",
     "doctor appointments",
   ],
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default async function RootLayout({

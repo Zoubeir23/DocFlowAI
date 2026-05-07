@@ -8,6 +8,7 @@ import { AppointmentTable } from "@/components/appointments/appointment-table";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { AppointmentWithRelations } from "@/types";
+import { useTranslations } from "next-intl";
 
 async function fetchClinicId(): Promise<string | null> {
   const supabase = createClient() as any;
@@ -31,15 +32,6 @@ async function fetchAppointments(clinicId: string, status: string) {
   return (data || []) as unknown as AppointmentWithRelations[];
 }
 
-const STATUS_OPTIONS = [
-  { value: "all", label: "All Status" },
-  { value: "booked", label: "Booked" },
-  { value: "confirmed", label: "Confirmed" },
-  { value: "completed", label: "Completed" },
-  { value: "cancelled", label: "Cancelled" },
-  { value: "no_show", label: "No Show" },
-];
-
 const STATUS_COUNT_COLORS: Record<string, string> = {
   all: "bg-slate-100 text-slate-600",
   booked: "bg-teal-50 text-teal-700",
@@ -51,6 +43,16 @@ const STATUS_COUNT_COLORS: Record<string, string> = {
 
 export default function AppointmentsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
+  const t = useTranslations("appointments");
+
+  const statusOptions = [
+    { value: "all", label: t("statusAll") },
+    { value: "booked", label: t("statusBooked") },
+    { value: "confirmed", label: t("statusConfirmed") },
+    { value: "completed", label: t("statusCompleted") },
+    { value: "cancelled", label: t("statusCancelled") },
+    { value: "no_show", label: t("statusNoShow") },
+  ];
 
   const { data: clinicId } = useQuery({ queryKey: ["clinicId"], queryFn: fetchClinicId });
 
@@ -70,9 +72,9 @@ export default function AppointmentsPage() {
             <div className="w-8 h-8 rounded-xl gradient-brand flex items-center justify-center">
               <CalendarCheck className="w-4 h-4 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Appointments</h2>
+            <h2 className="text-2xl font-bold text-slate-800 tracking-tight">{t("title")}</h2>
           </div>
-          <p className="text-slate-500 text-sm ml-10">Manage and track all clinic appointments</p>
+          <p className="text-slate-500 text-sm ml-10">{t("manageTrack")}</p>
         </div>
         <Button
           variant="outline"
@@ -82,13 +84,13 @@ export default function AppointmentsPage() {
           className="rounded-xl border-slate-200 text-slate-600 hover:bg-teal-50 hover:border-teal-200 hover:text-teal-700 transition-all"
         >
           <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? "animate-spin" : ""}`} />
-          Refresh
+          {t("refresh")}
         </Button>
       </div>
 
       {/* Filter tabs */}
       <div className="flex items-center gap-2 flex-wrap">
-        {STATUS_OPTIONS.map((opt) => (
+        {statusOptions.map((opt) => (
           <button
             key={opt.value}
             onClick={() => setStatusFilter(opt.value)}
@@ -109,7 +111,7 @@ export default function AppointmentsPage() {
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-slate-400" />
             <span className="font-semibold text-slate-700 text-sm">
-              {STATUS_OPTIONS.find(o => o.value === statusFilter)?.label}
+              {statusOptions.find(o => o.value === statusFilter)?.label}
             </span>
             <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${STATUS_COUNT_COLORS[statusFilter]}`}>
               {appointments.length}
@@ -121,7 +123,7 @@ export default function AppointmentsPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-xl border-slate-100">
-                {STATUS_OPTIONS.map((opt) => (
+                {statusOptions.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value} className="text-sm rounded-lg">
                     {opt.label}
                   </SelectItem>

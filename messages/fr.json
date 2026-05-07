@@ -55,7 +55,37 @@
     "revenue": "Revenus estimés",
     "recentAppointments": "Rendez-vous récents",
     "upcomingAppointments": "Prochains rendez-vous",
-    "noAppointments": "Aucun rendez-vous"
+    "noAppointments": "Aucun rendez-vous",
+    "liveDashboard": "Tableau de bord en direct",
+    "greeting": {
+      "morning": "Bonjour",
+      "afternoon": "Bon après-midi",
+      "evening": "Bonsoir"
+    },
+    "viewAllAppointments": "Voir tous les rendez-vous",
+    "todaySchedule": "Planning du jour",
+    "appointments": "rendez-vous",
+    "upcoming": "À venir",
+    "seeAll": "Tout voir",
+    "noUpcoming": "Aucun rendez-vous à venir",
+    "statToday": "Aujourd'hui",
+    "statUpcoming": "À venir",
+    "statPatients": "Patients",
+    "statCancellations": "Annulations",
+    "statNeedsAttention": "Attention requise",
+    "statAllClear": "Tout est en ordre",
+    "statCompletion": "Taux de complétion",
+    "statVsTotal": "vs. total",
+    "statNoShows": "Absences",
+    "statMissedVisits": "Visites manquées",
+    "scheduledToday": "Planifié aujourd'hui",
+    "bookedConfirmed": "Réservé et confirmé",
+    "allTime": "Depuis toujours",
+    "aiAssistant": "Assistant IA",
+    "smartBookingActive": "Réservation IA active",
+    "aiWidgetLive": "Votre widget IA est en ligne et accepte des réservations 24h/24.",
+    "configureAI": "Configurer l'IA",
+    "noAppointmentHistory": "Aucun historique de rendez-vous"
   },
   "appointments": {
     "title": "Rendez-vous",
@@ -84,7 +114,15 @@
       "complete": "Marquer terminé",
       "cancel": "Annuler",
       "noShow": "Marquer absent"
-    }
+    },
+    "manageTrack": "Gérez et suivez tous les rendez-vous de la clinique",
+    "refresh": "Actualiser",
+    "statusAll": "Tous les statuts",
+    "statusBooked": "Réservé",
+    "statusConfirmed": "Confirmé",
+    "statusCompleted": "Terminé",
+    "statusCancelled": "Annulé",
+    "statusNoShow": "Absent"
   },
   "patients": {
     "title": "Patients",
@@ -98,7 +136,30 @@
       "appointments": "Rendez-vous"
     },
     "noPatients": "Aucun patient enregistré",
-    "notes": "Notes"
+    "notes": "Notes",
+    "addPatient": "Ajouter un patient",
+    "searchPlaceholder": "Rechercher par nom, téléphone ou email...",
+    "registered": "patients enregistrés",
+    "noResults": "Aucun patient trouvé",
+    "tryDifferent": "Essayez un autre terme de recherche",
+    "autoAdded": "Les patients sont ajoutés automatiquement lors d'une réservation via le widget IA",
+    "visitHistory": "Historique des visites",
+    "noHistory": "Aucun historique de rendez-vous",
+    "addNewPatient": "Ajouter un nouveau patient",
+    "fullName": "Nom complet",
+    "fullNamePlaceholder": "Dr. Jean Dupont",
+    "phoneNumber": "Numéro de téléphone",
+    "phonePlaceholder": "+33-6-00-00-00-00",
+    "email": "Email",
+    "emailOptional": "(facultatif)",
+    "emailPlaceholder": "patient@email.com",
+    "notesLabel": "Notes",
+    "notesOptional": "(facultatif)",
+    "notesPlaceholder": "Allergies, antécédents médicaux...",
+    "adding": "Ajout en cours...",
+    "addButton": "Ajouter le patient",
+    "cancelButton": "Annuler",
+    "sinceLabel": "Depuis"
   },
   "services": {
     "title": "Services",
@@ -181,23 +242,59 @@
   "auth": {
     "login": {
       "title": "Connexion",
-      "subtitle": "Accédez à votre espace MedBook AI",
+      "subtitle": "Accédez à votre espace DocFlow IA",
       "email": "Adresse email",
       "password": "Mot de passe",
       "submit": "Se connecter",
       "noAccount": "Pas encore de compte ?",
       "signUp": "S'inscrire",
-      "forgotPassword": "Mot de passe oublié ?"
+      "forgotPassword": "Mot de passe oublié ?",
+      "brandPanel": "L'avenir de la réservation en cabinet est là.",
+      "brandSubtitle": "Votre assistant IA gère les rendez-vous 24h/24, pour que vous puissiez vous concentrer sur l'essentiel — vos patients.",
+      "featureAI": "Assistant IA de réservation propulsé par Claude",
+      "featureSecurity": "Données patients sécurisées, conformes HIPAA",
+      "featureNotifications": "Notifications email automatiques à la réservation",
+      "emailLabel": "Adresse email",
+      "passwordLabel": "Mot de passe",
+      "emailPlaceholder": "medecin@clinique.com",
+      "passwordPlaceholder": "••••••••",
+      "welcomeBack": "Bon retour",
+      "dashboardSubtitle": "Connectez-vous à votre tableau de bord",
+      "dontHaveAccount": "Pas encore de compte ?",
+      "startFreeTrial": "Démarrer l'essai gratuit"
     },
     "signup": {
       "title": "Créer un compte",
-      "subtitle": "Rejoignez MedBook AI",
+      "subtitle": "Rejoignez DocFlow IA",
       "fullName": "Nom complet",
       "email": "Adresse email",
       "password": "Mot de passe",
       "submit": "Créer mon compte",
       "hasAccount": "Déjà un compte ?",
-      "signIn": "Se connecter"
+      "signIn": "Se connecter",
+      "createAccount": "Créez votre compte",
+      "trialSubtitle": "Démarrez votre essai gratuit de 14 jours — sans carte bancaire",
+      "fullNameLabel": "Nom complet",
+      "fullNamePlaceholder": "Dr. Jean Dupont",
+      "emailLabel": "Adresse email",
+      "emailPlaceholder": "medecin@clinique.com",
+      "passwordLabel": "Mot de passe",
+      "passwordPlaceholder": "Min. 8 caractères",
+      "confirmPasswordLabel": "Confirmer le mot de passe",
+      "confirmPasswordPlaceholder": "Répétez le mot de passe",
+      "submitLoading": "Création du compte...",
+      "submitButton": "Créer mon compte",
+      "alreadyHaveAccount": "Déjà un compte ?",
+      "termsText": "En créant un compte, vous acceptez nos",
+      "termsOfService": "Conditions d'utilisation",
+      "privacyPolicy": "Politique de confidentialité",
+      "brandTitle": "Lancez-vous en moins de 2 minutes.",
+      "brandSubtitle": "Configurez votre clinique, personnalisez votre assistant IA et commencez à accepter des réservations dès aujourd'hui.",
+      "feature1": "Sans carte bancaire",
+      "feature2": "Le plan gratuit inclut 50 rendez-vous/mois",
+      "feature3": "Widget IA prêt en 2 minutes",
+      "feature4": "Annulable à tout moment",
+      "copyright": "© 2024 DocFlow IA · Tous droits réservés"
     }
   },
   "onboarding": {
@@ -205,5 +302,177 @@
     "clinicName": "Nom de la clinique",
     "timezone": "Fuseau horaire",
     "submit": "Créer ma clinique"
+  },
+  "pricing": {
+    "nav": {
+      "features": "Fonctionnalités",
+      "pricing": "Tarifs",
+      "howItWorks": "Comment ça marche",
+      "reviews": "Avis",
+      "signIn": "Connexion",
+      "getStarted": "Commencer"
+    },
+    "badge": "Tarifs simples et transparents",
+    "title1": "Des plans qui évoluent avec",
+    "titleHighlight": "votre cabinet",
+    "subtitle": "Commencez gratuitement. Évoluez à votre rythme. Aucun frais caché.",
+    "mostPopular": "Le plus populaire",
+    "forever": "pour toujours",
+    "perMonth": "par mois",
+    "plans": {
+      "free": {
+        "name": "Gratuit",
+        "description": "Idéal pour démarrer",
+        "cta": "Commencer gratuitement",
+        "features": [
+          "1 clinique",
+          "Jusqu'à 50 rendez-vous/mois",
+          "Assistant IA de réservation",
+          "Agenda basique",
+          "Gestion des patients",
+          "Support par email"
+        ]
+      },
+      "starter": {
+        "name": "Starter",
+        "description": "Pour les cabinets en croissance",
+        "cta": "Démarrer l'essai gratuit",
+        "features": [
+          "1 clinique",
+          "Jusqu'à 200 rendez-vous/mois",
+          "Assistant IA de réservation",
+          "Agenda complet (jour/semaine/mois)",
+          "CRM Patients",
+          "Gestion des services",
+          "Paramètres de disponibilité",
+          "Support prioritaire"
+        ]
+      },
+      "professional": {
+        "name": "Professionnel",
+        "description": "Le plus populaire pour les cliniques établies",
+        "cta": "Démarrer l'essai gratuit",
+        "features": [
+          "1 clinique",
+          "Rendez-vous illimités",
+          "Assistant IA de réservation",
+          "Agenda complet avec drag & drop",
+          "CRM Patients complet",
+          "Gestion des rôles du personnel",
+          "Analytiques avancées",
+          "Personnalité IA personnalisée",
+          "Personnalisation du widget",
+          "Support prioritaire 24h/24"
+        ]
+      },
+      "enterprise": {
+        "name": "Entreprise",
+        "description": "Pour les grands cabinets et groupes",
+        "cta": "Contacter les ventes",
+        "features": [
+          "Plusieurs cliniques",
+          "Rendez-vous illimités",
+          "Toutes les fonctionnalités Pro",
+          "Gestion multi-sites",
+          "Intégrations sur mesure",
+          "Responsable de compte dédié",
+          "SLA personnalisé",
+          "Option on-premise"
+        ]
+      }
+    },
+    "includedTitle": "Inclus dans tous les plans",
+    "includedSubtitle": "Fonctionnalités de base disponibles à chaque niveau",
+    "included": [
+      "Sécurité SSL",
+      "99,9% de disponibilité",
+      "Export de données",
+      "Sécurité par ligne",
+      "Prêt RGPD",
+      "Accès API",
+      "Responsive mobile",
+      "Intégration widget"
+    ],
+    "questions": "Des questions ?",
+    "talkToUs": "Contactez-nous",
+    "wereHappy": "— nous sommes là pour vous aider."
+  },
+  "landing": {
+    "nav": {
+      "features": "Fonctionnalités",
+      "pricing": "Tarifs",
+      "howItWorks": "Comment ça marche",
+      "reviews": "Avis",
+      "signIn": "Connexion",
+      "startFreeTrial": "Essai gratuit"
+    },
+    "hero": {
+      "badge": "Propulsé par Claude AI · Assistant de réservation 24h/24",
+      "badgeNew": "Nouveau",
+      "titlePart1": "Laissez l'IA gérer vos",
+      "titleHighlight": "Réservations de rendez-vous",
+      "titlePart2": "Automatiquement",
+      "subtitle": "Assistant de réservation intelligent pour les cliniques. Les patients discutent naturellement pour réserver, reporter ou annuler. Vous vous concentrez sur les soins — l'IA gère l'administratif.",
+      "ctaPrimary": "Démarrer l'essai gratuit de 14 jours",
+      "ctaSecondary": "Voir la démo",
+      "noCard": "Sans carte bancaire · Annulable à tout moment",
+      "liveLabel": "En direct",
+      "viewAppointments": "Voir les rendez-vous",
+      "statToday": "Aujourd'hui",
+      "statPatients": "Patients",
+      "statCompletion": "Taux de complétion",
+      "statAiBookings": "Réservations IA",
+      "greeting": "Bonjour, Dr. Smith"
+    },
+    "proof": {
+      "clinics": "500+ cliniques partenaires",
+      "bookings": "50 000+ réservations traitées",
+      "uptime": "99,9% de disponibilité",
+      "hipaa": "Architecture conforme HIPAA"
+    },
+    "features": {
+      "sectionLabel": "Fonctionnalités",
+      "title": "Tout pour gérer une clinique moderne",
+      "subtitle": "Des outils puissants conçus spécifiquement pour les professionnels de santé",
+      "aiAssistantTitle": "Assistant IA de réservation",
+      "aiAssistantDesc": "Claude AI discute naturellement avec les patients pour collecter les informations, afficher les créneaux et confirmer les réservations automatiquement.",
+      "calendarTitle": "Agenda intelligent",
+      "calendarDesc": "Agenda visuel jour/semaine/mois. Glissez-déposez les rendez-vous, modifiez les statuts et gérez votre planning sans effort.",
+      "crmTitle": "CRM Patients",
+      "crmDesc": "Profils patients complets avec historique des visites, prochains rendez-vous et notes cliniques au même endroit.",
+      "availabilityTitle": "Gestion des disponibilités",
+      "availabilityDesc": "Définissez les horaires, pauses déjeuner, jours fériés et créneaux bloqués. L'IA respecte chaque contrainte automatiquement.",
+      "securityTitle": "Sécurité multi-tenant",
+      "securityDesc": "Chaque clinique est totalement isolée. La sécurité par ligne garantit qu'aucune donnée ne fuite entre les cabinets.",
+      "analyticsTitle": "Tableau de bord analytique",
+      "analyticsDesc": "Suivez les tendances de réservation, les taux d'occupation, les absences et l'acquisition de patients en un coup d'œil."
+    },
+    "howItWorks": {
+      "sectionLabel": "Processus",
+      "title": "Comment ça marche",
+      "subtitle": "Opérationnel en moins de 10 minutes",
+      "step1Title": "Configurez votre clinique",
+      "step1Desc": "Créez votre compte, configurez vos services, définissez vos horaires et personnalisez la personnalité de votre assistant IA.",
+      "step2Title": "Ajoutez le widget à votre site",
+      "step2Desc": "Intégrez le widget de réservation sur votre site en une ligne de code. Compatible avec tous les CMS.",
+      "step3Title": "L'IA réserve vos patients",
+      "step3Desc": "Les patients discutent avec votre IA pour réserver 24h/24. Vous êtes notifié et gérez tout depuis votre tableau de bord."
+    },
+    "testimonials": {
+      "sectionLabel": "Témoignages",
+      "title": "Plébiscité par les professionnels de santé"
+    },
+    "cta": {
+      "badge": "14 jours d'essai · Sans carte bancaire",
+      "title": "Prêt à transformer votre cabinet ?",
+      "subtitle": "Rejoignez des centaines de cliniques qui utilisent l'IA pour moderniser leur prise de rendez-vous",
+      "button": "Démarrer votre essai gratuit"
+    },
+    "footer": {
+      "rights": "© 2025 DocFlow IA. Tous droits réservés.",
+      "pricing": "Tarifs",
+      "login": "Connexion",
+      "signup": "Inscription"
+    }
   }
 }

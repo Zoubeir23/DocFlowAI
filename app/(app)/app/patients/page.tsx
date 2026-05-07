@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Skeleton } from "@/components/ui/skeleton";
 import { getStatusColor, getStatusLabel } from "@/lib/utils";
 import type { Patient } from "@/types";
+import { useTranslations } from "next-intl";
 
 async function fetchClinicId() {
   const supabase = createClient() as any;
@@ -40,6 +41,7 @@ export default function PatientsPage() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const queryClient = useQueryClient();
+  const t = useTranslations("patients");
 
   const { data: clinicId } = useQuery({ queryKey: ["clinicId"], queryFn: fetchClinicId });
 
@@ -93,10 +95,10 @@ export default function PatientsPage() {
             <div className="w-8 h-8 rounded-xl gradient-brand flex items-center justify-center">
               <Users className="w-4 h-4 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Patients</h2>
+            <h2 className="text-2xl font-bold text-slate-800 tracking-tight">{t("title")}</h2>
           </div>
           <p className="text-slate-500 text-sm ml-10">
-            {patientsResult?.total || 0} patients registered
+            {patientsResult?.total || 0} {t("registered")}
           </p>
         </div>
         <Button
@@ -104,7 +106,7 @@ export default function PatientsPage() {
           className="rounded-xl gradient-brand text-white border-none shadow-md shadow-teal-200/50 hover:shadow-teal-300/60 hover:scale-[1.02] transition-all duration-200 font-semibold"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Add Patient
+          {t("addPatient")}
         </Button>
       </div>
 
@@ -112,7 +114,7 @@ export default function PatientsPage() {
       <div className="relative max-w-lg">
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <Input
-          placeholder="Search by name, phone, or email..."
+          placeholder={t("searchPlaceholder")}
           className="pl-10 h-10 rounded-xl border-slate-200 bg-white focus:ring-teal-500 focus:border-teal-400 text-sm shadow-sm"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -157,7 +159,7 @@ export default function PatientsPage() {
                       {patient.full_name}
                     </h3>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      Since {format(parseISO(patient.created_at), "MMM yyyy")}
+                      {t("sinceLabel")} {format(parseISO(patient.created_at), "MMM yyyy")}
                     </p>
                   </div>
                 </div>
@@ -182,11 +184,11 @@ export default function PatientsPage() {
           <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center mx-auto mb-4">
             <Users className="w-8 h-8 text-slate-300" />
           </div>
-          <p className="text-slate-600 font-semibold">No patients found</p>
+          <p className="text-slate-600 font-semibold">{t("noResults")}</p>
           {search ? (
-            <p className="text-sm text-slate-400 mt-1">Try a different search term</p>
+            <p className="text-sm text-slate-400 mt-1">{t("tryDifferent")}</p>
           ) : (
-            <p className="text-sm text-slate-400 mt-1">Patients are added automatically when they book via the AI widget</p>
+            <p className="text-sm text-slate-400 mt-1">{t("autoAdded")}</p>
           )}
         </div>
       )}
@@ -222,7 +224,7 @@ export default function PatientsPage() {
                 {selectedPatient.notes && (
                   <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
                     <div className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-                      <FileText className="w-4 h-4 text-teal-500" /> Notes
+                      <FileText className="w-4 h-4 text-teal-500" /> {t("notes")}
                     </div>
                     <p className="text-sm text-slate-600 leading-relaxed">{selectedPatient.notes}</p>
                   </div>
@@ -231,7 +233,7 @@ export default function PatientsPage() {
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <Calendar className="w-4 h-4 text-teal-500" />
-                    <h4 className="font-bold text-slate-700 text-sm">Visit History</h4>
+                    <h4 className="font-bold text-slate-700 text-sm">{t("visitHistory")}</h4>
                   </div>
                   {patientAppts && patientAppts.length > 0 ? (
                     <div className="space-y-2">
@@ -255,7 +257,7 @@ export default function PatientsPage() {
                   ) : (
                     <div className="text-center py-8 text-slate-400">
                       <Calendar className="w-8 h-8 mx-auto mb-2 text-slate-200" />
-                      <p className="text-sm">No appointment history yet</p>
+                      <p className="text-sm">{t("noHistory")}</p>
                     </div>
                   )}
                 </div>
@@ -273,41 +275,45 @@ export default function PatientsPage() {
               <div className="w-7 h-7 rounded-lg gradient-brand flex items-center justify-center">
                 <Plus className="w-4 h-4 text-white" />
               </div>
-              Add New Patient
+              {t("addNewPatient")}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit((d) => createMutation.mutate(d))} className="space-y-4 mt-1">
             <div className="space-y-1.5">
-              <Label className="text-sm font-semibold text-slate-700">Full Name</Label>
+              <Label className="text-sm font-semibold text-slate-700">{t("fullName")}</Label>
               <Input
-                placeholder="Dr. John Smith"
+                placeholder={t("fullNamePlaceholder")}
                 className="rounded-xl border-slate-200 focus:ring-teal-500 focus:border-teal-400"
                 {...register("full_name")}
               />
               {errors.full_name && <p className="text-xs text-red-500">{errors.full_name.message}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm font-semibold text-slate-700">Phone Number</Label>
+              <Label className="text-sm font-semibold text-slate-700">{t("phoneNumber")}</Label>
               <Input
-                placeholder="+1-555-0123"
+                placeholder={t("phonePlaceholder")}
                 className="rounded-xl border-slate-200 focus:ring-teal-500 focus:border-teal-400"
                 {...register("phone")}
               />
               {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm font-semibold text-slate-700">Email <span className="text-slate-400 font-normal">(optional)</span></Label>
+              <Label className="text-sm font-semibold text-slate-700">
+                {t("email")} <span className="text-slate-400 font-normal">{t("emailOptional")}</span>
+              </Label>
               <Input
                 type="email"
-                placeholder="patient@email.com"
+                placeholder={t("emailPlaceholder")}
                 className="rounded-xl border-slate-200 focus:ring-teal-500 focus:border-teal-400"
                 {...register("email")}
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm font-semibold text-slate-700">Notes <span className="text-slate-400 font-normal">(optional)</span></Label>
+              <Label className="text-sm font-semibold text-slate-700">
+                {t("notesLabel")} <span className="text-slate-400 font-normal">{t("notesOptional")}</span>
+              </Label>
               <Textarea
-                placeholder="Allergies, medical history..."
+                placeholder={t("notesPlaceholder")}
                 className="rounded-xl border-slate-200 focus:ring-teal-500 focus:border-teal-400 resize-none"
                 rows={3}
                 {...register("notes")}
@@ -315,14 +321,14 @@ export default function PatientsPage() {
             </div>
             <div className="flex gap-3 pt-2">
               <Button type="button" variant="outline" className="flex-1 rounded-xl border-slate-200" onClick={() => setShowAddModal(false)}>
-                Cancel
+                {t("cancelButton")}
               </Button>
               <Button
                 type="submit"
                 className="flex-1 rounded-xl gradient-brand text-white border-none shadow-md shadow-teal-200/40 font-semibold"
                 disabled={createMutation.isPending}
               >
-                {createMutation.isPending ? "Adding..." : "Add Patient"}
+                {createMutation.isPending ? t("adding") : t("addButton")}
               </Button>
             </div>
           </form>

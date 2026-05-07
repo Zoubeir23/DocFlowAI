@@ -6,19 +6,21 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Image from 'next/image'
-import { Eye, EyeOff, Loader2, Sparkles, Shield, Brain } from 'lucide-react'
+import { Eye, EyeOff, Loader2, Bell, Shield, MessageSquare } from 'lucide-react'
 import { toast } from 'sonner'
 import { loginSchema, type LoginInput } from '@/lib/validations'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useTranslations } from 'next-intl'
 
 export default function LoginPage() {
   const router = useRouter()
   const supabase = createClient()
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const t = useTranslations('auth.login')
 
   const {
     register,
@@ -60,27 +62,26 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div className="relative flex items-center">
-          <Image src="/logo.png" alt="DocFlow IA" width={150} height={41} className="object-contain brightness-0 invert" />
+          <Link href="/">
+            <Image src="/logo.png" alt="DocFlow IA" width={150} height={41} className="object-contain brightness-0 invert" />
+          </Link>
         </div>
 
         {/* Center content */}
         <div className="relative space-y-8">
           <div>
             <h2 className="text-3xl font-bold text-white leading-snug">
-              The future of clinic
-              <br />
-              booking is here.
+              {t('brandPanel')}
             </h2>
             <p className="text-teal-100/80 mt-3 leading-relaxed text-sm">
-              Your AI-powered assistant handles appointments 24/7, so you can focus on what matters
-              most — your patients.
+              {t('brandSubtitle')}
             </p>
           </div>
           <div className="space-y-3">
             {[
-              { icon: Brain, text: 'Claude-powered AI booking assistant' },
-              { icon: Shield, text: 'HIPAA-ready, secure patient data' },
-              { icon: Sparkles, text: 'Auto email notifications on booking' },
+              { icon: MessageSquare, text: t('featureAI') },
+              { icon: Shield, text: t('featureSecurity') },
+              { icon: Bell, text: t('featureNotifications') },
             ].map((item) => (
               <div key={item.text} className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
@@ -101,24 +102,26 @@ export default function LoginPage() {
         <div className="w-full max-w-[400px]">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center justify-center mb-8">
-            <Image src="/logo.png" alt="DocFlow IA" width={140} height={38} className="object-contain" />
+            <Link href="/">
+              <Image src="/logo.png" alt="DocFlow IA" width={140} height={38} className="object-contain" />
+            </Link>
           </div>
 
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Welcome back</h1>
-            <p className="text-slate-500 mt-1 text-sm">Sign in to your clinic dashboard</p>
+            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">{t('welcomeBack')}</h1>
+            <p className="text-slate-500 mt-1 text-sm">{t('dashboardSubtitle')}</p>
           </div>
 
           <div className="glass-card rounded-2xl p-7">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               <div className="space-y-1.5">
                 <Label htmlFor="email" className="text-sm font-semibold text-slate-700">
-                  Email address
+                  {t('emailLabel')}
                 </Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="doctor@clinic.com"
+                  placeholder={t('emailPlaceholder')}
                   autoComplete="email"
                   className="h-10 rounded-xl border-slate-200 bg-slate-50/60 focus:bg-white focus:ring-teal-500 focus:border-teal-400 transition-colors"
                   {...register('email')}
@@ -128,13 +131,13 @@ export default function LoginPage() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="password" className="text-sm font-semibold text-slate-700">
-                  Password
+                  {t('passwordLabel')}
                 </Label>
                 <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
+                    placeholder={t('passwordPlaceholder')}
                     autoComplete="current-password"
                     className="h-10 rounded-xl border-slate-200 bg-slate-50/60 focus:bg-white focus:ring-teal-500 focus:border-teal-400 transition-colors"
                     {...register('password')}
@@ -158,18 +161,18 @@ export default function LoginPage() {
                 disabled={loading}
               >
                 {loading ? <Loader2 className="mr-2 w-4 h-4 animate-spin" /> : null}
-                {loading ? 'Signing in...' : 'Sign In'}
+                {loading ? 'Signing in...' : t('submit')}
               </Button>
             </form>
 
             <div className="mt-5 pt-5 border-t border-slate-100 text-center">
               <p className="text-slate-500 text-sm">
-                Don&apos;t have an account?{' '}
+                {t('dontHaveAccount')}{' '}
                 <Link
                   href="/signup"
                   className="text-teal-600 font-semibold hover:text-teal-700 transition-colors"
                 >
-                  Start free trial
+                  {t('startFreeTrial')}
                 </Link>
               </p>
             </div>

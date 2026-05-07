@@ -55,7 +55,37 @@
     "revenue": "Estimated Revenue",
     "recentAppointments": "Recent Appointments",
     "upcomingAppointments": "Upcoming Appointments",
-    "noAppointments": "No appointments"
+    "noAppointments": "No appointments",
+    "liveDashboard": "Live Dashboard",
+    "greeting": {
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening"
+    },
+    "viewAllAppointments": "View All Appointments",
+    "todaySchedule": "Today's Schedule",
+    "appointments": "appointments",
+    "upcoming": "Upcoming",
+    "seeAll": "See all",
+    "noUpcoming": "No upcoming appointments",
+    "statToday": "Today",
+    "statUpcoming": "Upcoming",
+    "statPatients": "Patients",
+    "statCancellations": "Cancellations",
+    "statNeedsAttention": "Needs attention",
+    "statAllClear": "All clear",
+    "statCompletion": "Completion",
+    "statVsTotal": "vs. total",
+    "statNoShows": "No-Shows",
+    "statMissedVisits": "Missed visits",
+    "scheduledToday": "Scheduled today",
+    "bookedConfirmed": "Booked & confirmed",
+    "allTime": "All time",
+    "aiAssistant": "AI Assistant",
+    "smartBookingActive": "Smart Booking Active",
+    "aiWidgetLive": "Your AI widget is live and accepting patient bookings 24/7.",
+    "configureAI": "Configure AI",
+    "noAppointmentHistory": "No appointment history yet"
   },
   "appointments": {
     "title": "Appointments",
@@ -84,7 +114,15 @@
       "complete": "Mark Complete",
       "cancel": "Cancel",
       "noShow": "Mark No Show"
-    }
+    },
+    "manageTrack": "Manage and track all clinic appointments",
+    "refresh": "Refresh",
+    "statusAll": "All Status",
+    "statusBooked": "Booked",
+    "statusConfirmed": "Confirmed",
+    "statusCompleted": "Completed",
+    "statusCancelled": "Cancelled",
+    "statusNoShow": "No Show"
   },
   "patients": {
     "title": "Patients",
@@ -98,7 +136,30 @@
       "appointments": "Appointments"
     },
     "noPatients": "No registered patients",
-    "notes": "Notes"
+    "notes": "Notes",
+    "addPatient": "Add Patient",
+    "searchPlaceholder": "Search by name, phone, or email...",
+    "registered": "patients registered",
+    "noResults": "No patients found",
+    "tryDifferent": "Try a different search term",
+    "autoAdded": "Patients are added automatically when they book via the AI widget",
+    "visitHistory": "Visit History",
+    "noHistory": "No appointment history yet",
+    "addNewPatient": "Add New Patient",
+    "fullName": "Full Name",
+    "fullNamePlaceholder": "Dr. John Smith",
+    "phoneNumber": "Phone Number",
+    "phonePlaceholder": "+1-555-0123",
+    "email": "Email",
+    "emailOptional": "(optional)",
+    "emailPlaceholder": "patient@email.com",
+    "notesLabel": "Notes",
+    "notesOptional": "(optional)",
+    "notesPlaceholder": "Allergies, medical history...",
+    "adding": "Adding...",
+    "addButton": "Add Patient",
+    "cancelButton": "Cancel",
+    "sinceLabel": "Since"
   },
   "services": {
     "title": "Services",
@@ -181,23 +242,59 @@
   "auth": {
     "login": {
       "title": "Sign In",
-      "subtitle": "Access your MedBook AI dashboard",
+      "subtitle": "Access your DocFlow IA dashboard",
       "email": "Email address",
       "password": "Password",
       "submit": "Sign In",
       "noAccount": "Don't have an account?",
       "signUp": "Sign Up",
-      "forgotPassword": "Forgot password?"
+      "forgotPassword": "Forgot password?",
+      "brandPanel": "The future of clinic booking is here.",
+      "brandSubtitle": "Your AI-powered assistant handles appointments 24/7, so you can focus on what matters most — your patients.",
+      "featureAI": "Claude-powered AI booking assistant",
+      "featureSecurity": "HIPAA-ready, secure patient data",
+      "featureNotifications": "Auto email notifications on booking",
+      "emailLabel": "Email address",
+      "passwordLabel": "Password",
+      "emailPlaceholder": "doctor@clinic.com",
+      "passwordPlaceholder": "••••••••",
+      "welcomeBack": "Welcome back",
+      "dashboardSubtitle": "Sign in to your clinic dashboard",
+      "dontHaveAccount": "Don't have an account?",
+      "startFreeTrial": "Start free trial"
     },
     "signup": {
       "title": "Create Account",
-      "subtitle": "Join MedBook AI",
+      "subtitle": "Join DocFlow IA",
       "fullName": "Full Name",
       "email": "Email address",
       "password": "Password",
       "submit": "Create Account",
       "hasAccount": "Already have an account?",
-      "signIn": "Sign In"
+      "signIn": "Sign In",
+      "createAccount": "Create your account",
+      "trialSubtitle": "Start your 14-day free trial today — no card needed",
+      "fullNameLabel": "Full name",
+      "fullNamePlaceholder": "Dr. John Smith",
+      "emailLabel": "Email address",
+      "emailPlaceholder": "doctor@clinic.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Min. 8 characters",
+      "confirmPasswordLabel": "Confirm password",
+      "confirmPasswordPlaceholder": "Repeat password",
+      "submitLoading": "Creating account...",
+      "submitButton": "Create Account",
+      "alreadyHaveAccount": "Already have an account?",
+      "termsText": "By creating an account, you agree to our",
+      "termsOfService": "Terms of Service",
+      "privacyPolicy": "Privacy Policy",
+      "brandTitle": "Get started in under 2 minutes.",
+      "brandSubtitle": "Set up your clinic, configure your AI assistant, and start accepting patient bookings today.",
+      "feature1": "No credit card required",
+      "feature2": "Free plan includes 50 appointments/mo",
+      "feature3": "AI widget ready in 2 minutes",
+      "feature4": "Cancel anytime",
+      "copyright": "© 2024 DocFlow IA · All rights reserved"
     }
   },
   "onboarding": {
@@ -205,5 +302,177 @@
     "clinicName": "Clinic Name",
     "timezone": "Timezone",
     "submit": "Create My Clinic"
+  },
+  "pricing": {
+    "nav": {
+      "features": "Features",
+      "pricing": "Pricing",
+      "howItWorks": "How It Works",
+      "reviews": "Reviews",
+      "signIn": "Sign In",
+      "getStarted": "Get Started"
+    },
+    "badge": "Simple, transparent pricing",
+    "title1": "Plans that scale with",
+    "titleHighlight": "your practice",
+    "subtitle": "Start free. Upgrade as you grow. No hidden fees, no surprises.",
+    "mostPopular": "Most Popular",
+    "forever": "forever",
+    "perMonth": "per month",
+    "plans": {
+      "free": {
+        "name": "Free",
+        "description": "Perfect for getting started",
+        "cta": "Start Free",
+        "features": [
+          "1 clinic",
+          "Up to 50 appointments/month",
+          "AI booking assistant",
+          "Basic calendar",
+          "Patient management",
+          "Email support"
+        ]
+      },
+      "starter": {
+        "name": "Starter",
+        "description": "For growing practices",
+        "cta": "Start Free Trial",
+        "features": [
+          "1 clinic",
+          "Up to 200 appointments/month",
+          "AI booking assistant",
+          "Full calendar (day/week/month)",
+          "Patient CRM",
+          "Services management",
+          "Availability settings",
+          "Priority support"
+        ]
+      },
+      "professional": {
+        "name": "Professional",
+        "description": "Most popular for established clinics",
+        "cta": "Start Free Trial",
+        "features": [
+          "1 clinic",
+          "Unlimited appointments",
+          "AI booking assistant",
+          "Full calendar with drag & drop",
+          "Complete Patient CRM",
+          "Staff role management",
+          "Advanced analytics",
+          "Custom AI personality",
+          "Widget customization",
+          "Priority 24/7 support"
+        ]
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "For large practices and groups",
+        "cta": "Contact Sales",
+        "features": [
+          "Multiple clinics",
+          "Unlimited appointments",
+          "All Professional features",
+          "Multi-location management",
+          "Custom integrations",
+          "Dedicated account manager",
+          "Custom SLA",
+          "On-premise option"
+        ]
+      }
+    },
+    "includedTitle": "All plans include",
+    "includedSubtitle": "Core features available across every tier",
+    "included": [
+      "SSL Security",
+      "99.9% Uptime",
+      "Data Export",
+      "Row Level Security",
+      "GDPR Ready",
+      "API Access",
+      "Mobile Responsive",
+      "Widget Embedding"
+    ],
+    "questions": "Questions?",
+    "talkToUs": "Talk to us",
+    "wereHappy": "— we're happy to help."
+  },
+  "landing": {
+    "nav": {
+      "features": "Features",
+      "pricing": "Pricing",
+      "howItWorks": "How It Works",
+      "reviews": "Reviews",
+      "signIn": "Sign In",
+      "startFreeTrial": "Start Free Trial"
+    },
+    "hero": {
+      "badge": "Powered by Claude AI · 24/7 Booking Assistant",
+      "badgeNew": "New",
+      "titlePart1": "Let AI Handle Your",
+      "titleHighlight": "Appointment Bookings",
+      "titlePart2": "Automatically",
+      "subtitle": "Intelligent booking assistant for clinics. Patients chat naturally to book, reschedule, or cancel. You focus on care — AI handles the admin.",
+      "ctaPrimary": "Start 14-Day Free Trial",
+      "ctaSecondary": "See Live Demo",
+      "noCard": "No credit card required · Cancel anytime",
+      "liveLabel": "Live",
+      "viewAppointments": "View Appointments",
+      "statToday": "Today",
+      "statPatients": "Patients",
+      "statCompletion": "Completion",
+      "statAiBookings": "AI Bookings",
+      "greeting": "Good morning, Dr. Smith"
+    },
+    "proof": {
+      "clinics": "500+ clinics onboarded",
+      "bookings": "50,000+ bookings processed",
+      "uptime": "99.9% uptime",
+      "hipaa": "HIPAA-ready architecture"
+    },
+    "features": {
+      "sectionLabel": "Features",
+      "title": "Everything to Run a Modern Clinic",
+      "subtitle": "Powerful tools built specifically for healthcare providers",
+      "aiAssistantTitle": "AI Booking Assistant",
+      "aiAssistantDesc": "Claude AI converses naturally with patients to collect info, show slots, and confirm bookings automatically.",
+      "calendarTitle": "Smart Calendar",
+      "calendarDesc": "Visual day/week/month calendar. Drag-and-drop appointments, mark status, and manage your schedule effortlessly.",
+      "crmTitle": "Patient CRM",
+      "crmDesc": "Complete patient profiles with visit history, upcoming bookings, and clinical notes all in one place.",
+      "availabilityTitle": "Availability Management",
+      "availabilityDesc": "Set clinic hours, lunch breaks, holidays, and blocked dates. AI respects every constraint automatically.",
+      "securityTitle": "Multi-Tenant Security",
+      "securityDesc": "Each clinic is completely isolated. Row-level security ensures no data leakage between practices.",
+      "analyticsTitle": "Analytics Dashboard",
+      "analyticsDesc": "Track booking trends, occupancy rates, no-shows, and patient acquisition at a glance."
+    },
+    "howItWorks": {
+      "sectionLabel": "Process",
+      "title": "How It Works",
+      "subtitle": "Up and running in under 10 minutes",
+      "step1Title": "Set Up Your Clinic",
+      "step1Desc": "Create your account, configure services, set availability hours, and customise your AI assistant's personality.",
+      "step2Title": "Add Widget to Your Site",
+      "step2Desc": "Embed the booking widget on your website with one line of code. Works on any website or CMS.",
+      "step3Title": "AI Books Patients",
+      "step3Desc": "Patients chat with your AI to book appointments 24/7. You get notified and manage everything from your dashboard."
+    },
+    "testimonials": {
+      "sectionLabel": "Testimonials",
+      "title": "Loved by Healthcare Providers"
+    },
+    "cta": {
+      "badge": "14-day free trial · No credit card",
+      "title": "Ready to Transform Your Practice?",
+      "subtitle": "Join hundreds of clinics using AI to modernise their booking experience",
+      "button": "Start Your Free Trial"
+    },
+    "footer": {
+      "rights": "© 2025 DocFlow IA. All rights reserved.",
+      "pricing": "Pricing",
+      "login": "Login",
+      "signup": "Sign Up"
+    }
   }
 }
