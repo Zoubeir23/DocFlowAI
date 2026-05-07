@@ -1,0 +1,209 @@
+{
+  "navigation": {
+    "main": "Main",
+    "config": "Configuration",
+    "dashboard": "Dashboard",
+    "calendar": "Calendar",
+    "appointments": "Appointments",
+    "patients": "Patients",
+    "services": "Services",
+    "aiSettings": "AI Settings",
+    "settings": "Settings",
+    "billing": "Billing",
+    "profile": "My Profile",
+    "signOut": "Sign Out",
+    "aiPowered": "AI Powered",
+    "aiDescription": "24/7 smart booking assistant active"
+  },
+  "topbar": {
+    "searchPlaceholder": "Search patients, appointments...",
+    "myAccount": "My Account",
+    "settings": "Settings",
+    "billing": "Billing",
+    "signOut": "Sign Out"
+  },
+  "languageSwitcher": {
+    "label": "Language",
+    "fr": "Français",
+    "en": "English"
+  },
+  "common": {
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "confirm": "Confirm",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "loading": "Loading...",
+    "noData": "No data",
+    "active": "Active",
+    "inactive": "Inactive",
+    "status": "Status"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome",
+    "totalAppointments": "Total Appointments",
+    "totalPatients": "Total Patients",
+    "todayAppointments": "Today's Appointments",
+    "revenue": "Estimated Revenue",
+    "recentAppointments": "Recent Appointments",
+    "upcomingAppointments": "Upcoming Appointments",
+    "noAppointments": "No appointments"
+  },
+  "appointments": {
+    "title": "Appointments",
+    "newAppointment": "New Appointment",
+    "status": {
+      "booked": "Booked",
+      "confirmed": "Confirmed",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "noShow": "No Show"
+    },
+    "source": {
+      "widget": "AI Widget",
+      "manual": "Manual"
+    },
+    "columns": {
+      "patient": "Patient",
+      "service": "Service",
+      "date": "Date & Time",
+      "status": "Status",
+      "source": "Source",
+      "actions": "Actions"
+    },
+    "actions": {
+      "confirm": "Confirm",
+      "complete": "Mark Complete",
+      "cancel": "Cancel",
+      "noShow": "Mark No Show"
+    }
+  },
+  "patients": {
+    "title": "Patients",
+    "newPatient": "New Patient",
+    "search": "Search a patient...",
+    "columns": {
+      "name": "Name",
+      "phone": "Phone",
+      "email": "Email",
+      "createdAt": "Registered",
+      "appointments": "Appointments"
+    },
+    "noPatients": "No registered patients",
+    "notes": "Notes"
+  },
+  "services": {
+    "title": "Services",
+    "newService": "New Service",
+    "duration": "Duration",
+    "price": "Price",
+    "minutes": "min",
+    "free": "Free",
+    "active": "Active",
+    "inactive": "Inactive",
+    "columns": {
+      "name": "Name",
+      "duration": "Duration",
+      "price": "Price",
+      "status": "Status",
+      "actions": "Actions"
+    }
+  },
+  "billing": {
+    "title": "Billing & Subscription",
+    "subtitle": "Pay by card (Stripe) or with crypto (USDC on Polygon)",
+    "currentPlan": "Current Plan",
+    "renewsOn": "Renews on",
+    "plans": {
+      "free": "Free",
+      "starter": "Starter",
+      "professional": "Professional",
+      "enterprise": "Enterprise"
+    },
+    "planStatus": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "cancelled": "Cancelled",
+      "pastDue": "Past Due"
+    },
+    "payWithStripe": "Stripe",
+    "payWithCrypto": "Crypto",
+    "mostPopular": "Most Popular",
+    "currentPlanBadge": "Current",
+    "perMonth": "/mo",
+    "contactEnterprise": "Contact Enterprise Sales",
+    "customPlan": "Need a custom plan?",
+    "customPlanDescription": "For large practices or hospital groups — contact us for a tailored solution."
+  },
+  "settings": {
+    "title": "Settings",
+    "clinicName": "Clinic Name",
+    "timezone": "Timezone",
+    "save": "Save Changes",
+    "saved": "Changes saved"
+  },
+  "profile": {
+    "title": "My Profile",
+    "fullName": "Full Name",
+    "email": "Email Address",
+    "role": "Role",
+    "roles": {
+      "owner": "Owner",
+      "receptionist": "Receptionist",
+      "assistant": "Assistant"
+    }
+  },
+  "aiSettings": {
+    "title": "AI Settings",
+    "widgetPreview": "Widget Preview",
+    "welcomeMessage": "Welcome Message",
+    "tone": "Chatbot Tone",
+    "tones": {
+      "professional": "Professional",
+      "friendly": "Friendly",
+      "formal": "Formal",
+      "casual": "Casual"
+    },
+    "bookingBehavior": "Booking Behavior",
+    "faq": "FAQ",
+    "addFaq": "Add Question",
+    "question": "Question",
+    "answer": "Answer"
+  },
+  "auth": {
+    "login": {
+      "title": "Sign In",
+      "subtitle": "Access your MedBook AI dashboard",
+      "email": "Email address",
+      "password": "Password",
+      "submit": "Sign In",
+      "noAccount": "Don't have an account?",
+      "signUp": "Sign Up",
+      "forgotPassword": "Forgot password?"
+    },
+    "signup": {
+      "title": "Create Account",
+      "subtitle": "Join MedBook AI",
+      "fullName": "Full Name",
+      "email": "Email address",
+      "password": "Password",
+      "submit": "Create Account",
+      "hasAccount": "Already have an account?",
+      "signIn": "Sign In"
+    }
+  },
+  "onboarding": {
+    "title": "Set Up Your Clinic",
+    "clinicName": "Clinic Name",
+    "timezone": "Timezone",
+    "submit": "Create My Clinic"
+  }
+}
