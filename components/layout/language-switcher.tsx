@@ -1,15 +1,14 @@
 "use client";
 
-import { useTranslations, useLocale } from "next-intl";
-import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useLocale } from "next-intl";
+import { useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Globe, Check } from "lucide-react";
+import { Globe, Check, Loader2 } from "lucide-react";
 import { routing, type SupportedLocale } from "@/i18n/routing";
 
 const LOCALE_FLAGS: Record<SupportedLocale, string> = {
@@ -17,20 +16,21 @@ const LOCALE_FLAGS: Record<SupportedLocale, string> = {
   en: "🇬🇧",
 };
 
+const LOCALE_LABELS: Record<SupportedLocale, string> = {
+  fr: "Français",
+  en: "English",
+};
+
 export function LanguageSwitcher() {
-  const t = useTranslations("languageSwitcher");
   const currentLocale = useLocale() as SupportedLocale;
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
 
   const handleLocaleChange = (nextLocale: SupportedLocale) => {
-    if (nextLocale === currentLocale) return;
+    if (nextLocale === currentLocale || isPending) return;
 
+    setIsPending(true);
     document.cookie = `NEXT_LOCALE=${nextLocale}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
-
-    startTransition(() => {
-      router.refresh();
-    });
+    window.location.reload();
   };
 
   return (
@@ -39,9 +39,12 @@ export function LanguageSwitcher() {
         <button
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-slate-500 hover:text-teal-600 hover:bg-teal-50 border border-transparent hover:border-slate-200 transition-all duration-200 text-sm font-medium disabled:opacity-50"
           disabled={isPending}
-          title={t("label")}
         >
-          <Globe className="w-4 h-4" />
+          {isPending ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Globe className="w-4 h-4" />
+          )}
           <span className="hidden sm:inline">{LOCALE_FLAGS[currentLocale]}</span>
         </button>
       </DropdownMenuTrigger>
@@ -56,7 +59,7 @@ export function LanguageSwitcher() {
             className="rounded-lg text-sm text-slate-600 hover:text-teal-700 hover:bg-teal-50 cursor-pointer flex items-center gap-2"
           >
             <span>{LOCALE_FLAGS[locale]}</span>
-            <span>{t(locale)}</span>
+            <span>{LOCALE_LABELS[locale]}</span>
             {locale === currentLocale && (
               <Check className="w-3.5 h-3.5 text-teal-500 ml-auto" />
             )}
