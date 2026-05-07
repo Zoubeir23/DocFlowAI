@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -15,7 +16,6 @@ import {
   ChevronRight,
   CreditCard,
   UserCircle,
-  Activity,
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -66,19 +66,29 @@ export function Sidebar({ clinicName = "My Clinic" }: SidebarProps) {
     >
       {/* Logo */}
       <div className={cn(
-        "flex items-center gap-3 px-4 py-5 border-b border-teal-50",
+        "flex items-center gap-3 px-4 py-4 border-b border-teal-50",
         collapsed && "justify-center px-2"
       )}>
-        <div className="relative flex-shrink-0">
-          <div className="w-9 h-9 gradient-brand rounded-xl flex items-center justify-center shadow-md shadow-teal-200/50">
-            <Activity className="w-5 h-5 text-white" />
+        {collapsed ? (
+          <div className="relative flex-shrink-0 w-9 h-9">
+            <Image
+              src="/logo.png"
+              alt="DocFlow IA"
+              width={36}
+              height={36}
+              className="object-contain"
+            />
           </div>
-          <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-teal-400 rounded-full border-2 border-white pulse-dot" />
-        </div>
-        {!collapsed && (
-          <div className="overflow-hidden">
-            <div className="font-bold text-sm text-slate-800 tracking-tight">MedBook AI</div>
-            <div className="text-[11px] text-teal-600 font-medium truncate max-w-[140px]">{clinicName}</div>
+        ) : (
+          <div className="flex flex-col gap-0.5">
+            <Image
+              src="/logo.png"
+              alt="DocFlow IA"
+              width={130}
+              height={36}
+              className="object-contain"
+            />
+            <div className="text-[11px] text-teal-600 font-medium truncate max-w-[160px] pl-0.5">{clinicName}</div>
           </div>
         )}
       </div>
