@@ -6,35 +6,26 @@ import { routing } from "./i18n/routing";
 const intlMiddleware = createIntlMiddleware(routing);
 
 export async function middleware(request: NextRequest) {
-  // 1. next-intl résout la locale depuis le cookie NEXT_LOCALE et injecte les headers nécessaires
-  const intlResponse = intlMiddleware(request);
+  // 1. Supabase auth (protège /app, redirige si non authentifié)
+  const supabaseResponse = await updateSession(request);
 
-  // 2. Si next-intl redirige (ne devrait pas avec localePrefix: "never"), on l'honore
-  if (intlResponse.status !== 200) {
-    return intlResponse;
+  // Si Supabase redirige (auth required / already logged in), on l'honore sans modification
+  if (supabaseResponse.status === 302 || supabaseResponse.status === 307 || supabaseResponse.status === 308) {
+    return supabaseResponse;
   }
 
-  // 3. Enrichir la request avec les headers intl pour que getRequestConfig les lise via requestLocale
-  const requestWithLocale = new NextRequest(request.url, {
-    method: request.method,
-    headers: (() => {
-      const headers = new Headers(request.headers);
-      intlResponse.headers.forEach((value, key) => {
-        headers.set(key, value);
-      });
-      return headers;
-    })(),
-    body: request.body,
+  // 2. next-intl résout la locale depuis le cookie NEXT_LOCALE
+  const intlResponse = intlMiddleware(request);
+
+  // 3. Copier les headers intl (x-middleware-*) dans la réponse finale
+  // Ces headers permettent à getRequestConfig de lire requestLocale
+  intlResponse.headers.forEach((value, key) => {
+    supabaseResponse.headers.set(key, value);
   });
 
-  // 4. Auth Supabase sur la request enrichie
-  const supabaseResponse = await updateSession(requestWithLocale);
-
-  // 5. Fusionner les headers intl dans la réponse finale
-  intlResponse.headers.forEach((value, key) => {
-    if (!supabaseResponse.headers.has(key)) {
-      supabaseResponse.headers.set(key, value);
-    }
+  // 4. Copier les cookies intl si présents
+  intlResponse.cookies.getAll().forEach((cookie) => {
+    supabaseResponse.cookies.set(cookie);
   });
 
   return supabaseResponse;
