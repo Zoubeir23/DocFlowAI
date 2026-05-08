@@ -158,7 +158,7 @@ export default function OnboardingPage() {
                 </Label>
                 <div className="flex items-center rounded-none border border-foreground/10 overflow-hidden focus-within:ring-2 focus-within:ring-teal-400 focus-within:border-teal-400 bg-foreground/[0.02] focus-within:bg-background transition-colors">
                   <span className="bg-slate-100/80 border-r border-foreground/10 px-3 py-2 text-sm text-foreground/60 whitespace-nowrap h-10 flex items-center">
-                    medbook.ai/widget/
+                    docflow.ai/widget/
                   </span>
                   <Input
                     id="slug"
