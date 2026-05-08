@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format, parseISO } from 'date-fns'
 import { toast } from 'sonner'
@@ -301,12 +301,16 @@ function FullCalendarWrapper({
   }, [])
 
   const [modules, setModules] = useState<Awaited<ReturnType<typeof calendarModules>> | null>(null)
+  const [isMounted, setIsMounted] = useState(false)
 
-  if (typeof window !== 'undefined' && !modules) {
-    calendarModules().then(setModules)
-  }
+  useEffect(() => {
+    setIsMounted(true)
+    if (typeof window !== 'undefined' && !modules) {
+      calendarModules().then(setModules)
+    }
+  }, [modules, calendarModules])
 
-  if (!modules) {
+  if (!isMounted || !modules) {
     return (
       <div className="h-96 flex items-center justify-center text-foreground/50 text-sm">
         Loading calendar...
