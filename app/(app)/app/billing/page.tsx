@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format, parseISO } from "date-fns";
+import { useTranslations } from "next-intl";
 
 // ── Crypto config ─────────────────────────────────────────────────────────────
 const RECIPIENT = process.env.NEXT_PUBLIC_CRYPTO_WALLET_ADDRESS!;
@@ -38,32 +39,32 @@ const POLYGON_PARAMS = {
 // ── Plans ─────────────────────────────────────────────────────────────────────
 const PLANS = [
   {
-    name: "Free",
+    nameKey: "plans.free",
     priceEur: 0,
     priceUsdc: 0,
-    features: ["50 rendez-vous/mois", "Assistant IA de réservation", "Calendrier basique", "1 compte staff"],
+    featureKeys: ["features.50appointments", "features.aiBooking", "features.basicCalendar", "features.1staff"],
     plan: "free" as const,
   },
   {
-    name: "Starter",
+    nameKey: "plans.starter",
     priceEur: Number(process.env.NEXT_PUBLIC_PLAN_STARTER_PRICE_EUR || 45),
     priceUsdc: Number(process.env.NEXT_PUBLIC_PLAN_STARTER_PRICE || 49),
-    features: ["200 rendez-vous/mois", "Toutes les fonctions Free", "Calendrier complet", "CRM patients", "3 comptes staff"],
+    featureKeys: ["features.200appointments", "features.allFreeFeatures", "features.fullCalendar", "features.patientCRM", "features.3staff"],
     plan: "starter" as StripePlan,
   },
   {
-    name: "Professional",
+    nameKey: "plans.professional",
     priceEur: Number(process.env.NEXT_PUBLIC_PLAN_PROFESSIONAL_PRICE_EUR || 89),
     priceUsdc: Number(process.env.NEXT_PUBLIC_PLAN_PROFESSIONAL_PRICE || 99),
-    features: ["Rendez-vous illimités", "Toutes les fonctions Starter", "Analyses avancées", "IA personnalisée", "10 comptes staff", "Support prioritaire"],
+    featureKeys: ["features.unlimitedAppointments", "features.allStarterFeatures", "features.advancedAnalytics", "features.customAI", "features.10staff", "features.prioritySupport"],
     plan: "professional" as StripePlan,
     popular: true,
   },
   {
-    name: "Enterprise",
+    nameKey: "plans.enterprise",
     priceEur: Number(process.env.NEXT_PUBLIC_PLAN_ENTERPRISE_PRICE_EUR || 269),
     priceUsdc: Number(process.env.NEXT_PUBLIC_PLAN_ENTERPRISE_PRICE || 299),
-    features: ["Plusieurs cliniques", "Toutes les fonctions Pro", "Intégrations sur mesure", "Responsable de compte dédié"],
+    featureKeys: ["features.multipleClinics", "features.allProFeatures", "features.customIntegrations", "features.dedicatedManager"],
     plan: "enterprise" as StripePlan,
   },
 ];
@@ -85,14 +86,15 @@ async function fetchSubscription() {
 }
 
 function CopyButton({ text }: { text: string }) {
+  const t = useTranslations('billing');
   const [copied, setCopied] = useState(false);
   return (
     <button
       onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-      className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
+      className="flex items-center gap-1 text-xs text-primary hover:text-primary font-medium"
     >
       {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
-      {copied ? "Copié !" : "Copier"}
+      {copied ? t('copied') : t('copy')}
     </button>
   );
 }
@@ -106,6 +108,7 @@ interface CryptoPaymentModalProps {
 }
 
 function CryptoPaymentModal({ plan, onClose }: CryptoPaymentModalProps) {
+  const t = useTranslations('billing');
   const [step, setStep] = useState<TxStep>("idle");
   const [error, setError] = useState("");
   const [txHash, setTxHash] = useState("");
@@ -137,7 +140,7 @@ function CryptoPaymentModal({ plan, onClose }: CryptoPaymentModalProps) {
   const connectWallet = async () => {
     const provider = getProvider();
     if (!provider) {
-      setError("MetaMask introuvable. Veuillez l'installer depuis metamask.io");
+      setError("MetaMask not found. Please install it from metamask.io");
       return;
     }
     setStep("connecting");
@@ -150,7 +153,7 @@ function CryptoPaymentModal({ plan, onClose }: CryptoPaymentModalProps) {
       await fetchWalletInfo(address, provider);
       setStep("idle");
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : "Connexion refusée";
+      const message = e instanceof Error ? e.message : "Connection refused";
       setError(message);
       setStep("error");
     }
@@ -168,13 +171,13 @@ function CryptoPaymentModal({ plan, onClose }: CryptoPaymentModalProps) {
         try {
           await eth.request({ method: "wallet_addEthereumChain", params: [POLYGON_PARAMS] });
         } catch (addErr: unknown) {
-          const message = addErr instanceof Error ? addErr.message : "Impossible d'ajouter le réseau Polygon";
+          const message = addErr instanceof Error ? addErr.message : "Could not add Polygon network";
           setError(message);
           setStep("error");
           return;
         }
       } else {
-        const message = e instanceof Error ? e.message : "Échec du changement de réseau";
+        const message = e instanceof Error ? e.message : "Network switch failed";
         setError(message);
         setStep("error");
         return;
@@ -200,7 +203,7 @@ function CryptoPaymentModal({ plan, onClose }: CryptoPaymentModalProps) {
       setTxHash(receipt.hash);
       setStep("success");
     } catch (e: unknown) {
-      const rawMessage = (e as { reason?: string; message?: string })?.reason ?? (e instanceof Error ? e.message : "Transaction échouée");
+      const rawMessage = (e as { reason?: string; message?: string })?.reason ?? (e instanceof Error ? e.message : "Transaction failed");
       setError(rawMessage.length > 120 ? rawMessage.slice(0, 120) + "..." : rawMessage);
       setStep("error");
     }
@@ -211,30 +214,30 @@ function CryptoPaymentModal({ plan, onClose }: CryptoPaymentModalProps) {
 
   const stepLabel: Record<TxStep, string> = {
     idle: "",
-    connecting: "Connexion du portefeuille...",
-    switching: "Changement vers Polygon...",
-    approving: "En attente d'approbation dans MetaMask...",
-    sending: "Envoi de la transaction...",
+    connecting: t('connectingWallet'),
+    switching: t('switchingToPolygon'),
+    approving: t('waitingApproval'),
+    sending: t('sendingTx'),
     success: "",
     error: "",
   };
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+      <div className="bg-background rounded-xl shadow-none w-full max-w-md">
 
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
+        <div className="flex items-center justify-between p-5 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
-              <Wallet className="w-5 h-5 text-purple-600" />
+            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+              <Wallet className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h3 className="font-bold text-gray-900">Plan {plan.name} — Crypto</h3>
-              <p className="text-sm text-gray-500">{plan.priceUsdc} USDC / mois</p>
+              <h3 className="font-medium text-foreground">{t(plan.nameKey)} — Crypto</h3>
+              <p className="text-sm text-muted-foreground">{plan.priceUsdc} USDC/mo</p>
             </div>
           </div>
-          <button onClick={onClose} disabled={isLoading} className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-40">
-            <X className="w-4 h-4 text-gray-500" />
+          <button onClick={onClose} disabled={isLoading} className="p-2 hover:bg-muted rounded-xl transition-colors disabled:opacity-40">
+            <X className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
 
@@ -245,71 +248,71 @@ function CryptoPaymentModal({ plan, onClose }: CryptoPaymentModalProps) {
                 <CheckCircle className="w-9 h-9 text-green-500" />
               </div>
               <div>
-                <h3 className="font-bold text-gray-900 text-lg">Paiement envoyé !</h3>
-                <p className="text-gray-500 text-sm mt-1">Votre plan {plan.name} sera activé sous quelques minutes après confirmation on-chain.</p>
+                <h3 className="font-medium text-foreground text-lg">{t('paymentSent')}</h3>
+                <p className="text-muted-foreground text-sm mt-1">{t('paymentSentDesc', { plan: t(plan.nameKey) })}</p>
               </div>
-              <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 text-left space-y-1">
-                <p className="text-xs text-gray-400">Hash de transaction</p>
-                <p className="text-xs font-mono text-gray-700 break-all">{txHash}</p>
+              <div className="p-3 bg-muted/50 rounded-xl border border-border text-left space-y-1">
+                <p className="text-xs text-muted-foreground">{t('txHash')}</p>
+                <p className="text-xs font-mono text-foreground break-all">{txHash}</p>
                 <a href={`https://polygonscan.com/tx/${txHash}`} target="_blank" rel="noopener noreferrer"
-                  className="text-xs text-blue-600 flex items-center gap-1 hover:underline">
-                  <ExternalLink className="w-3 h-3" /> Voir sur Polygonscan
+                  className="text-xs text-primary flex items-center gap-1 hover:underline">
+                  <ExternalLink className="w-3 h-3" /> {t('viewOnPolygonscan')}
                 </a>
               </div>
-              <Button className="w-full" onClick={onClose}>Fermer</Button>
+              <Button className="w-full" onClick={onClose}>{t('close')}</Button>
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-between p-3 bg-purple-50 rounded-xl border border-purple-100">
+              <div className="flex items-center justify-between p-3 bg-muted rounded-xl border border-border">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">P</span>
+                  <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                    <span className="text-foreground text-xs font-medium">P</span>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-purple-900">Réseau Polygon · USDC</p>
-                    <p className="text-xs text-purple-500">Chain ID : {REQUIRED_CHAIN_ID}</p>
+                    <p className="text-sm font-medium text-foreground">{t('polygonNetwork')}</p>
+                    <p className="text-xs text-muted-foreground">Chain ID: {REQUIRED_CHAIN_ID}</p>
                   </div>
                 </div>
                 {walletAddress && (
                   <div className={`text-xs px-2 py-1 rounded-full font-medium ${isCorrectChain ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                    {isCorrectChain ? "✓ Connecté" : "Mauvais réseau"}
+                    {isCorrectChain ? `✓ ${t('connected')}` : t('wrongNetwork')}
                   </div>
                 )}
               </div>
 
-              <div className="text-center py-3 bg-gray-50 rounded-xl border border-gray-100">
-                <p className="text-xs text-gray-400 mb-0.5">Montant à payer</p>
-                <p className="text-4xl font-bold text-gray-900">{plan.priceUsdc} <span className="text-lg text-gray-400">USDC</span></p>
-                <p className="text-xs text-gray-400 mt-0.5">≈ {plan.priceEur}€ · mensuel</p>
+              <div className="text-center py-3 bg-muted/50 rounded-xl border border-border">
+                <p className="text-xs text-muted-foreground mb-0.5">{t('amountToPay')}</p>
+                <p className="text-4xl font-medium text-foreground">{plan.priceUsdc} <span className="text-lg text-muted-foreground">USDC</span></p>
+                <p className="text-xs text-muted-foreground mt-0.5">≈ {plan.priceEur}€ · {t('monthly')}</p>
               </div>
 
               {walletAddress ? (
-                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
+                <div className="p-3 bg-muted/50 rounded-xl border border-border space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs text-gray-400">Portefeuille connecté</p>
+                    <p className="text-xs text-muted-foreground">{t('connectedWallet')}</p>
                     <CopyButton text={walletAddress} />
                   </div>
-                  <p className="text-sm font-mono text-gray-700">{walletAddress.slice(0, 8)}...{walletAddress.slice(-6)}</p>
+                  <p className="text-sm font-mono text-foreground">{walletAddress.slice(0, 8)}...{walletAddress.slice(-6)}</p>
                   {usdcBalance !== null && (
                     <div className="flex items-center justify-between">
-                      <p className="text-xs text-gray-400">Solde USDC</p>
-                      <p className={`text-sm font-semibold ${hasInsufficientBalance ? "text-red-500" : "text-green-600"}`}>
+                      <p className="text-xs text-muted-foreground">{t('usdcBalance')}</p>
+                      <p className={`text-sm font-medium ${hasInsufficientBalance ? "text-red-500" : "text-green-600"}`}>
                         {Number(usdcBalance).toFixed(2)} USDC
                       </p>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="p-3 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-center">
-                  <p className="text-sm text-gray-500">Aucun portefeuille connecté</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Cliquez ci-dessous pour connecter MetaMask</p>
+                <div className="p-3 bg-muted/50 rounded-xl border border-dashed border-border text-center">
+                  <p className="text-sm text-muted-foreground">{t('noWalletConnected')}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t('clickToConnect')}</p>
                 </div>
               )}
 
               {isLoading && (
-                <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
-                  <Loader2 className="w-4 h-4 animate-spin text-blue-600 flex-shrink-0" />
-                  <p className="text-sm text-blue-700">{stepLabel[step]}</p>
+                <div className="flex items-center gap-3 p-3 bg-muted rounded-xl border border-border">
+                  <Loader2 className="w-4 h-4 animate-spin text-primary flex-shrink-0" />
+                  <p className="text-sm text-primary">{stepLabel[step]}</p>
                 </div>
               )}
 
@@ -324,46 +327,46 @@ function CryptoPaymentModal({ plan, onClose }: CryptoPaymentModalProps) {
                 <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-xl border border-amber-100">
                   <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
                   <p className="text-xs text-amber-700">
-                    Solde USDC insuffisant. Vous avez besoin de {plan.priceUsdc} USDC mais votre solde est {Number(usdcBalance).toFixed(2)} USDC.
-                    Obtenez des USDC sur Polygon via <a href="https://app.uniswap.org" target="_blank" rel="noopener noreferrer" className="underline font-medium">Uniswap</a>.
+                    {t('insufficientBalance', { needed: plan.priceUsdc.toString(), balance: Number(usdcBalance).toFixed(2) })}
+                    {' '}{t('getUsdc')} <a href="https://app.uniswap.org" target="_blank" rel="noopener noreferrer" className="underline font-medium">Uniswap</a>.
                   </p>
                 </div>
               )}
 
               <div className="space-y-2 pt-1">
                 {!walletAddress ? (
-                  <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white h-11" onClick={connectWallet} disabled={isLoading}>
-                    <Wallet className="w-4 h-4 mr-2" />Connecter MetaMask
+                  <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-11" onClick={connectWallet} disabled={isLoading}>
+                    <Wallet className="w-4 h-4 mr-2" />{t('connectMetaMask')}
                   </Button>
                 ) : !isCorrectChain ? (
-                  <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white h-11" onClick={switchToPolygon} disabled={isLoading}>
-                    <RefreshCw className="w-4 h-4 mr-2" />Passer sur le réseau Polygon
+                  <Button className="w-full bg-orange-500 hover:bg-orange-600 h-11" onClick={switchToPolygon} disabled={isLoading}>
+                    <RefreshCw className="w-4 h-4 mr-2" />{t('switchToPolygon')}
                   </Button>
                 ) : (
                   <Button
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white h-11"
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-11"
                     onClick={sendPayment}
                     disabled={isLoading || hasInsufficientBalance}
                   >
                     {isLoading
                       ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       : <ShieldCheck className="w-4 h-4 mr-2" />}
-                    {isLoading ? stepLabel[step] : `Payer ${plan.priceUsdc} USDC`}
+                    {isLoading ? stepLabel[step] : `Pay ${plan.priceUsdc} USDC`}
                   </Button>
                 )}
                 <Button variant="outline" className="w-full" onClick={onClose} disabled={isLoading}>
-                  Annuler
+                  {t('cancel')}
                 </Button>
               </div>
 
-              <div className="pt-1 border-t border-gray-100">
-                <p className="text-xs text-gray-400 mb-1">Envoi vers</p>
+              <div className="pt-1 border-t border-border">
+                <p className="text-xs text-muted-foreground mb-1">{t('sendingTo')}</p>
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-mono text-gray-600">{RECIPIENT.slice(0, 10)}...{RECIPIENT.slice(-8)}</p>
+                  <p className="text-xs font-mono text-muted-foreground">{RECIPIENT.slice(0, 10)}...{RECIPIENT.slice(-8)}</p>
                   <div className="flex items-center gap-2">
                     <CopyButton text={RECIPIENT} />
                     <a href={`https://polygonscan.com/address/${RECIPIENT}`} target="_blank" rel="noopener noreferrer"
-                      className="text-xs text-blue-600 flex items-center gap-0.5 hover:underline">
+                      className="text-xs text-primary flex items-center gap-0.5 hover:underline">
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
@@ -379,6 +382,7 @@ function CryptoPaymentModal({ plan, onClose }: CryptoPaymentModalProps) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function BillingPage() {
+  const t = useTranslations('billing');
   const [selectedCryptoPlan, setSelectedCryptoPlan] = useState<typeof PLANS[0] | null>(null);
   const [hasMetaMask, setHasMetaMask] = useState(false);
   const [stripeLoadingPlan, setStripeLoadingPlan] = useState<string | null>(null);
@@ -414,34 +418,34 @@ export default function BillingPage() {
     <div className="p-6 space-y-6 max-w-5xl">
 
       {/* Header */}
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-xl gradient-brand flex items-center justify-center">
-          <Wallet className="w-4 h-4 text-white" />
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 bg-gradient-to-br from-primary/20 to-primary/5 rounded-xl flex items-center justify-center">
+          <Wallet className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Facturation & Abonnement</h2>
-          <p className="text-slate-500 text-sm">Payez par carte bancaire (Stripe) ou en crypto (USDC sur Polygon)</p>
+          <h2 className="text-2xl font-semibold text-foreground tracking-tight">{t('title')}</h2>
+          <p className="text-muted-foreground text-sm">{t('subtitle')}</p>
         </div>
       </div>
 
       {/* Stripe success / cancel banners */}
       {stripeStatus === "success" && (
-        <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-100 rounded-2xl">
+        <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-100 rounded-xl">
           <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
           <div>
-            <p className="text-sm font-bold text-green-800">Paiement Stripe réussi !</p>
-            <p className="text-xs text-green-600 mt-0.5">Votre abonnement sera activé sous quelques secondes.</p>
+            <p className="text-sm font-medium text-green-800">{t('stripeSuccess')}</p>
+            <p className="text-xs text-green-600 mt-0.5">{t('stripeSuccessDesc')}</p>
           </div>
         </div>
       )}
       {stripeStatus === "cancelled" && (
-        <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-100 rounded-2xl">
+        <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-100 rounded-xl">
           <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0" />
-          <p className="text-sm text-amber-800">Paiement annulé. Vous pouvez réessayer à tout moment.</p>
+          <p className="text-sm text-amber-800">{t('stripeCancelled')}</p>
         </div>
       )}
       {stripeError && (
-        <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-100 rounded-2xl">
+        <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-100 rounded-xl">
           <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
           <p className="text-sm text-red-700">{stripeError}</p>
         </div>
@@ -449,25 +453,25 @@ export default function BillingPage() {
 
       {/* Current subscription */}
       {subscription && (
-        <div className="glass-card rounded-2xl p-5 border-l-4 border-teal-500">
+        <div className="rounded-2xl border border-border bg-gradient-to-r from-teal-50/50 to-background p-5">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 gradient-brand rounded-xl flex items-center justify-center shadow-md shadow-teal-200/50">
+              <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/5 rounded-xl flex items-center justify-center">
                 {subscription.payment_provider === "stripe"
-                  ? <CreditCard className="w-6 h-6 text-white" />
-                  : <Wallet className="w-6 h-6 text-white" />
+                  ? <CreditCard className="w-6 h-6 text-primary" />
+                  : <Wallet className="w-6 h-6 text-primary" />
                 }
               </div>
               <div>
-                <h3 className="font-bold text-slate-800 capitalize">Plan {subscription.plan}</h3>
-                <p className="text-sm text-slate-500">
-                  Renouvellement le {format(parseISO(subscription.current_period_end), "d MMMM yyyy")}
+                <h3 className="font-semibold text-foreground capitalize">Plan {subscription.plan}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t('renewsOn')} {format(parseISO(subscription.current_period_end), "d MMMM yyyy")}
                   {" · "}
                   <span className="capitalize">{subscription.payment_provider === "stripe" ? "Stripe" : "Crypto"}</span>
                 </p>
               </div>
             </div>
-            <span className={`text-xs font-bold px-3 py-1.5 rounded-full border capitalize ${subscription.status === "active" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-red-50 text-red-600 border-red-100"}`}>
+            <span className={`text-xs font-semibold px-3 py-1.5 rounded-lg border capitalize ${subscription.status === "active" ? "bg-teal-50 text-teal-700 border-teal-200" : "bg-red-50 text-red-600 border-red-100"}`}>
               {subscription.status}
             </span>
           </div>
@@ -476,41 +480,41 @@ export default function BillingPage() {
 
       {/* MetaMask warning (only shown as info, not blocking) */}
       {!hasMetaMask && (
-        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-100 rounded-2xl">
+        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-100 rounded-xl">
           <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-bold text-amber-800">MetaMask non détecté</p>
+            <p className="text-sm font-medium text-amber-800">{t('metamaskNotDetected')}</p>
             <p className="text-xs text-amber-600 mt-0.5">
-              Installez l&apos;extension MetaMask pour payer en crypto.{" "}
-              <a href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer" className="underline font-semibold">
-                Télécharger MetaMask →
+              {t('metamaskInstall')}{" "}
+              <a href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer" className="underline font-medium">
+                {t('metamaskDownload')}
               </a>
-              {" "}Vous pouvez toujours payer par carte Stripe.
+              {" "}{t('canStillPayStripe')}
             </p>
           </div>
         </div>
       )}
 
       {/* Payment method explanation */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-100 rounded-2xl">
-          <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0">
-            <CreditCard className="w-5 h-5 text-white" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="flex items-center gap-3 p-4 rounded-2xl border border-border bg-background hover:border-primary/20 transition-colors">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center flex-shrink-0">
+            <CreditCard className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <p className="text-sm font-bold text-blue-900">Stripe — Carte bancaire</p>
-            <p className="text-xs text-blue-600 mt-0.5">Visa, Mastercard, SEPA · Prix en Euros · Facturation mensuelle automatique</p>
+            <p className="text-sm font-semibold text-foreground">{t('payWithStripe')}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{t('stripeCardDesc')}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 p-4 bg-violet-50 border border-violet-100 rounded-2xl">
-          <div className="w-9 h-9 rounded-xl bg-violet-600 flex items-center justify-center flex-shrink-0">
-            <span className="text-white text-xs font-bold">P</span>
+        <div className="flex items-center gap-3 p-4 rounded-2xl border border-border bg-background hover:border-primary/20 transition-colors">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-violet-500/5 flex items-center justify-center flex-shrink-0">
+            <span className="text-violet-600 text-xs font-bold">P</span>
           </div>
           <div>
-            <p className="text-sm font-bold text-violet-900">Crypto — USDC sur Polygon</p>
-            <p className="text-xs text-violet-500 mt-0.5">Rapide · Faibles frais · Chain ID : {REQUIRED_CHAIN_ID} ·{" "}
-              <a href={`https://polygonscan.com/address/${RECIPIENT}`} target="_blank" rel="noopener noreferrer" className="underline font-semibold">
-                Voir le wallet
+            <p className="text-sm font-semibold text-foreground">{t('payWithCrypto')}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{t('cryptoFastLowFees')} · Chain ID: {REQUIRED_CHAIN_ID} ·{" "}
+              <a href={`https://polygonscan.com/address/${RECIPIENT}`} target="_blank" rel="noopener noreferrer" className="underline font-medium text-primary hover:text-primary/80">
+                {t('viewWallet')}
               </a>
             </p>
           </div>
@@ -518,7 +522,7 @@ export default function BillingPage() {
       </div>
 
       {/* Plans grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         {PLANS.map((plan) => {
           const isCurrentPlan = subscription?.plan === plan.plan;
           const isStripeLoading = stripeLoadingPlan === plan.plan;
@@ -526,94 +530,116 @@ export default function BillingPage() {
           return (
             <div
               key={plan.plan}
-              className={`glass-card rounded-2xl flex flex-col relative hover-lift transition-all
-                ${plan.popular ? "ring-2 ring-violet-400 shadow-lg shadow-violet-100" : ""}
-                ${isCurrentPlan ? "ring-2 ring-teal-400" : ""}`}
+              className={`relative flex flex-col overflow-hidden rounded-2xl border transition-all duration-300 hover:shadow-lg hover:-translate-y-1
+                ${plan.popular
+                  ? "border-primary/40 bg-gradient-to-b from-primary/[0.04] to-background shadow-md shadow-primary/5"
+                  : "border-border bg-background hover:border-primary/20"
+                }
+                ${isCurrentPlan ? "ring-2 ring-primary/50" : ""}`}
             >
-              {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-                  <span className="bg-violet-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">Le plus populaire</span>
-                </div>
-              )}
-              {isCurrentPlan && (
-                <div className="absolute -top-3 right-3 z-10">
-                  <span className="bg-teal-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">Actuel</span>
-                </div>
-              )}
+              {/* Badge row — inside card, no overflow */}
+              <div className="flex items-center justify-between px-5 pt-5 pb-0 min-h-[28px]">
+                {isCurrentPlan ? (
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-teal-700 bg-teal-50 border border-teal-200 px-2.5 py-1 rounded-md">
+                    <CheckCircle className="w-3 h-3" />
+                    {t('currentPlanBadge')}
+                  </span>
+                ) : <span />}
+                {plan.popular && (
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-md">
+                    <Zap className="w-3 h-3" />
+                    {t('mostPopular')}
+                  </span>
+                )}
+              </div>
 
-              <div className="p-5 flex flex-col flex-1">
-                <h4 className="font-bold text-slate-800 mb-1">{plan.name}</h4>
+              <div className="p-5 pt-3 flex flex-col flex-1">
+                {/* Plan name */}
+                <h4 className="text-lg font-semibold text-foreground tracking-tight">{t(plan.nameKey)}</h4>
 
-                {/* Price display */}
-                <div className="mb-4">
+                {/* Price */}
+                <div className="mt-3 mb-5">
                   {plan.priceEur === 0 ? (
-                    <span className="text-3xl font-bold text-slate-800 stat-number">Gratuit</span>
+                    <div>
+                      <span className="text-4xl font-bold text-foreground tracking-tight">{t('free')}</span>
+                      <p className="text-xs text-muted-foreground mt-1">{t('startFree')}</p>
+                    </div>
                   ) : (
                     <div>
-                      <div>
-                        <span className="text-3xl font-bold text-slate-800 stat-number">{plan.priceEur}€</span>
-                        <span className="text-slate-400 text-sm ml-1">/mois</span>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-4xl font-bold text-foreground tracking-tight">{plan.priceEur}€</span>
+                        <span className="text-muted-foreground text-sm font-medium">{t('perMonth')}</span>
                       </div>
-                      <p className="text-xs text-slate-400 mt-0.5">{plan.priceUsdc} USDC en crypto</p>
+                      <p className="text-xs text-muted-foreground mt-1">{plan.priceUsdc} USDC crypto</p>
                     </div>
                   )}
                 </div>
 
-                <ul className="space-y-2 mb-5 flex-1">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2 text-sm text-slate-600">
-                      <CheckCircle className="w-4 h-4 text-teal-500 flex-shrink-0 mt-0.5" />{feature}
+                {/* Divider */}
+                <div className="h-px bg-border mb-5" />
+
+                {/* Features */}
+                <ul className="space-y-3 mb-6 flex-1">
+                  {plan.featureKeys.map((featureKey) => (
+                    <li key={featureKey} className="flex items-start gap-2.5 text-sm text-foreground/80">
+                      <CheckCircle className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                      <span>{t(featureKey)}</span>
                     </li>
                   ))}
                 </ul>
 
                 {/* CTA buttons */}
-                {plan.priceEur === 0 ? (
-                  <Button variant="outline" className="w-full rounded-xl border-slate-200 font-semibold" disabled={isCurrentPlan}>
-                    {isCurrentPlan ? "Plan actuel" : "Commencer gratuitement"}
-                  </Button>
-                ) : isCurrentPlan ? (
-                  <Button
-                    className="w-full rounded-xl font-semibold bg-slate-100 text-slate-400 cursor-default hover:bg-slate-100 shadow-none border-none"
-                    disabled
-                  >
-                    Plan actuel
-                  </Button>
-                ) : (
-                  <div className="space-y-2">
-                    {/* Stripe button */}
-                    <Button
-                      className={`w-full rounded-xl font-semibold border-none shadow-md ${
-                        plan.popular
-                          ? "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200/50"
-                          : "bg-blue-500 hover:bg-blue-600 text-white shadow-blue-100/50"
-                      }`}
-                      onClick={() => handleStripeCheckout(plan.plan as StripePlan)}
-                      disabled={isPending && isStripeLoading}
-                    >
-                      {isPending && isStripeLoading
-                        ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        : <CreditCard className="w-4 h-4 mr-1.5" />
-                      }
-                      {isPending && isStripeLoading ? "Redirection..." : `Stripe — ${plan.priceEur}€`}
-                      {!(isPending && isStripeLoading) && <ArrowRight className="w-4 h-4 ml-1.5" />}
-                    </Button>
-
-                    {/* Crypto button */}
+                <div className="space-y-2.5 mt-auto">
+                  {plan.priceEur === 0 ? (
                     <Button
                       variant="outline"
-                      className={`w-full rounded-xl font-semibold border-violet-200 text-violet-700 hover:bg-violet-50 hover:border-violet-300 ${
-                        !hasMetaMask ? "opacity-50" : ""
-                      }`}
-                      onClick={() => setSelectedCryptoPlan(plan)}
-                      disabled={!hasMetaMask}
-                      title={!hasMetaMask ? "MetaMask requis pour payer en crypto" : undefined}
+                      className="w-full h-11 rounded-xl border-border font-semibold text-sm hover:bg-muted/80 transition-colors"
+                      disabled={isCurrentPlan}
                     >
-                      <Wallet className="w-4 h-4 mr-1.5" />
-                      Crypto — {plan.priceUsdc} USDC
+                      {isCurrentPlan ? t('currentPlanBadge') : t('startFree')}
                     </Button>
-                  </div>
-                )}
+                  ) : isCurrentPlan ? (
+                    <Button
+                      className="w-full h-11 rounded-xl font-semibold text-sm bg-muted text-muted-foreground cursor-default hover:bg-muted border-none shadow-none"
+                      disabled
+                    >
+                      {t('currentPlanBadge')}
+                    </Button>
+                  ) : (
+                    <>
+                      {/* Stripe button */}
+                      <Button
+                        className={`w-full h-11 rounded-xl font-semibold text-sm shadow-sm transition-all duration-200 ${
+                          plan.popular
+                            ? "bg-primary text-white hover:bg-primary/90 shadow-primary/20 hover:shadow-md hover:shadow-primary/30"
+                            : "bg-foreground text-background hover:bg-foreground/90"
+                        }`}
+                        onClick={() => handleStripeCheckout(plan.plan as StripePlan)}
+                        disabled={isPending && isStripeLoading}
+                      >
+                        {isPending && isStripeLoading
+                          ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          : <CreditCard className="w-4 h-4 mr-2" />
+                        }
+                        {isPending && isStripeLoading ? t('redirecting') : `Stripe — ${plan.priceEur}€`}
+                        {!(isPending && isStripeLoading) && <ArrowRight className="w-4 h-4 ml-auto" />}
+                      </Button>
+
+                      {/* Crypto button */}
+                      <Button
+                        variant="outline"
+                        className={`w-full h-10 rounded-xl font-medium text-sm border-border text-muted-foreground hover:text-primary hover:border-primary/40 hover:bg-primary/[0.03] transition-all duration-200 ${
+                          !hasMetaMask ? "opacity-40 cursor-not-allowed" : ""
+                        }`}
+                        onClick={() => setSelectedCryptoPlan(plan)}
+                        disabled={!hasMetaMask}
+                      >
+                        <Wallet className="w-4 h-4 mr-2" />
+                        Crypto — {plan.priceUsdc} USDC
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           );
@@ -621,18 +647,18 @@ export default function BillingPage() {
       </div>
 
       {/* Enterprise CTA */}
-      <div className="glass-card rounded-2xl p-6">
-        <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-xl gradient-brand flex items-center justify-center flex-shrink-0 shadow-md shadow-teal-200/50">
-            <Zap className="w-5 h-5 text-white" />
+      <div className="rounded-2xl border border-border bg-gradient-to-r from-primary/[0.03] via-background to-primary/[0.03] p-6">
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
+            <Building2 className="w-6 h-6 text-primary" />
           </div>
-          <div>
-            <h4 className="font-bold text-slate-800">Besoin d&apos;un plan sur mesure ?</h4>
-            <p className="text-sm text-slate-500 mt-1">Pour les grands cabinets ou groupes hospitaliers — contactez-nous pour une offre personnalisée.</p>
-            <Button variant="outline" size="sm" className="mt-3 rounded-xl border-slate-200 font-semibold text-slate-600 hover:bg-teal-50 hover:border-teal-200 hover:text-teal-700">
-              <Building2 className="w-4 h-4 mr-2" />Contacter l&apos;équipe Enterprise
-            </Button>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-semibold text-foreground">{t('customPlan')}</h4>
+            <p className="text-sm text-muted-foreground mt-0.5">{t('customPlanDescription')}</p>
           </div>
+          <Button variant="outline" className="rounded-xl border-primary/30 font-semibold text-primary hover:bg-primary hover:text-white transition-all duration-200 px-6">
+            <Building2 className="w-4 h-4 mr-2" />{t('contactEnterprise')}
+          </Button>
         </div>
       </div>
 

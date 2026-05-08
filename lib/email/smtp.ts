@@ -11,15 +11,14 @@ import {
 
 let transporterInstance: nodemailer.Transporter | null = null;
 
-function getSmtpTransporter(): nodemailer.Transporter {
+function getSmtpTransporter(): nodemailer.Transporter | null {
   if (!transporterInstance) {
     const googleUser = process.env.SMTP_GOOGLE_EMAIL;
     const googleAppPassword = process.env.GOOGLE_APP_PASSWORD;
 
     if (!googleUser || !googleAppPassword) {
-      throw new Error(
-        "SMTP_GOOGLE_EMAIL and GOOGLE_APP_PASSWORD must be configured"
-      );
+      console.warn("[SMTP] SMTP_GOOGLE_EMAIL or GOOGLE_APP_PASSWORD not configured. Email skipped.");
+      return null;
     }
 
     transporterInstance = nodemailer.createTransport({
@@ -44,6 +43,8 @@ export async function sendConfirmationEmail(
   const transporter = getSmtpTransporter();
   const locale = payload.locale ?? "fr";
   const results: EmailResult[] = [];
+
+  if (!transporter) return [{ success: false, channel: "email", error: "SMTP not configured" }];
 
   if (payload.patientEmail) {
     try {

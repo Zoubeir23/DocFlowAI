@@ -8,9 +8,11 @@ import {
 } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth,
   eachDayOfInterval, isSameDay, isBefore, startOfDay, getDay } from "date-fns";
+import { fr, enUS } from "date-fns/locale";
 import { v4 as uuidv4 } from "uuid";
 import { generatePatientTempId } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
+import { useTranslations } from "next-intl";
 // patientTempId kept for chat mode conversation tracking
 
 interface Service {
@@ -76,6 +78,8 @@ export function WidgetChat({
     const raw = match?.[1];
     return raw === "fr" || raw === "en" ? raw : "fr";
   });
+  const dfLocale = widgetLocale === "fr" ? fr : enUS;
+  const t = useTranslations("widgetChat");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
 
@@ -116,7 +120,7 @@ export function WidgetChat({
 
   const confirmBooking = async () => {
     if (!patientName.trim() || !patientPhone.trim()) {
-      setBookingError("Name and phone number are required.");
+      setBookingError(t("nameReq"));
       return;
     }
     setBookingError("");
@@ -140,10 +144,10 @@ export function WidgetChat({
       if (data.success) {
         setStep("success");
       } else {
-        setBookingError(data.error || "Booking failed. Please try again.");
+        setBookingError(data.error || t("bookFailed"));
       }
     } catch {
-      setBookingError("Something went wrong. Please try again.");
+      setBookingError(t("error"));
     } finally {
       setBookingLoading(false);
     }
@@ -163,13 +167,14 @@ export function WidgetChat({
         body: JSON.stringify({ message: trimmed, conversationId, patientTempId, clinicSlug, locale: widgetLocale }),
       });
       const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || "Server error");
       if (data.conversationId) setConversationId(data.conversationId);
       setMessages((p) => [...p, {
         id: uuidv4(), role: "assistant", content: data.message,
         timestamp: new Date(), bookingSuccess: data.bookingResult?.success,
       }]);
     } catch {
-      setMessages((p) => [...p, { id: uuidv4(), role: "assistant", content: "Sorry, something went wrong.", timestamp: new Date() }]);
+      setMessages((p) => [...p, { id: uuidv4(), role: "assistant", content: t("error"), timestamp: new Date() }]);
     } finally {
       setChatLoading(false);
     }
@@ -198,7 +203,7 @@ export function WidgetChat({
           style={colorStyle}
         >
           <MessageCircle className="w-6 h-6" />
-          <span>Book Appointment</span>
+          <span>{t("bookAppointment")}</span>
         </button>
       )}
 
@@ -229,7 +234,7 @@ export function WidgetChat({
                 <p className="font-semibold text-sm">{clinicName}</p>
                 <div className="flex items-center gap-1">
                   <div className="w-1.5 h-1.5 rounded-full bg-green-300 animate-pulse" />
-                  <p className="text-xs text-white/80">AI Assistant Online</p>
+                  <p className="text-xs text-white/80">{t("aiOnline")}</p>
                 </div>
               </div>
             </div>
@@ -267,8 +272,8 @@ export function WidgetChat({
                         <Calendar className="w-5 h-5" />
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-900 text-sm">Book an Appointment</p>
-                        <p className="text-xs text-gray-500 mt-0.5">Choose a service, date & time</p>
+                        <p className="font-semibold text-gray-900 text-sm">{t("bookAction")}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{t("chooseService")}</p>
                       </div>
                     </button>
 
@@ -286,13 +291,13 @@ export function WidgetChat({
                         <MessageCircle className="w-5 h-5 text-gray-600" />
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-900 text-sm">Chat with AI Assistant</p>
-                        <p className="text-xs text-gray-500 mt-0.5">Ask questions or get help</p>
+                        <p className="font-semibold text-gray-900 text-sm">{t("chatAction")}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{t("askQuestions")}</p>
                       </div>
                     </button>
                   </div>
 
-                  <p className="text-center text-xs text-gray-400 pt-2">Powered by MedBook AI</p>
+                  <p className="text-center text-xs text-gray-400 pt-2">{t("poweredBy")}</p>
                 </div>
               )}
 
@@ -300,8 +305,8 @@ export function WidgetChat({
               {step === "service" && (
                 <div className="p-5 space-y-4">
                   <div>
-                    <h3 className="font-bold text-gray-900">Select a Service</h3>
-                    <p className="text-sm text-gray-500 mt-0.5">Choose what you need help with</p>
+                    <h3 className="font-bold text-gray-900">{t("selectService")}</h3>
+                    <p className="text-sm text-gray-500 mt-0.5">{t("chooseHelp")}</p>
                   </div>
                   <div className="space-y-2">
                     {services.map((service) => (
@@ -318,7 +323,7 @@ export function WidgetChat({
                           <p className="font-semibold text-gray-900 text-sm">{service.name}</p>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-xs text-gray-500 flex items-center gap-1">
-                              <Clock className="w-3 h-3" />{service.duration_minutes} min
+                              <Clock className="w-3 h-3" />{service.duration_minutes} {t("min")}
                             </span>
                             {service.price && (
                               <span className="text-xs font-medium" style={colorText}>${service.price}</span>
@@ -335,7 +340,7 @@ export function WidgetChat({
               {step === "calendar" && (
                 <div className="p-5 space-y-4">
                   <div>
-                    <h3 className="font-bold text-gray-900">Choose a Date</h3>
+                    <h3 className="font-bold text-gray-900">{t("chooseDate")}</h3>
                     <p className="text-sm text-gray-500 mt-0.5">{selectedService?.name}</p>
                   </div>
 
@@ -349,8 +354,8 @@ export function WidgetChat({
                       >
                         <ChevronLeft className="w-4 h-4 text-gray-600" />
                       </button>
-                      <span className="font-semibold text-gray-900 text-sm">
-                        {format(calendarMonth, "MMMM yyyy")}
+                      <span className="font-semibold text-gray-900 text-sm capitalize">
+                        {format(calendarMonth, "MMMM yyyy", { locale: dfLocale })}
                       </span>
                       <button
                         onClick={() => setCalendarMonth(addMonths(calendarMonth, 1))}
@@ -362,7 +367,7 @@ export function WidgetChat({
 
                     {/* Day names */}
                     <div className="grid grid-cols-7 border-b border-gray-100">
-                      {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
+                      {(widgetLocale === "fr" ? ["Di", "Lu", "Ma", "Me", "Je", "Ve", "Sa"] : ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]).map((d) => (
                         <div key={d} className="py-2 text-center text-xs font-medium text-gray-400">{d}</div>
                       ))}
                     </div>
@@ -389,7 +394,7 @@ export function WidgetChat({
                             `}
                             style={isSelected ? colorStyle : isToday && !isSelected ? colorBorder : {}}
                           >
-                            {format(day, "d")}
+                            {format(day, "d", { locale: dfLocale })}
                           </button>
                         );
                       })}
@@ -402,24 +407,24 @@ export function WidgetChat({
               {step === "slots" && (
                 <div className="p-5 space-y-4">
                   <div>
-                    <h3 className="font-bold text-gray-900">Pick a Time</h3>
-                    <p className="text-sm text-gray-500 mt-0.5">
-                      {selectedDate && format(selectedDate, "EEEE, MMMM d")} · {selectedService?.name}
+                    <h3 className="font-bold text-gray-900">{t("pickTime")}</h3>
+                    <p className="text-sm text-gray-500 mt-0.5 capitalize">
+                      {selectedDate && format(selectedDate, "EEEE, d MMMM", { locale: dfLocale })} · {selectedService?.name}
                     </p>
                   </div>
 
                   {slotsLoading ? (
                     <div className="flex flex-col items-center justify-center py-12 gap-3">
                       <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-                      <p className="text-sm text-gray-400">Loading available times...</p>
+                      <p className="text-sm text-gray-400">{t("loadingTimes")}</p>
                     </div>
                   ) : slots.length === 0 ? (
                     <div className="text-center py-12">
                       <Calendar className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                      <p className="font-medium text-gray-700 text-sm">No slots available</p>
-                      <p className="text-xs text-gray-400 mt-1">Try a different date</p>
+                      <p className="font-medium text-gray-700 text-sm">{t("noSlots")}</p>
+                      <p className="text-xs text-gray-400 mt-1">{t("tryDifferent")}</p>
                       <button onClick={() => setStep("calendar")} className="mt-4 text-sm font-medium underline" style={colorText}>
-                        Go back to calendar
+                        {t("goBack")}
                       </button>
                     </div>
                   ) : (
@@ -448,13 +453,13 @@ export function WidgetChat({
               {step === "details" && (
                 <div className="p-5 space-y-4">
                   <div>
-                    <h3 className="font-bold text-gray-900">Your Details</h3>
-                    <p className="text-sm text-gray-500 mt-0.5">We need a few details to confirm your booking</p>
+                    <h3 className="font-bold text-gray-900">{t("yourDetails")}</h3>
+                    <p className="text-sm text-gray-500 mt-0.5">{t("detailsSubtitle")}</p>
                   </div>
 
                   <div className="space-y-3">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Full Name *</label>
+                      <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{t("fullName")}</label>
                       <div className="relative">
                         <UserCircle2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
@@ -469,7 +474,7 @@ export function WidgetChat({
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Phone Number *</label>
+                      <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{t("phone")}</label>
                       <div className="relative">
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
@@ -484,7 +489,7 @@ export function WidgetChat({
 
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                        Email <span className="text-gray-400 font-normal normal-case">(optional)</span>
+                        {t("email")} <span className="text-gray-400 font-normal normal-case">{t("optional")}</span>
                       </label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -506,7 +511,7 @@ export function WidgetChat({
                   <button
                     onClick={() => {
                       if (!patientName.trim() || !patientPhone.trim()) {
-                        setBookingError("Name and phone number are required.");
+                        setBookingError(t("nameReq"));
                         return;
                       }
                       setBookingError("");
@@ -515,7 +520,7 @@ export function WidgetChat({
                     className="w-full py-3 rounded-xl text-white font-semibold text-sm transition-all hover:opacity-90 active:scale-95"
                     style={colorStyle}
                   >
-                    Review Booking
+                    {t("review")}
                   </button>
                 </div>
               )}
@@ -524,8 +529,8 @@ export function WidgetChat({
               {step === "confirm" && (
                 <div className="p-5 space-y-4">
                   <div>
-                    <h3 className="font-bold text-gray-900">Confirm Booking</h3>
-                    <p className="text-sm text-gray-500 mt-0.5">Please review your appointment details</p>
+                    <h3 className="font-bold text-gray-900">{t("confirmTitle")}</h3>
+                    <p className="text-sm text-gray-500 mt-0.5">{t("confirmSubtitle")}</p>
                   </div>
 
                   <div className="rounded-xl border border-gray-100 overflow-hidden divide-y divide-gray-100">
@@ -534,7 +539,7 @@ export function WidgetChat({
                         <Stethoscope className="w-4 h-4" />
                       </div>
                       <div>
-                        <p className="text-xs text-gray-400">Service</p>
+                        <p className="text-xs text-gray-400">{t("service")}</p>
                         <p className="text-sm font-semibold text-gray-900">{selectedService?.name}</p>
                         <p className="text-xs text-gray-500">{selectedService?.duration_minutes} min{selectedService?.price ? ` · $${selectedService.price}` : ""}</p>
                       </div>
@@ -544,9 +549,9 @@ export function WidgetChat({
                         <Calendar className="w-4 h-4" />
                       </div>
                       <div>
-                        <p className="text-xs text-gray-400">Date & Time</p>
-                        <p className="text-sm font-semibold text-gray-900">
-                          {selectedDate && format(selectedDate, "EEEE, MMMM d, yyyy")}
+                        <p className="text-xs text-gray-400">{t("dateTime")}</p>
+                        <p className="text-sm font-semibold text-gray-900 capitalize">
+                          {selectedDate && format(selectedDate, "EEEE, d MMMM yyyy", { locale: dfLocale })}
                         </p>
                         <p className="text-xs text-gray-500">{selectedSlot?.label}</p>
                       </div>
@@ -556,7 +561,7 @@ export function WidgetChat({
                         <User className="w-4 h-4" />
                       </div>
                       <div>
-                        <p className="text-xs text-gray-400">Patient</p>
+                        <p className="text-xs text-gray-400">{t("patient")}</p>
                         <p className="text-sm font-semibold text-gray-900">{patientName}</p>
                         <p className="text-xs text-gray-500">{patientPhone}{patientEmail ? ` · ${patientEmail}` : ""}</p>
                       </div>
@@ -575,14 +580,14 @@ export function WidgetChat({
                       style={colorStyle}
                     >
                       {bookingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                      {bookingLoading ? "Confirming..." : "Confirm Appointment"}
+                      {bookingLoading ? t("confirmingBtn") : t("confirmBtn")}
                     </button>
                     <button
                       onClick={() => setStep("details")}
                       disabled={bookingLoading}
                       className="w-full py-2.5 rounded-xl text-gray-600 text-sm font-medium hover:bg-gray-50 transition-all"
                     >
-                      Edit Details
+                      {t("editBtn")}
                     </button>
                   </div>
                 </div>
@@ -595,37 +600,37 @@ export function WidgetChat({
                     <CheckCircle className="w-9 h-9" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-gray-900 text-lg">Booking Confirmed!</h3>
-                    <p className="text-gray-500 text-sm mt-1">Your appointment has been successfully booked.</p>
+                    <h3 className="font-bold text-gray-900 text-lg">{t("successTitle")}</h3>
+                    <p className="text-gray-500 text-sm mt-1">{t("successSubtitle")}</p>
                   </div>
 
                   <div className="w-full rounded-xl bg-gray-50 border border-gray-100 p-4 text-left space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Service</span>
+                      <span className="text-gray-500">{t("service")}</span>
                       <span className="font-medium text-gray-900">{selectedService?.name}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Date</span>
-                      <span className="font-medium text-gray-900">{selectedDate && format(selectedDate, "MMM d, yyyy")}</span>
+                      <span className="text-gray-500">{t("dateTime")}</span>
+                      <span className="font-medium text-gray-900 capitalize">{selectedDate && format(selectedDate, "d MMM yyyy", { locale: dfLocale })}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Time</span>
+                      <span className="text-gray-500">{t("pickTime")}</span>
                       <span className="font-medium text-gray-900">{selectedSlot?.label.split(" - ")[0]}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Patient</span>
+                      <span className="text-gray-500">{t("patient")}</span>
                       <span className="font-medium text-gray-900">{patientName}</span>
                     </div>
                   </div>
 
-                  <p className="text-xs text-gray-400">We look forward to seeing you. Please arrive 5 minutes early.</p>
+                  <p className="text-xs text-gray-400">{t("successNotes")}</p>
 
                   <button
                     onClick={reset}
                     className="w-full py-3 rounded-xl text-white font-semibold text-sm transition-all hover:opacity-90"
                     style={colorStyle}
                   >
-                    Book Another Appointment
+                    {t("bookAnother")}
                   </button>
                 </div>
               )}
@@ -657,7 +662,7 @@ export function WidgetChat({
                               )}
                             </div>
                           )}
-                          <span className="text-xs text-gray-400 px-1">{format(msg.timestamp, "h:mm a")}</span>
+                          <span className="text-xs text-gray-400 px-1">{format(msg.timestamp, widgetLocale === "fr" ? "HH:mm" : "h:mm a")}</span>
                         </div>
                       </div>
                     ))}
@@ -685,7 +690,7 @@ export function WidgetChat({
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }}
-                        placeholder="Type a message..."
+                        placeholder={t("typeMessage")}
                         className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 bg-white"
                         disabled={chatLoading}
                       />
@@ -698,7 +703,7 @@ export function WidgetChat({
                         {chatLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                       </button>
                     </div>
-                    <p className="text-center text-xs text-gray-400 mt-2">Powered by MedBook AI</p>
+                    <p className="text-center text-xs text-gray-400 mt-2">{t("poweredBy")}</p>
                   </div>
                 </div>
               )}

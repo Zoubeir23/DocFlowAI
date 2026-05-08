@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
+import { NavigationProgress } from "@/components/layout/navigation-progress";
 
 export default async function AppLayout({
   children,
@@ -37,7 +38,8 @@ export default async function AppLayout({
   if (!clinic) redirect("/onboarding");
 
   return (
-    <div className="flex h-screen gradient-mesh overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-muted/30 dark:bg-background">
+      <NavigationProgress />
       <Sidebar clinicName={clinic.name} />
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <Topbar
@@ -45,7 +47,7 @@ export default async function AppLayout({
           userName={userData.full_name || "Doctor"}
           userEmail={userData.email}
         />
-        <main className="flex-1 overflow-y-auto scrollbar-hide">
+        <main className="flex-1 overflow-y-auto scrollbar-hide bg-background">
           {children}
         </main>
       </div>

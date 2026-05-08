@@ -40,21 +40,21 @@ export function Topbar({ title, userName = "Doctor", userEmail }: TopbarProps) {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-100 px-6 py-3.5">
+    <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border px-6 py-3">
       <div className="flex items-center justify-between gap-4">
         {/* Title */}
         <div className="flex items-center gap-3">
-          <div className="w-1 h-6 rounded-full gradient-brand" />
-          <h1 className="text-lg font-bold text-slate-800 tracking-tight">{title}</h1>
+          <div className="w-1.5 h-5 rounded-sm bg-primary" />
+          <h1 className="text-lg font-semibold text-foreground tracking-tight">{title}</h1>
         </div>
 
         <div className="flex items-center gap-3">
           {/* Search */}
           <div className="relative hidden md:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
             <Input
               placeholder={t("searchPlaceholder")}
-              className="pl-9 w-64 h-9 bg-slate-50 border-slate-200 text-sm rounded-xl focus:ring-teal-500 focus:border-teal-400 placeholder:text-slate-400"
+              className="pl-9 w-64 h-9 bg-muted/50 border-border text-sm rounded-lg focus:ring-primary focus:border-primary placeholder:text-muted-foreground"
             />
           </div>
 
@@ -62,50 +62,50 @@ export function Topbar({ title, userName = "Doctor", userEmail }: TopbarProps) {
           <LanguageSwitcher />
 
           {/* Notification bell */}
-          <button className="relative p-2 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-all duration-200">
+          <button className="relative p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-all duration-200">
             <Bell className="w-4.5 h-4.5" style={{ width: 18, height: 18 }} />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-500 rounded-full border-2 border-white" />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full border-2 border-background" />
           </button>
 
           {/* User menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2.5 pl-2 pr-3 py-1.5 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-all duration-200 focus:outline-none group">
-                <Avatar className="h-8 w-8 ring-2 ring-teal-100">
+              <button className="flex items-center gap-2.5 pl-2 pr-3 py-1.5 rounded-lg hover:bg-accent border border-transparent hover:border-border transition-all duration-200 focus:outline-none group">
+                <Avatar className="h-8 w-8 ring-2 ring-border">
                   <AvatarFallback className="gradient-brand text-white text-xs font-bold">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden md:block text-left">
-                  <div className="text-sm font-semibold text-slate-700 leading-tight">{userName}</div>
+                  <div className="text-sm font-semibold text-foreground leading-tight">{userName}</div>
                   {userEmail && (
-                    <div className="text-[11px] text-slate-400 truncate max-w-[140px]">{userEmail}</div>
+                    <div className="text-[11px] text-muted-foreground truncate max-w-[140px]">{userEmail}</div>
                   )}
                 </div>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden md:block group-hover:text-teal-500 transition-colors" />
+                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground hidden md:block group-hover:text-foreground transition-colors" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52 rounded-xl border-slate-100 shadow-lg shadow-slate-200/50 p-1">
-              <DropdownMenuLabel className="text-xs text-slate-500 font-normal px-2 py-1.5">{t("myAccount")}</DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-slate-100" />
+            <DropdownMenuContent align="end" className="w-52 rounded-lg border-border shadow-lg p-1">
+              <DropdownMenuLabel className="text-xs text-muted-foreground font-normal px-2 py-1.5">{t("myAccount")}</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-border" />
               <DropdownMenuItem
                 onClick={() => router.push("/app/settings")}
-                className="rounded-lg text-sm text-slate-600 hover:text-teal-700 hover:bg-teal-50 cursor-pointer"
+                className="rounded-md text-sm text-foreground hover:bg-accent cursor-pointer"
               >
-                <Settings className="w-4 h-4 mr-2 text-slate-400" />
+                <Settings className="w-4 h-4 mr-2 text-muted-foreground" />
                 {t("settings")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => router.push("/app/billing")}
-                className="rounded-lg text-sm text-slate-600 hover:text-teal-700 hover:bg-teal-50 cursor-pointer"
+                className="rounded-md text-sm text-foreground hover:bg-accent cursor-pointer"
               >
-                <CreditCard className="w-4 h-4 mr-2 text-slate-400" />
+                <CreditCard className="w-4 h-4 mr-2 text-muted-foreground" />
                 {t("billing")}
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-slate-100" />
+              <DropdownMenuSeparator className="bg-border" />
               <DropdownMenuItem
                 onClick={handleSignOut}
-                className="rounded-lg text-sm text-red-500 hover:text-red-600 hover:bg-red-50 cursor-pointer"
+                className="rounded-md text-sm text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
               >
                 <LogOut className="w-4 h-4 mr-2" />
                 {t("signOut")}

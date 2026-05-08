@@ -5,20 +5,22 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  Calendar,
+  CalendarHeart,
   CalendarCheck,
-  Users,
+  UsersRound,
   Stethoscope,
   Settings,
-  Bot,
   LogOut,
   ChevronLeft,
   ChevronRight,
   CreditCard,
   UserCircle,
   Sparkles,
+  Globe,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ThemeSwitcher } from "@/components/theme-switcher";
+import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -27,11 +29,12 @@ import { useTranslations } from "next-intl";
 
 const NAV_ITEMS = [
   { href: "/app/dashboard", labelKey: "dashboard", icon: LayoutDashboard, group: "main" },
-  { href: "/app/calendar", labelKey: "calendar", icon: Calendar, group: "main" },
+  { href: "/app/calendar", labelKey: "calendar", icon: CalendarHeart, group: "main" },
   { href: "/app/appointments", labelKey: "appointments", icon: CalendarCheck, group: "main" },
-  { href: "/app/patients", labelKey: "patients", icon: Users, group: "main" },
+  { href: "/app/patients", labelKey: "patients", icon: UsersRound, group: "main" },
   { href: "/app/services", labelKey: "services", icon: Stethoscope, group: "main" },
-  { href: "/app/ai-settings", labelKey: "aiSettings", icon: Bot, group: "config" },
+  { href: "/app/ai-settings", labelKey: "aiSettings", icon: Sparkles, group: "config" },
+  { href: "/app/website-builder", labelKey: "websiteBuilder", icon: Globe, group: "config" },
   { href: "/app/settings", labelKey: "settings", icon: Settings, group: "config" },
   { href: "/app/billing", labelKey: "billing", icon: CreditCard, group: "config" },
   { href: "/app/profile", labelKey: "profile", icon: UserCircle, group: "config" },
@@ -60,44 +63,33 @@ export function Sidebar({ clinicName = "My Clinic" }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "relative flex flex-col h-screen glass-sidebar transition-all duration-300 ease-in-out flex-shrink-0",
+        "relative flex flex-col h-screen bg-card border-r border-border transition-all duration-300 ease-in-out flex-shrink-0 z-40",
         collapsed ? "w-[68px]" : "w-[240px]"
       )}
     >
-      {/* Logo */}
+      {/* Logo zone */}
       <div className={cn(
-        "flex items-center gap-3 px-4 py-4 border-b border-teal-50",
+        "flex items-center gap-3 px-4 h-16 border-b border-border",
         collapsed && "justify-center px-2"
       )}>
         {collapsed ? (
-          <div className="relative flex-shrink-0 w-9 h-9">
-            <Image
-              src="/logo.png"
-              alt="DocFlow IA"
-              width={36}
-              height={36}
-              className="object-contain"
-            />
-          </div>
+          <div className="w-8 h-[1px] bg-gradient-to-r from-primary to-transparent"></div>
         ) : (
-          <div className="flex flex-col gap-0.5">
-            <Image
-              src="/logo.png"
-              alt="DocFlow IA"
-              width={130}
-              height={36}
-              className="object-contain"
-            />
-            <div className="text-[11px] text-teal-600 font-medium truncate max-w-[160px] pl-0.5">{clinicName}</div>
+          <div className="flex items-center gap-3 w-full">
+            <div className="w-8 h-[1px] bg-gradient-to-r from-primary to-transparent shrink-0"></div>
+            <div className="flex flex-col gap-0.5 truncate">
+              <Image src="/logo.png" alt="DocFlow IA" width={110} height={28} className="object-contain dark:brightness-0 dark:invert" />
+              <span className="text-xs text-muted-foreground uppercase tracking-widest truncate mt-1">{clinicName}</span>
+            </div>
           </div>
         )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto scrollbar-hide">
+      <nav className="flex-1 py-4 space-y-0.5 overflow-y-auto scrollbar-hide">
         {/* Main group */}
         {!collapsed && (
-          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2">{t("main")}</p>
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest px-6 mb-3">{t("main")}</p>
         )}
         {mainItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -108,30 +100,27 @@ export function Sidebar({ clinicName = "My Clinic" }: SidebarProps) {
               href={item.href}
               title={collapsed ? label : undefined}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group",
+                "flex items-center gap-3 px-6 py-2.5 text-sm transition-all duration-200 group",
                 collapsed && "justify-center px-2",
                 isActive
-                  ? "nav-active text-teal-700"
-                  : "text-slate-500 hover:bg-teal-50/60 hover:text-teal-700"
+                  ? "text-primary font-medium bg-primary/10 border-r-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
               )}
             >
               <item.icon className={cn(
                 "flex-shrink-0 transition-colors duration-200",
-                collapsed ? "w-5 h-5" : "w-4.5 h-4.5",
-                isActive ? "text-teal-600" : "text-slate-400 group-hover:text-teal-500"
-              )} style={{ width: collapsed ? 20 : 18, height: collapsed ? 20 : 18 }} />
+                collapsed ? "w-5 h-5" : "w-[18px] h-[18px]",
+                isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+              )} strokeWidth={1.5} />
               {!collapsed && <span className="truncate">{label}</span>}
-              {isActive && !collapsed && (
-                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-teal-500" />
-              )}
             </Link>
           );
         })}
 
         {/* Config group */}
-        <div className={cn("pt-3 mt-3 border-t border-slate-100/80", collapsed && "border-t")}>
+        <div className={cn("pt-4 mt-4 border-t border-border")}>
           {!collapsed && (
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2">{t("config")}</p>
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest px-6 mb-3">{t("config")}</p>
           )}
           {configItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -142,21 +131,19 @@ export function Sidebar({ clinicName = "My Clinic" }: SidebarProps) {
                 href={item.href}
                 title={collapsed ? label : undefined}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group",
+                  "flex items-center gap-3 px-6 py-2.5 text-sm transition-all duration-200 group",
                   collapsed && "justify-center px-2",
                   isActive
-                    ? "nav-active text-teal-700"
-                    : "text-slate-500 hover:bg-teal-50/60 hover:text-teal-700"
+                    ? "text-primary font-medium bg-primary/10 border-r-2 border-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
                 )}
               >
                 <item.icon className={cn(
                   "flex-shrink-0 transition-colors duration-200",
-                  isActive ? "text-teal-600" : "text-slate-400 group-hover:text-teal-500"
-                )} style={{ width: collapsed ? 20 : 18, height: collapsed ? 20 : 18 }} />
+                  collapsed ? "w-5 h-5" : "w-[18px] h-[18px]",
+                  isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                )} strokeWidth={1.5} />
                 {!collapsed && <span className="truncate">{label}</span>}
-                {isActive && !collapsed && (
-                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-teal-500" />
-                )}
               </Link>
             );
           })}
@@ -165,27 +152,36 @@ export function Sidebar({ clinicName = "My Clinic" }: SidebarProps) {
 
       {/* AI badge */}
       {!collapsed && (
-        <div className="mx-3 mb-3 p-3 rounded-xl bg-gradient-to-br from-teal-50 to-cyan-50 border border-teal-100">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-teal-500 flex-shrink-0" />
-            <p className="text-[11px] font-semibold text-teal-700">{t("aiPowered")}</p>
+        <div className="px-6 mb-4">
+          <div className="text-[11px] text-primary/60 uppercase tracking-widest flex items-center gap-2 font-medium">
+            <Sparkles className="w-3 h-3" />
+            AI ACTIVE
           </div>
-          <p className="text-[10px] text-teal-500 mt-0.5">{t("aiDescription")}</p>
         </div>
       )}
 
-      {/* Sign out */}
-      <div className="px-2 pb-4 border-t border-slate-100/80 pt-2">
+      {/* Bottom Section */}
+      <div className={cn(
+        "p-4 border-t border-border space-y-2",
+        collapsed ? "items-center" : ""
+      )}>
+        {/* Controls */}
+        <div className={cn("flex items-center gap-2 mb-3", collapsed ? "flex-col justify-center gap-3" : "justify-start pl-2")}>
+          <ThemeSwitcher />
+          <LanguageSwitcher />
+        </div>
+
+        {/* Sign out */}
         <button
           onClick={handleSignOut}
           title={collapsed ? "Sign Out" : undefined}
           className={cn(
-            "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 w-full text-left",
+            "flex items-center gap-3 px-4 py-2.5 text-sm transition-all duration-200 w-full text-left group rounded-md",
             collapsed && "justify-center px-2",
-            "text-slate-400 hover:bg-red-50 hover:text-red-500"
+            "text-muted-foreground hover:text-destructive hover:bg-destructive/10"
           )}
         >
-          <LogOut style={{ width: collapsed ? 20 : 18, height: collapsed ? 20 : 18 }} className="flex-shrink-0" />
+          <LogOut strokeWidth={1.5} className="w-[18px] h-[18px] flex-shrink-0" />
           {!collapsed && <span>{t("signOut")}</span>}
         </button>
       </div>
@@ -193,9 +189,9 @@ export function Sidebar({ clinicName = "My Clinic" }: SidebarProps) {
       {/* Collapse toggle */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-[72px] w-6 h-6 bg-white border border-teal-100 rounded-full flex items-center justify-center text-teal-500 hover:bg-teal-50 hover:border-teal-200 transition-all shadow-sm z-10"
+        className="absolute -right-3.5 top-14 w-7 h-7 rounded-full bg-background border-2 border-primary/20 hover:border-primary shadow-lg flex items-center justify-center text-foreground hover:bg-primary/5 transition-all z-[100]"
       >
-        {collapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
+        {collapsed ? <ChevronRight strokeWidth={2.5} className="w-3.5 h-3.5 text-primary" /> : <ChevronLeft strokeWidth={2.5} className="w-3.5 h-3.5 text-primary" />}
       </button>
     </aside>
   );

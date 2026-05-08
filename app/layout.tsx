@@ -1,12 +1,29 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Cormorant_Garamond, DM_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { Providers } from "@/components/providers";
+import { ThemeProvider } from "@/components/theme-provider";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 
-const inter = Inter({ subsets: ["latin"] });
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["300", "400", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-cormorant",
+});
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-dm-sans",
+});
+
+const ibmMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-ibm-mono",
+});
 
 export const metadata: Metadata = {
   title: "DocFlow IA - Assistant IA pour la gestion de cliniques",
@@ -34,13 +51,15 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} suppressHydrationWarning>
-      <body className={inter.className}>
+    <html lang={locale} suppressHydrationWarning className={`${cormorant.variable} ${dmSans.variable} ${ibmMono.variable}`}>
+      <body className="font-sans bg-background text-foreground antialiased transition-colors duration-300">
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <Providers>
-            {children}
-            <Toaster position="top-right" richColors />
-          </Providers>
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+            <Providers>
+              {children}
+              <Toaster position="top-right" richColors />
+            </Providers>
+          </ThemeProvider>
         </NextIntlClientProvider>
       </body>
     </html>

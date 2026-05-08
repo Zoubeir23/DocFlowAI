@@ -1,67 +1,42 @@
-import { type LucideIcon } from "lucide-react";
+import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
 
 interface StatCardProps {
   title: string;
   value: string | number;
-  change?: string;
-  changeType?: "positive" | "negative" | "neutral";
   icon: LucideIcon;
-  iconColor?: string;
-  iconBg?: string;
-  gradient?: string;
-  loading?: boolean;
+  change?: {
+    value: string;
+    trend: "up" | "down" | "neutral";
+  };
 }
 
 export function StatCard({
   title,
   value,
-  change,
-  changeType = "neutral",
   icon: Icon,
-  iconColor = "text-teal-600",
-  iconBg = "bg-teal-50",
-  gradient,
-  loading = false,
+  change,
 }: StatCardProps) {
-  if (loading) {
-    return (
-      <div className="glass-card rounded-2xl p-5">
-        <div className="flex items-start justify-between mb-4">
-          <Skeleton className="h-3.5 w-24 rounded-lg" />
-          <Skeleton className="h-10 w-10 rounded-xl" />
-        </div>
-        <Skeleton className="h-8 w-16 rounded-lg mb-1.5" />
-        <Skeleton className="h-3 w-20 rounded-lg" />
-      </div>
-    );
-  }
-
   return (
-    <div className="glass-card rounded-2xl p-5 hover-lift group cursor-default">
-      <div className="flex items-start justify-between mb-3">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide leading-tight">{title}</p>
-        <div className={cn(
-          "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-110",
-          gradient ? "" : iconBg
-        )}
-          style={gradient ? { background: gradient } : undefined}
-        >
-          <Icon className={cn("w-5 h-5", gradient ? "text-white" : iconColor)} />
+    <div className="p-5 group cursor-default bg-card">
+      <div className="flex items-start justify-between mb-4">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">{title}</p>
+        <div className="w-9 h-9 flex items-center justify-center bg-primary/10 rounded-lg">
+          <Icon className="w-4 h-4 text-primary" strokeWidth={1.5} />
         </div>
       </div>
-      <div className="stat-number text-2xl font-bold text-slate-800 mb-1">{value}</div>
+      
+      <div className="text-3xl font-semibold text-foreground leading-none mb-2 tracking-tight">
+        {value}
+      </div>
+      
       {change && (
         <p className={cn(
-          "text-[11px] font-medium flex items-center gap-1",
-          changeType === "positive" && "text-emerald-600",
-          changeType === "negative" && "text-red-500",
-          changeType === "neutral" && "text-slate-400"
+          "text-xs font-medium uppercase tracking-wide",
+          change.trend === "up" ? "text-primary" : 
+          change.trend === "down" ? "text-destructive" : "text-muted-foreground"
         )}>
-          {changeType === "positive" && <span className="text-emerald-500">↑</span>}
-          {changeType === "negative" && <span className="text-red-500">↓</span>}
-          {change}
+          {change.trend === "up" ? "+" : change.trend === "down" ? "-" : ""}{change.value}
         </p>
       )}
     </div>

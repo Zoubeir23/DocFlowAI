@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useTranslations } from 'next-intl'
 
 async function fetchClinicId() {
   const supabase = createClient() as any
@@ -28,35 +29,20 @@ async function fetchClinicId() {
   return { clinicId: data?.clinic_id || null, userId: user.id }
 }
 
-const DAYS = [
-  { day: 0, label: 'Sunday' },
-  { day: 1, label: 'Monday' },
-  { day: 2, label: 'Tuesday' },
-  { day: 3, label: 'Wednesday' },
-  { day: 4, label: 'Thursday' },
-  { day: 5, label: 'Friday' },
-  { day: 6, label: 'Saturday' },
-]
-
-const DAY_ABBR: Record<number, string> = {
-  0: 'Sun',
-  1: 'Mon',
-  2: 'Tue',
-  3: 'Wed',
-  4: 'Thu',
-  5: 'Fri',
-  6: 'Sat',
-}
+const DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const
+const DAY_SHORT_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const
 
 function AvailabilityRow({
   day,
   label,
+  dayShort,
   rule,
   clinicId,
   onSaved,
 }: {
   day: number
   label: string
+  dayShort: string
   rule?: {
     id?: string
     is_active: boolean
@@ -68,6 +54,7 @@ function AvailabilityRow({
   clinicId: string
   onSaved: () => void
 }) {
+  const t = useTranslations('settings')
   const [isActive, setIsActive] = useState(rule?.is_active ?? false)
   const [startTime, setStartTime] = useState(rule?.start_time ?? '09:00')
   const [endTime, setEndTime] = useState(rule?.end_time ?? '17:00')
@@ -99,16 +86,16 @@ function AvailabilityRow({
     })
     setSaving(false)
     if (result.success) {
-      toast.success(`${label} schedule saved`)
+      toast.success(`${label} ${t('scheduleSaved')}`)
       onSaved()
     } else {
-      toast.error(result.error || 'Failed to save')
+      toast.error(result.error || t('failedToSave'))
     }
   }
 
   return (
     <div
-      className={`rounded-xl border transition-all duration-200 ${isActive ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-50/60 border-slate-100'}`}
+      className={`rounded-none border transition-all duration-200 ${isActive ? 'bg-background border-foreground/10 shadow-none' : 'bg-foreground/[0.02] border-foreground/10'}`}
     >
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3">
@@ -118,11 +105,11 @@ function AvailabilityRow({
             className="data-[state=checked]:bg-teal-500"
           />
           <div className="flex items-center gap-2">
-            <span className="w-8 h-8 rounded-lg bg-teal-50 text-teal-700 text-xs font-bold flex items-center justify-center border border-teal-100">
-              {DAY_ABBR[day]}
+            <span className="w-8 h-8 rounded-none bg-teal-50 text-teal-700 text-xs font-medium flex items-center justify-center border border-foreground/10">
+              {dayShort}
             </span>
             <span
-              className={`font-semibold text-sm ${isActive ? 'text-slate-700' : 'text-slate-400'}`}
+              className={`font-medium text-sm ${isActive ? 'text-foreground/80' : 'text-foreground/50'}`}
             >
               {label}
             </span>
@@ -133,52 +120,52 @@ function AvailabilityRow({
           variant="outline"
           onClick={handleSave}
           disabled={saving}
-          className="h-7 rounded-lg text-xs border-slate-200 hover:border-teal-200 hover:bg-teal-50 hover:text-teal-700 font-semibold"
+          className="h-7 rounded-none text-xs border-foreground/10 hover:border-[#14b8a6]/40 hover:bg-[#14b8a6]/[0.03] hover:text-teal-700 font-medium"
         >
           <Save className="w-3 h-3 mr-1" />
-          {saving ? 'Saving...' : 'Save'}
+          {saving ? t('saving') : t('save')}
         </Button>
       </div>
       {isActive && (
-        <div className="grid grid-cols-2 gap-3 px-4 pb-4 border-t border-slate-100 pt-3">
+        <div className="grid grid-cols-2 gap-3 px-4 pb-4 border-t border-foreground/10 pt-3">
           <div className="space-y-1">
-            <Label className="text-xs font-semibold text-slate-500">Open</Label>
+            <Label className="text-xs font-medium text-foreground/60">{t('open')}</Label>
             <Input
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              className="h-8 text-sm rounded-xl border-slate-200 focus:ring-teal-500 focus:border-teal-400"
+              className="h-8 text-sm rounded-none border-foreground/10 focus:ring-0 focus:border-[#14b8a6]"
             />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs font-semibold text-slate-500">Close</Label>
+            <Label className="text-xs font-medium text-foreground/60">{t('close')}</Label>
             <Input
               type="time"
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
-              className="h-8 text-sm rounded-xl border-slate-200 focus:ring-teal-500 focus:border-teal-400"
+              className="h-8 text-sm rounded-none border-foreground/10 focus:ring-0 focus:border-[#14b8a6]"
             />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs font-semibold text-slate-500">
-              Break Start <span className="text-slate-300">(opt)</span>
+            <Label className="text-xs font-medium text-foreground/60">
+              {t('breakStart')} <span className="text-muted-foreground">({t('optional')})</span>
             </Label>
             <Input
               type="time"
               value={breakStart}
               onChange={(e) => setBreakStart(e.target.value)}
-              className="h-8 text-sm rounded-xl border-slate-200 focus:ring-teal-500 focus:border-teal-400"
+              className="h-8 text-sm rounded-none border-foreground/10 focus:ring-0 focus:border-[#14b8a6]"
             />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs font-semibold text-slate-500">
-              Break End <span className="text-slate-300">(opt)</span>
+            <Label className="text-xs font-medium text-foreground/60">
+              {t('breakEnd')} <span className="text-muted-foreground">({t('optional')})</span>
             </Label>
             <Input
               type="time"
               value={breakEnd}
               onChange={(e) => setBreakEnd(e.target.value)}
-              className="h-8 text-sm rounded-xl border-slate-200 focus:ring-teal-500 focus:border-teal-400"
+              className="h-8 text-sm rounded-none border-foreground/10 focus:ring-0 focus:border-[#14b8a6]"
             />
           </div>
         </div>
@@ -188,6 +175,7 @@ function AvailabilityRow({
 }
 
 export default function SettingsPage() {
+  const t = useTranslations('settings')
   const queryClient = useQueryClient()
   const [newBlockedDate, setNewBlockedDate] = useState('')
   const [newBlockedReason, setNewBlockedReason] = useState('')
@@ -212,12 +200,12 @@ export default function SettingsPage() {
     mutationFn: () => addBlockedDate(clinicId!, { date: newBlockedDate, reason: newBlockedReason }),
     onSuccess: (result) => {
       if (result.success) {
-        toast.success('Date blocked')
+        toast.success(t('dateBlocked'))
         queryClient.invalidateQueries({ queryKey: ['blocked-dates', userId, clinicId] })
         setNewBlockedDate('')
         setNewBlockedReason('')
       } else {
-        toast.error(result.error || 'Failed to block date')
+        toast.error(result.error || t('failedToBlock'))
       }
     },
   })
@@ -225,7 +213,7 @@ export default function SettingsPage() {
   const removeBlockedMutation = useMutation({
     mutationFn: removeBlockedDate,
     onSuccess: () => {
-      toast.success('Date unblocked')
+      toast.success(t('dateUnblocked'))
       queryClient.invalidateQueries({ queryKey: ['blocked-dates', userId, clinicId] })
     },
   })
@@ -235,48 +223,49 @@ export default function SettingsPage() {
   return (
     <div className="p-6 space-y-6 max-w-[1400px]">
       <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-xl gradient-brand flex items-center justify-center">
-          <Settings className="w-4 h-4 text-white" />
+        <div className="w-8 h-8 bg-[#14b8a6]/10 text-[#14b8a6] border border-[#14b8a6]/30 flex items-center justify-center">
+          <Settings className="w-4 h-4 text-foreground" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Settings</h2>
-          <p className="text-slate-500 text-sm">Manage clinic availability and blocked dates</p>
+          <h2 className="text-2xl font-medium text-foreground tracking-tight">{t('title')}</h2>
+          <p className="text-foreground/60 text-sm">{t('subtitle')}</p>
         </div>
       </div>
 
       <Tabs defaultValue="availability">
-        <TabsList className="bg-slate-100/80 rounded-xl p-1 h-auto gap-1">
+        <TabsList className="bg-muted/80 rounded-none p-1 h-auto gap-1">
           <TabsTrigger
             value="availability"
-            className="rounded-lg text-sm font-semibold data-[state=active]:bg-white data-[state=active]:text-teal-700 data-[state=active]:shadow-sm text-slate-500 px-4 py-2"
+            className="rounded-none text-sm font-medium data-[state=active]:bg-background data-[state=active]:text-[#14b8a6] data-[state=active]:shadow-none text-foreground/60 px-4 py-2"
           >
             <Clock className="w-3.5 h-3.5 mr-1.5" />
-            Availability
+            {t('availability')}
           </TabsTrigger>
           <TabsTrigger
             value="blocked"
-            className="rounded-lg text-sm font-semibold data-[state=active]:bg-white data-[state=active]:text-teal-700 data-[state=active]:shadow-sm text-slate-500 px-4 py-2"
+            className="rounded-none text-sm font-medium data-[state=active]:bg-background data-[state=active]:text-[#14b8a6] data-[state=active]:shadow-none text-foreground/60 px-4 py-2"
           >
             <Calendar className="w-3.5 h-3.5 mr-1.5" />
-            Blocked Dates
+            {t('blockedDates')}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="availability" className="mt-5">
-          <div className="glass-card rounded-2xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100">
-              <h3 className="font-bold text-slate-800">Weekly Schedule</h3>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Set the days and hours your clinic is open for bookings
+          <div className="glass-card rounded-none overflow-hidden">
+            <div className="px-6 py-4 border-b border-foreground/10">
+              <h3 className="font-medium text-foreground">{t('weeklySchedule')}</h3>
+              <p className="text-xs text-foreground/50 mt-0.5">
+                {t('weeklyScheduleDesc')}
               </p>
             </div>
             <div className="p-4 space-y-2.5">
-              {DAYS.map(({ day, label }) => (
+              {DAY_KEYS.map((dayKey, idx) => (
                 <AvailabilityRow
-                  key={day}
-                  day={day}
-                  label={label}
-                  rule={getRuleForDay(day) as Parameters<typeof AvailabilityRow>[0]['rule']}
+                  key={idx}
+                  day={idx}
+                  label={t(`days.${dayKey}`)}
+                  dayShort={t(`daysShort.${DAY_SHORT_KEYS[idx]}`)}
+                  rule={getRuleForDay(idx) as Parameters<typeof AvailabilityRow>[0]['rule']}
                   clinicId={clinicId!}
                   onSaved={() =>
                     queryClient.invalidateQueries({
@@ -290,11 +279,11 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="blocked" className="mt-5">
-          <div className="glass-card rounded-2xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100">
-              <h3 className="font-bold text-slate-800">Blocked Dates & Holidays</h3>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Block dates when your clinic will be closed
+          <div className="glass-card rounded-none overflow-hidden">
+            <div className="px-6 py-4 border-b border-foreground/10">
+              <h3 className="font-medium text-foreground">{t('blockedDatesHolidays')}</h3>
+              <p className="text-xs text-foreground/50 mt-0.5">
+                {t('blockedDatesDesc')}
               </p>
             </div>
             <div className="p-5 space-y-5">
@@ -304,40 +293,40 @@ export default function SettingsPage() {
                   value={newBlockedDate}
                   onChange={(e) => setNewBlockedDate(e.target.value)}
                   min={new Date().toISOString().split('T')[0]}
-                  className="w-auto rounded-xl border-slate-200 focus:ring-teal-500 focus:border-teal-400"
+                  className="w-auto rounded-none border-foreground/10 focus:ring-0 focus:border-[#14b8a6]"
                 />
                 <Input
-                  placeholder="Reason (optional)"
+                  placeholder={t('reasonOptional')}
                   value={newBlockedReason}
                   onChange={(e) => setNewBlockedReason(e.target.value)}
-                  className="flex-1 min-w-[160px] rounded-xl border-slate-200 focus:ring-teal-500 focus:border-teal-400"
+                  className="flex-1 min-w-[160px] rounded-none border-foreground/10 focus:ring-0 focus:border-[#14b8a6]"
                 />
                 <Button
                   onClick={() => addBlockedMutation.mutate()}
                   disabled={!newBlockedDate || addBlockedMutation.isPending}
-                  className="rounded-xl gradient-brand text-white border-none shadow-sm font-semibold"
+                  className="btn-void-primary"
                 >
                   <Plus className="w-4 h-4 mr-1.5" />
-                  Block Date
+                  {t('blockDate')}
                 </Button>
               </div>
               {blockedDates.length === 0 ? (
-                <div className="text-center py-10 text-slate-400">
-                  <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center mx-auto mb-3">
-                    <Calendar className="w-6 h-6 text-slate-300" />
+                <div className="text-center py-10 text-foreground/50">
+                  <div className="w-12 h-12 rounded-none bg-background border border-foreground/10 flex items-center justify-center mx-auto mb-3">
+                    <Calendar className="w-6 h-6 text-muted-foreground" />
                   </div>
-                  <p className="text-sm font-medium">No dates blocked</p>
-                  <p className="text-xs mt-0.5 text-slate-300">Block holidays and days off above</p>
+                  <p className="text-sm font-medium">{t('noBlockedDates')}</p>
+                  <p className="text-xs mt-0.5 text-muted-foreground">{t('noBlockedDatesDesc')}</p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {blockedDates.map((bd) => (
                     <div
                       key={bd.id}
-                      className="flex items-center justify-between p-3.5 bg-red-50/60 border border-red-100 rounded-xl group hover:bg-red-50 transition-colors"
+                      className="flex items-center justify-between p-3.5 bg-red-50/60 border border-red-100 rounded-none group hover:bg-red-50 transition-colors"
                     >
                       <div>
-                        <p className="font-semibold text-sm text-slate-800">
+                        <p className="font-medium text-sm text-foreground">
                           {new Date(bd.date + 'T12:00:00').toLocaleDateString('en-US', {
                             weekday: 'long',
                             year: 'numeric',
@@ -345,12 +334,12 @@ export default function SettingsPage() {
                             day: 'numeric',
                           })}
                         </p>
-                        {bd.reason && <p className="text-xs text-slate-500 mt-0.5">{bd.reason}</p>}
+                        {bd.reason && <p className="text-xs text-foreground/60 mt-0.5">{bd.reason}</p>}
                       </div>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-100 opacity-0 group-hover:opacity-100 transition-all"
+                        className="h-8 w-8 p-0 rounded-none text-red-400 hover:text-red-600 hover:bg-red-100 opacity-0 group-hover:opacity-100 transition-all"
                         onClick={() => removeBlockedMutation.mutate(bd.id)}
                       >
                         <Trash2 className="w-3.5 h-3.5" />

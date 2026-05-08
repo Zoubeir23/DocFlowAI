@@ -11,10 +11,13 @@ import {
 
 let resendClient: Resend | null = null;
 
-function getResendClient(): Resend {
+function getResendClient(): Resend | null {
   if (!resendClient) {
     const apiKey = process.env.RESEND_API_KEY;
-    if (!apiKey) throw new Error("RESEND_API_KEY is not configured");
+    if (!apiKey) {
+      console.warn("[Resend] RESEND_API_KEY is not configured. Email will be skipped.");
+      return null;
+    }
     resendClient = new Resend(apiKey);
   }
   return resendClient;
@@ -30,6 +33,8 @@ export async function sendConfirmationEmail(
   const resend = getResendClient();
   const locale = payload.locale ?? "fr";
   const results: EmailResult[] = [];
+
+  if (!resend) return [{ success: false, channel: "email", error: "Resend not configured" }];
 
   if (payload.patientEmail) {
     try {

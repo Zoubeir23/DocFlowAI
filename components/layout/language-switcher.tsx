@@ -37,7 +37,7 @@ export function LanguageSwitcher() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-slate-500 hover:text-teal-600 hover:bg-teal-50 border border-transparent hover:border-slate-200 transition-all duration-200 text-sm font-medium disabled:opacity-50"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-none text-foreground/60 hover:text-foreground hover:bg-foreground/5 border border-transparent hover:border-foreground/10 transition-all duration-200 text-sm font-medium disabled:opacity-50"
           disabled={isPending}
         >
           {isPending ? (
@@ -50,13 +50,13 @@ export function LanguageSwitcher() {
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="w-36 rounded-xl border-slate-100 shadow-lg shadow-slate-200/50 p-1"
+        className="w-36 rounded-none border-foreground/10 shadow-none p-1 bg-background"
       >
         {(routing.locales as readonly SupportedLocale[]).map((locale) => (
           <DropdownMenuItem
             key={locale}
             onClick={() => handleLocaleChange(locale)}
-            className="rounded-lg text-sm text-slate-600 hover:text-teal-700 hover:bg-teal-50 cursor-pointer flex items-center gap-2"
+            className="rounded-none text-sm text-foreground/80 focus:text-foreground focus:bg-foreground/5 cursor-pointer flex items-center gap-2"
           >
             <span>{LOCALE_FLAGS[locale]}</span>
             <span>{LOCALE_LABELS[locale]}</span>

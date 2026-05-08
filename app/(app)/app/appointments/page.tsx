@@ -33,10 +33,10 @@ async function fetchAppointments(clinicId: string, status: string) {
 }
 
 const STATUS_COUNT_COLORS: Record<string, string> = {
-  all: "bg-slate-100 text-slate-600",
+  all: "bg-muted text-foreground/70",
   booked: "bg-teal-50 text-teal-700",
   confirmed: "bg-emerald-50 text-emerald-700",
-  completed: "bg-slate-50 text-slate-600",
+  completed: "bg-background text-foreground/70",
   cancelled: "bg-red-50 text-red-600",
   no_show: "bg-amber-50 text-amber-700",
 };
@@ -69,19 +69,19 @@ export default function AppointmentsPage() {
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 rounded-xl gradient-brand flex items-center justify-center">
-              <CalendarCheck className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 bg-[#14b8a6]/10 text-[#14b8a6] border border-[#14b8a6]/30 flex items-center justify-center">
+              <CalendarCheck className="w-4 h-4 text-foreground" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-800 tracking-tight">{t("title")}</h2>
+            <h2 className="text-2xl font-medium text-foreground tracking-tight">{t("title")}</h2>
           </div>
-          <p className="text-slate-500 text-sm ml-10">{t("manageTrack")}</p>
+          <p className="text-foreground/60 text-sm ml-10">{t("manageTrack")}</p>
         </div>
         <Button
           variant="outline"
           size="sm"
           onClick={() => refetch()}
           disabled={isFetching}
-          className="rounded-xl border-slate-200 text-slate-600 hover:bg-teal-50 hover:border-teal-200 hover:text-teal-700 transition-all"
+          className="rounded-none border-foreground/10 text-foreground/70 hover:bg-[#14b8a6]/[0.03] hover:border-[#14b8a6]/40 hover:text-teal-700 transition-all"
         >
           <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? "animate-spin" : ""}`} />
           {t("refresh")}
@@ -94,10 +94,10 @@ export default function AppointmentsPage() {
           <button
             key={opt.value}
             onClick={() => setStatusFilter(opt.value)}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 border ${
+            className={`px-3.5 py-1.5 rounded-none text-xs font-medium transition-all duration-200 border ${
               statusFilter === opt.value
-                ? "gradient-brand text-white border-transparent shadow-md shadow-teal-200/40"
-                : "bg-white border-slate-200 text-slate-500 hover:border-teal-200 hover:text-teal-600 hover:bg-teal-50"
+                ? "gradient-brand text-foreground border-transparent shadow-none"
+                : "bg-background border-foreground/10 text-foreground/60 hover:border-[#14b8a6]/40 hover:text-[#14b8a6] hover:bg-[#14b8a6]/[0.03]"
             }`}
           >
             {opt.label}
@@ -106,25 +106,25 @@ export default function AppointmentsPage() {
       </div>
 
       {/* Table card */}
-      <div className="glass-card rounded-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+      <div className="glass-card rounded-none overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-foreground/10">
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-slate-400" />
-            <span className="font-semibold text-slate-700 text-sm">
+            <Filter className="w-4 h-4 text-foreground/50" />
+            <span className="font-medium text-foreground/80 text-sm">
               {statusOptions.find(o => o.value === statusFilter)?.label}
             </span>
-            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${STATUS_COUNT_COLORS[statusFilter]}`}>
+            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COUNT_COLORS[statusFilter]}`}>
               {appointments.length}
             </span>
           </div>
           <div className="hidden md:block">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40 h-8 rounded-xl text-xs border-slate-200 bg-slate-50">
+              <SelectTrigger className="w-40 h-8 rounded-none text-xs border-foreground/10 bg-background">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="rounded-xl border-slate-100">
+              <SelectContent className="rounded-none border-foreground/10">
                 {statusOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value} className="text-sm rounded-lg">
+                  <SelectItem key={opt.value} value={opt.value} className="text-sm rounded-none">
                     {opt.label}
                   </SelectItem>
                 ))}

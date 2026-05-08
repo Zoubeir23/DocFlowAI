@@ -165,83 +165,87 @@ export async function POST(req: NextRequest) {
     locale,
   });
 
-  const { text, action } = await generateAIResponse(allMessages, systemPrompt);
+  try {
+    const { text, action } = await generateAIResponse(allMessages, systemPrompt);
 
-  let bookingResult: { success: boolean; appointmentId?: string; patientId?: string; error?: string } | null = null;
+    let bookingResult: { success: boolean; appointmentId?: string; patientId?: string; error?: string } | null = null;
 
-  if (action && action.intent === "create_booking" && action.data) {
-    const data = action.data as Record<string, string>;
-    console.log("[booking] action data:", data);
+    if (action && action.intent === "create_booking" && action.data) {
+      const data = action.data as Record<string, string>;
+      console.log("[booking] action data:", data);
 
-    if (data.patientName && data.patientPhone && data.startAt && data.endAt) {
-      const service = (services as any[]).find(
-        (s) =>
-          s.id === data.serviceId ||
-          s.name.toLowerCase() === (data.serviceName || "").toLowerCase()
-      );
+      if (data.patientName && data.patientPhone && data.startAt && data.endAt) {
+        const service = (services as any[]).find(
+          (s) =>
+            s.id === data.serviceId ||
+            s.name.toLowerCase() === (data.serviceName || "").toLowerCase()
+        );
 
-      console.log("[booking] matched service:", service?.id, service?.name);
+        console.log("[booking] matched service:", service?.id, service?.name);
 
-      if (service) {
-        const { data: result, error } = await db.rpc("create_booking_from_widget", {
-          p_clinic_id: clinic.id,
-          p_patient_name: data.patientName,
-          p_patient_phone: data.patientPhone,
-          p_patient_email: data.patientEmail || null,
-          p_service_id: service.id,
-          p_start_at: data.startAt,
-          p_end_at: data.endAt,
-          p_notes: null,
-        });
-
-        console.log("[booking] rpc result:", result, "error:", error);
-
-        if (!error && result) {
-          const resultData = result as { appointment_id: string; patient_id: string };
-          bookingResult = {
-            success: true,
-            appointmentId: resultData.appointment_id,
-            patientId: resultData.patient_id,
-          };
-
-          await sendNotification({
-            type: "appointment_confirmation",
-            appointmentId: resultData.appointment_id,
-            patientName: data.patientName,
-            patientPhone: data.patientPhone,
-            patientEmail: data.patientEmail || undefined,
-            clinicName: clinic.name,
-            serviceName: service.name,
-            startAt: data.startAt,
+        if (service) {
+          const { data: result, error } = await db.rpc("create_booking_from_widget", {
+            p_clinic_id: clinic.id,
+            p_patient_name: data.patientName,
+            p_patient_phone: data.patientPhone,
+            p_patient_email: data.patientEmail || null,
+            p_service_id: service.id,
+            p_start_at: data.startAt,
+            p_end_at: data.endAt,
+            p_notes: null,
           });
+
+          console.log("[booking] rpc result:", result, "error:", error);
+
+          if (!error && result) {
+            const resultData = result as { appointment_id: string; patient_id: string };
+            bookingResult = {
+              success: true,
+              appointmentId: resultData.appointment_id,
+              patientId: resultData.patient_id,
+            };
+
+            await sendNotification({
+              type: "appointment_confirmation",
+              appointmentId: resultData.appointment_id,
+              patientName: data.patientName,
+              patientPhone: data.patientPhone,
+              patientEmail: data.patientEmail || undefined,
+              clinicName: clinic.name,
+              serviceName: service.name,
+              startAt: data.startAt,
+            });
+          } else {
+            bookingResult = { success: false, error: error?.message || "Booking failed" };
+          }
         } else {
-          bookingResult = { success: false, error: error?.message || "Booking failed" };
+          console.log("[booking] no service matched. serviceId:", data.serviceId, "serviceName:", data.serviceName);
+          bookingResult = { success: false, error: "Service not found" };
         }
       } else {
-        console.log("[booking] no service matched. serviceId:", data.serviceId, "serviceName:", data.serviceName);
-        console.log("[booking] available services:", (services as any[]).map((s) => ({ id: s.id, name: s.name })));
-        bookingResult = { success: false, error: "Service not found" };
+        console.log("[booking] missing required fields:", { patientName: data.patientName, patientPhone: data.patientPhone, startAt: data.startAt, endAt: data.endAt });
       }
-    } else {
-      console.log("[booking] missing required fields:", { patientName: data.patientName, patientPhone: data.patientPhone, startAt: data.startAt, endAt: data.endAt });
     }
+
+    const updatedMessages: AIMessage[] = [
+      ...historyMessages,
+      { role: "user", content: message },
+      { role: "assistant", content: text },
+    ];
+
+    await db
+      .from("ai_conversations")
+      .update({ messages: updatedMessages })
+      .eq("id", conversation.id);
+
+    return NextResponse.json({
+      message: text,
+      conversationId: conversation.id,
+      action,
+      bookingResult,
+    });
+  } catch (error: any) {
+    console.error("[WidgetChat] Error in chat route:", error);
+    return NextResponse.json({ error: error.message || "Internal AI Error" }, { status: 500 });
   }
-
-  const updatedMessages: AIMessage[] = [
-    ...historyMessages,
-    { role: "user", content: message },
-    { role: "assistant", content: text },
-  ];
-
-  await db
-    .from("ai_conversations")
-    .update({ messages: updatedMessages })
-    .eq("id", conversation.id);
-
-  return NextResponse.json({
-    message: text,
-    conversationId: conversation.id,
-    action,
-    bookingResult,
-  });
 }

@@ -25,17 +25,24 @@ export async function generateAIResponse(
     systemInstruction: systemPrompt,
   });
 
-  const history = messages.slice(0, -1).map((m) => ({
-    role: m.role === "assistant" ? "model" : "user",
-    parts: [{ text: m.content }],
-  }));
+  const filteredHistory: { role: string; parts: { text: string }[] }[] = [];
+  
+  messages.slice(0, -1).forEach((m) => {
+    const role = m.role === "assistant" ? "model" : "user";
+    if (filteredHistory.length === 0 || filteredHistory[filteredHistory.length - 1].role !== role) {
+      filteredHistory.push({ role, parts: [{ text: m.content }] });
+    } else {
+      // Append text to the previous message if roles are identical (avoids consecutive identical roles)
+      filteredHistory[filteredHistory.length - 1].parts[0].text += "\n" + m.content;
+    }
+  });
 
   const lastMessage = messages[messages.length - 1];
   if (!lastMessage) {
     return { text: "", action: null };
   }
 
-  const chat = model.startChat({ history });
+  const chat = model.startChat({ history: filteredHistory });
   const result = await chat.sendMessage(lastMessage.content);
   const rawText = result.response.text();
 

@@ -4,11 +4,12 @@ import { getDashboardStats } from "@/actions/appointments";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { AppointmentTable } from "@/components/appointments/appointment-table";
 import {
-  Calendar,
-  Users,
+  CalendarClock,
+  CalendarHeart,
+  UsersRound,
   CheckCircle,
-  AlertCircle,
-  TrendingUp,
+  CalendarMinus,
+  CalendarX,
   Clock,
   Activity,
   Sparkles,
@@ -16,13 +17,16 @@ import {
 } from "lucide-react";
 import type { AppointmentWithRelations } from "@/types";
 import { format } from "date-fns";
+import { fr, enUS } from "date-fns/locale";
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
   const db = supabase as any;
   const t = await getTranslations("dashboard");
+  const localeStr = await getLocale();
+  const dfLocale = localeStr === "fr" ? fr : enUS;
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
@@ -40,7 +44,8 @@ export default async function DashboardPage() {
   const todayStr = format(today, "yyyy-MM-dd");
   const hour = today.getHours();
   const greeting = hour < 12 ? t("greeting.morning") : hour < 17 ? t("greeting.afternoon") : t("greeting.evening");
-  const firstName = (userData.full_name || "Doctor").split(" ")[0];
+  const rawName = userData.full_name || "Doctor";
+  const formattedName = rawName.toLowerCase().startsWith("dr") ? rawName : `Dr. ${rawName}`;
 
   const [stats, todayAppts, upcomingAppts] = await Promise.all([
     getDashboardStats(clinicId),
@@ -63,106 +68,86 @@ export default async function DashboardPage() {
   ]);
 
   return (
-    <div className="p-6 space-y-6 max-w-[1400px]">
+    <div className="p-8 lg:p-12 space-y-8 max-w-[1400px]">
 
       {/* Header */}
-      <div className="flex items-start justify-between flex-wrap gap-4">
+      <div className="flex items-start justify-between flex-wrap gap-4 fade-in-up">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="pulse-dot" />
-            <span className="text-xs font-semibold text-teal-600 uppercase tracking-wider">{t("liveDashboard")}</span>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-[1px] h-3 bg-primary"></div>
+            <span className="font-mono text-[15px] text-muted-foreground uppercase tracking-[0.15em]">{t("liveDashboard")}</span>
           </div>
-          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">
-            {greeting}, Dr. {firstName}
+          <h2 className="font-cormorant font-normal text-[40px] text-foreground tracking-tight leading-none">
+            {greeting}, {formattedName}
           </h2>
-          <p className="text-slate-500 text-sm mt-1">
-            {format(today, "EEEE, MMMM d, yyyy")} — {userData.clinic?.name}
+          <p className="font-sans font-normal text-muted-foreground text-[15px] mt-4 capitalize">
+            {format(today, "EEEE, d MMMM yyyy", { locale: dfLocale })} — {userData.clinic?.name}
           </p>
         </div>
         <Link
           href="/app/appointments"
-          className="flex items-center gap-2 px-4 py-2 rounded-xl gradient-brand text-white text-sm font-semibold shadow-md shadow-teal-200/50 hover:shadow-teal-300/60 hover:scale-[1.02] transition-all duration-200"
+          className="btn-void-ghost flex items-center gap-2"
         >
-          <Activity className="w-4 h-4" />
           {t("viewAllAppointments")}
           <ArrowRight className="w-3.5 h-3.5" />
         </Link>
       </div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="void-grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 fade-in-up" style={{ animationDelay: "0.1s" }}>
         <StatCard
           title={t("statToday")}
           value={stats.todayAppointments}
-          icon={Calendar}
-          gradient="linear-gradient(135deg,#0d9488,#0891b2)"
-          change={t("scheduledToday")}
-          changeType="neutral"
+          icon={CalendarClock}
+          change={{ value: t("scheduledToday"), trend: "neutral" }}
         />
         <StatCard
           title={t("statUpcoming")}
           value={stats.upcomingAppointments}
           icon={Clock}
-          iconColor="text-cyan-600"
-          iconBg="bg-cyan-50"
-          change={t("bookedConfirmed")}
-          changeType="neutral"
+          change={{ value: t("bookedConfirmed"), trend: "neutral" }}
         />
         <StatCard
           title={t("statPatients")}
           value={stats.totalPatients}
-          icon={Users}
-          iconColor="text-violet-600"
-          iconBg="bg-violet-50"
-          change={t("allTime")}
-          changeType="positive"
+          icon={UsersRound}
+          change={{ value: t("allTime"), trend: "up" }}
         />
         <StatCard
           title={t("statCancellations")}
           value={stats.pendingCancellations}
-          icon={AlertCircle}
-          iconColor="text-rose-500"
-          iconBg="bg-rose-50"
-          change={stats.pendingCancellations > 0 ? t("statNeedsAttention") : t("statAllClear")}
-          changeType={stats.pendingCancellations > 0 ? "negative" : "neutral"}
+          icon={CalendarMinus}
+          change={{ value: stats.pendingCancellations > 0 ? t("statNeedsAttention") : t("statAllClear"), trend: stats.pendingCancellations > 0 ? "down" : "neutral" }}
         />
         <StatCard
           title={t("statCompletion")}
           value={`${stats.completionRate}%`}
           icon={CheckCircle}
-          iconColor="text-emerald-600"
-          iconBg="bg-emerald-50"
-          change={t("statVsTotal")}
-          changeType="positive"
+          change={{ value: t("statVsTotal"), trend: "up" }}
         />
         <StatCard
           title={t("statNoShows")}
           value={`${stats.noShowRate}%`}
-          icon={TrendingUp}
-          iconColor="text-amber-600"
-          iconBg="bg-amber-50"
-          change={t("statMissedVisits")}
-          changeType={stats.noShowRate > 20 ? "negative" : "neutral"}
+          icon={CalendarX}
+          change={{ value: t("statMissedVisits"), trend: stats.noShowRate > 20 ? "down" : "neutral" }}
         />
       </div>
 
       {/* Main content */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 fade-in-up" style={{ animationDelay: "0.2s" }}>
 
         {/* Today's schedule */}
         <div className="xl:col-span-2">
-          <div className="glass-card rounded-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl gradient-brand flex items-center justify-center">
-                  <Calendar className="w-4 h-4 text-white" />
-                </div>
+          <div className="void-card">
+            <div className="flex items-center justify-between px-8 py-6 border-b border-border">
+              <div className="flex items-center gap-3">
+                <CalendarClock strokeWidth={1.5} className="w-5 h-5 text-foreground" />
                 <div>
-                  <h3 className="font-bold text-slate-800 text-sm">{t("todaySchedule")}</h3>
-                  <p className="text-xs text-slate-400">{format(today, "EEEE, MMM d")}</p>
+                  <h3 className="font-cormorant font-normal text-[22px] text-foreground">{t("todaySchedule")}</h3>
+                  <p className="font-mono text-[15px] uppercase tracking-[0.1em] text-muted-foreground">{format(today, "EEEE, d MMM", { locale: dfLocale })}</p>
                 </div>
               </div>
-              <span className="text-xs font-semibold px-2.5 py-1 bg-teal-50 text-teal-700 rounded-full border border-teal-100">
+              <span className="font-mono text-[14px] uppercase tracking-[0.1em] text-primary">
                 {(todayAppts.data || []).length} {t("appointments")}
               </span>
             </div>
@@ -175,47 +160,45 @@ export default async function DashboardPage() {
         </div>
 
         {/* Upcoming sidebar */}
-        <div className="space-y-4">
+        <div className="space-y-8">
           {/* Upcoming appointments */}
-          <div className="glass-card rounded-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-cyan-50 flex items-center justify-center">
-                  <Clock className="w-4 h-4 text-cyan-600" />
-                </div>
-                <h3 className="font-bold text-slate-800 text-sm">{t("upcoming")}</h3>
+          <div className="void-card">
+            <div className="flex items-center justify-between px-8 py-6 border-b border-border">
+              <div className="flex items-center gap-3">
+                <Clock strokeWidth={1.5} className="w-5 h-5 text-foreground" />
+                <h3 className="font-cormorant font-normal text-[22px] text-foreground">{t("upcoming")}</h3>
               </div>
-              <Link href="/app/appointments" className="text-xs text-teal-600 font-semibold hover:text-teal-700 flex items-center gap-0.5">
+              <Link href="/app/appointments" className="font-mono text-[14px] text-primary uppercase tracking-[0.1em] hover:text-foreground transition-colors flex items-center gap-1">
                 {t("seeAll")} <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
-            <div className="p-3 space-y-1.5">
+            <div className="p-4 space-y-1">
               {(upcomingAppts.data || []).length === 0 ? (
-                <div className="text-center py-8">
-                  <Clock className="w-10 h-10 text-slate-200 mx-auto mb-2" />
-                  <p className="text-sm text-slate-400 font-medium">{t("noUpcoming")}</p>
+                <div className="text-center py-12">
+                  <Clock strokeWidth={1} className="w-10 h-10 text-foreground/10 mx-auto mb-4" />
+                  <p className="font-sans font-normal text-[15px] text-muted-foreground">{t("noUpcoming")}</p>
                 </div>
               ) : (
                 ((upcomingAppts.data || []) as AppointmentWithRelations[]).map((appt) => {
                   const a = appt as AppointmentWithRelations;
                   const statusColors: Record<string, string> = {
-                    confirmed: "bg-emerald-400",
-                    booked: "bg-teal-400",
-                    default: "bg-slate-300",
+                    confirmed: "bg-primary",
+                    booked: "bg-muted-foreground",
+                    default: "bg-muted",
                   };
                   const dot = statusColors[a.status] || statusColors.default;
                   return (
                     <div
                       key={a.id}
-                      className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50/80 transition-colors group"
+                      className="flex items-center gap-4 p-4 hover:bg-accent transition-colors group border-l border-transparent hover:border-primary"
                     >
-                      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
+                      <div className={`w-[3px] h-[3px] rounded-full flex-shrink-0 ${dot}`} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-700 truncate group-hover:text-teal-700 transition-colors">
+                        <p className="font-sans font-normal text-[14px] text-foreground truncate group-hover:text-foreground transition-colors">
                           {a.patient?.full_name}
                         </p>
-                        <p className="text-xs text-slate-400 truncate">
-                          {a.service?.name} · {format(new Date(a.start_at), "MMM d, h:mm a")}
+                        <p className="font-mono text-[14px] text-muted-foreground uppercase tracking-wide truncate mt-1">
+                          {a.service?.name} · {format(new Date(a.start_at), "d MMM, H:mm", { locale: dfLocale })}
                         </p>
                       </div>
                     </div>
@@ -226,23 +209,19 @@ export default async function DashboardPage() {
           </div>
 
           {/* AI widget promo */}
-          <div className="rounded-2xl gradient-brand p-5 text-white relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -translate-y-8 translate-x-8" />
-            <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/5 rounded-full translate-y-6 -translate-x-6" />
-            <div className="relative">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-teal-200" />
-                <span className="text-xs font-semibold text-teal-100 uppercase tracking-wider">{t("aiAssistant")}</span>
-              </div>
-              <p className="text-sm font-bold mb-1">{t("smartBookingActive")}</p>
-              <p className="text-xs text-teal-100/80 leading-relaxed">{t("aiWidgetLive")}</p>
-              <Link
-                href="/app/ai-settings"
-                className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold bg-white/15 hover:bg-white/25 px-3 py-1.5 rounded-lg transition-colors"
-              >
-                {t("configureAI")} <ArrowRight className="w-3 h-3" />
-              </Link>
+          <div className="void-card p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <Sparkles strokeWidth={1.5} className="w-5 h-5 text-primary" />
+              <span className="font-mono text-[14px] text-foreground uppercase tracking-[0.15em]">{t("aiAssistant")}</span>
             </div>
+            <h4 className="font-cormorant font-normal text-[24px] text-foreground mb-2">{t("smartBookingActive")}</h4>
+            <p className="font-sans font-normal text-[15px] text-foreground leading-relaxed mb-8">{t("aiWidgetLive")}</p>
+            <Link
+              href="/app/ai-settings"
+              className="btn-void-ghost flex items-center justify-center gap-2 w-full"
+            >
+              {t("configureAI")} <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
         </div>
       </div>

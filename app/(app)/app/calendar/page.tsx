@@ -109,12 +109,12 @@ export default function CalendarPage() {
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 gradient-brand rounded-lg flex items-center justify-center">
-              <CalendarDays className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 bg-[#14b8a6]/10 text-[#14b8a6] border border-[#14b8a6]/30 flex items-center justify-center">
+              <CalendarDays className="w-4 h-4 text-foreground" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Calendar</h2>
+            <h2 className="text-2xl font-medium text-foreground tracking-tight">Calendar</h2>
           </div>
-          <p className="text-slate-500 text-sm ml-10">
+          <p className="text-foreground/60 text-sm ml-10">
             Drag to reschedule · Click to view details
           </p>
         </div>
@@ -123,7 +123,7 @@ export default function CalendarPage() {
       {/* Legend */}
       <div className="flex items-center gap-4 flex-wrap">
         {Object.entries(STATUS_LABELS).map(([status, { label, dot }]) => (
-          <div key={status} className="flex items-center gap-1.5 text-xs text-slate-500">
+          <div key={status} className="flex items-center gap-1.5 text-xs text-foreground/60">
             <div className={`w-2.5 h-2.5 rounded-full ${dot}`} />
             <span className="font-medium">{label}</span>
           </div>
@@ -131,7 +131,7 @@ export default function CalendarPage() {
       </div>
 
       {/* Calendar card */}
-      <div className="glass-card rounded-2xl overflow-hidden">
+      <div className="glass-card rounded-none overflow-hidden">
         <div className="p-4 fc-wrapper">
           {!isLoading && typeof window !== 'undefined' && (
             <FullCalendarWrapper
@@ -143,7 +143,7 @@ export default function CalendarPage() {
             />
           )}
           {isLoading && (
-            <div className="h-96 flex items-center justify-center text-slate-400 text-sm">
+            <div className="h-96 flex items-center justify-center text-foreground/50 text-sm">
               Loading calendar...
             </div>
           )}
@@ -152,11 +152,11 @@ export default function CalendarPage() {
 
       {/* Detail modal */}
       <Dialog open={!!selectedAppt} onOpenChange={() => setSelectedAppt(null)}>
-        <DialogContent className="glass-card border-0 rounded-2xl p-0 overflow-hidden max-w-md">
+        <DialogContent className="glass-card border-0 rounded-none p-0 overflow-hidden max-w-md">
           {selectedAppt && (
             <>
-              <DialogHeader className="gradient-brand p-6 pb-5">
-                <DialogTitle className="text-white text-lg font-bold">
+              <DialogHeader className="border-b border-foreground/10 bg-foreground/[0.02] p-6 pb-5">
+                <DialogTitle className="text-foreground text-lg font-medium">
                   Appointment Details
                 </DialogTitle>
                 <p className="text-teal-100/80 text-sm mt-0.5">
@@ -167,51 +167,51 @@ export default function CalendarPage() {
               <div className="p-6 space-y-5">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-foreground/50 uppercase tracking-wide">
                       <User className="w-3 h-3" /> Patient
                     </div>
-                    <p className="font-semibold text-slate-800 text-sm">
+                    <p className="font-medium text-foreground text-sm">
                       {selectedAppt.patient?.full_name}
                     </p>
-                    <p className="text-slate-500 text-xs">{selectedAppt.patient?.phone}</p>
+                    <p className="text-foreground/60 text-xs">{selectedAppt.patient?.phone}</p>
                   </div>
                   <div className="space-y-1">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-foreground/50 uppercase tracking-wide">
                       <Stethoscope className="w-3 h-3" /> Service
                     </div>
-                    <p className="font-semibold text-slate-800 text-sm">
+                    <p className="font-medium text-foreground text-sm">
                       {selectedAppt.service?.name}
                     </p>
-                    <p className="text-slate-500 text-xs">
+                    <p className="text-foreground/60 text-xs">
                       {selectedAppt.service?.duration_minutes} min
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-foreground/50 uppercase tracking-wide">
                       <Clock className="w-3 h-3" /> Time
                     </div>
-                    <p className="font-semibold text-slate-800 text-sm">
+                    <p className="font-medium text-foreground text-sm">
                       {format(parseISO(selectedAppt.start_at), 'h:mm a')} &mdash;{' '}
                       {format(parseISO(selectedAppt.end_at), 'h:mm a')}
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                    <p className="text-xs font-medium text-foreground/50 uppercase tracking-wide">
                       Status
                     </p>
                     <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(selectedAppt.status)}`}
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedAppt.status)}`}
                     >
                       {getStatusLabel(selectedAppt.status)}
                     </span>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 pt-4 border-t border-slate-100">
+                <div className="flex flex-wrap gap-2 pt-4 border-t border-foreground/10">
                   {selectedAppt.status !== 'confirmed' && (
                     <Button
                       size="sm"
-                      className="gradient-brand text-white border-none rounded-lg h-8 text-xs font-semibold"
+                      className="bg-transparent border border-[#14b8a6] text-[#14b8a6] h-8 text-xs px-4 uppercase tracking-widest hover:bg-[#14b8a6]/10 transition-colors"
                       onClick={() =>
                         updateStatusMutation.mutate({
                           id: selectedAppt.id,
@@ -226,7 +226,7 @@ export default function CalendarPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="rounded-lg h-8 text-xs border-slate-200 text-slate-600 hover:border-teal-300 hover:text-teal-700"
+                      className="rounded-none h-8 text-xs border-foreground/10 text-foreground/70 hover:border-[#14b8a6]/50 hover:text-teal-700"
                       onClick={() =>
                         updateStatusMutation.mutate({
                           id: selectedAppt.id,
@@ -241,7 +241,7 @@ export default function CalendarPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="rounded-lg h-8 text-xs border-slate-200 text-slate-600 hover:border-amber-300 hover:text-amber-700"
+                      className="rounded-none h-8 text-xs border-foreground/10 text-foreground/70 hover:border-amber-300 hover:text-amber-700"
                       onClick={() =>
                         updateStatusMutation.mutate({
                           id: selectedAppt.id,
@@ -255,7 +255,7 @@ export default function CalendarPage() {
                   <Button
                     size="sm"
                     variant="destructive"
-                    className="rounded-lg h-8 text-xs"
+                    className="rounded-none h-8 text-xs"
                     onClick={() =>
                       updateStatusMutation.mutate({
                         id: selectedAppt.id,
@@ -308,7 +308,7 @@ function FullCalendarWrapper({
 
   if (!modules) {
     return (
-      <div className="h-96 flex items-center justify-center text-slate-400 text-sm">
+      <div className="h-96 flex items-center justify-center text-foreground/50 text-sm">
         Loading calendar...
       </div>
     )
