@@ -22,7 +22,7 @@ const STRINGS = {
     labelClinic: "Clinique",
     instructions:
       "Merci d'arriver 5 à 10 minutes avant l'heure prévue. En cas d'annulation ou de report, veuillez nous contacter au moins 24 heures à l'avance.",
-    footer: "Propulsé par <strong>MedBook AI</strong> · Message automatique",
+    footer: "Propulsé par <strong>DocFlow AI</strong> · Message automatique",
   },
   en: {
     subject: (serviceName: string, clinicName: string) =>
@@ -36,7 +36,7 @@ const STRINGS = {
     labelClinic: "Clinic",
     instructions:
       "Please arrive 5–10 minutes early. If you need to cancel or reschedule, please contact us at least 24 hours in advance.",
-    footer: "Powered by <strong>MedBook AI</strong> · Automated message",
+    footer: "Powered by <strong>DocFlow AI</strong> · Automated message",
   },
 } as const;
 
