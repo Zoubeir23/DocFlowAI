@@ -39,7 +39,7 @@ export default function RootLayout({
         <main>{children}</main>
         <Footer />
 
-        {/* <!-- MedBook AI Widget --> */}
+        {/* <!-- docflow.ai widget/--> */}
         <iframe
           src="http://localhost:3000/widget/theblockchaincoders"
           style={{
