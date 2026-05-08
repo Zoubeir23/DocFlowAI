@@ -30,7 +30,7 @@ const STRINGS = {
     labelAppointmentId: "ID Rendez-vous",
     dashboardLink: "Gérer ce rendez-vous dans votre tableau de bord →",
     footer:
-      "Propulsé par <strong>MedBook AI</strong> · Notification automatique",
+      "Propulsé par <strong>DocFlow AI</strong> · Notification automatique",
   },
   en: {
     subject: (patientName: string, serviceName: string) =>
@@ -49,7 +49,7 @@ const STRINGS = {
     labelAppointmentId: "Appointment ID",
     dashboardLink: "View and manage this appointment in your Dashboard →",
     footer:
-      "Powered by <strong>MedBook AI</strong> · Automated notification",
+      "Powered by <strong>DocFlow AI</strong> · Automated notification",
   },
 } as const;
 
