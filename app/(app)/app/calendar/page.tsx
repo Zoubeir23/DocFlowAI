@@ -133,7 +133,7 @@ export default function CalendarPage() {
       {/* Calendar card */}
       <div className="glass-card rounded-none overflow-hidden">
         <div className="p-4 fc-wrapper">
-          {!isLoading && typeof window !== 'undefined' && (
+          {!isLoading && (
             <FullCalendarWrapper
               events={events}
               onEventClick={(appt) => setSelectedAppt(appt)}
