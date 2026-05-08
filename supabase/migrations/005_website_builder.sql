@@ -91,3 +91,13 @@ CREATE POLICY "Anyone can view published clinic websites"
 -- Index
 CREATE INDEX IF NOT EXISTS idx_clinic_websites_clinic_id ON clinic_websites(clinic_id);
 CREATE INDEX IF NOT EXISTS idx_clinic_websites_published ON clinic_websites(is_published);
+
+-- Function to increment views
+CREATE OR REPLACE FUNCTION increment_website_views(website_id uuid)
+RETURNS void AS $$
+BEGIN
+  UPDATE clinic_websites
+  SET views_count = views_count + 1
+  WHERE id = website_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

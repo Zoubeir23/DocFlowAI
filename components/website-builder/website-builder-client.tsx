@@ -4,8 +4,9 @@ import { useState } from "react";
 import { TemplatePicker } from "./template-picker";
 import { WebsiteEditor } from "./website-editor";
 import { WebsitePreview } from "./website-preview";
-import { ExternalLink, PanelRightClose, PanelRightOpen } from "lucide-react";
+import { Copy, ExternalLink, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export function WebsiteBuilderClient({ initialWebsite, clinic }: { initialWebsite: any, clinic: any }) {
   const [website, setWebsite] = useState(initialWebsite);
@@ -60,14 +61,27 @@ export function WebsiteBuilderClient({ initialWebsite, clinic }: { initialWebsit
             </div>
             
             {website.is_published && (
-              <a 
-                href={`/clinique/${clinic.slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors ml-4"
-              >
-                View Live <ExternalLink className="w-4 h-4" />
-              </a>
+              <div className="flex items-center gap-2 ml-4">
+                <a 
+                  href={`/clinique/${clinic.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+                >
+                  View Live <ExternalLink className="w-4 h-4" />
+                </a>
+                <div className="h-4 w-px bg-border mx-1" />
+                <button 
+                  onClick={() => {
+                    const url = `${window.location.origin}/clinique/${clinic.slug}`;
+                    navigator.clipboard.writeText(url);
+                    toast.success("Public link copied to clipboard!");
+                  }}
+                  className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Copy Link <Copy className="w-4 h-4" />
+                </button>
+              </div>
             )}
           </div>
         </div>
