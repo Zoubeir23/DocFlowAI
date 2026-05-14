@@ -4,8 +4,9 @@ import { useState, useTransition } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   listWebhooks, createWebhook, deleteWebhook, toggleWebhook, testWebhook,
-  regenerateWebhookSecret, WEBHOOK_EVENTS, type WebhookRecord, type WebhookEvent,
+  regenerateWebhookSecret, type WebhookRecord, type WebhookEvent,
 } from "@/actions/webhooks";
+import { WEBHOOK_EVENTS } from "@/lib/webhook-events";
 import {
   listApiKeys, createApiKey, revokeApiKey, type ApiKeyRecord,
 } from "@/actions/api-keys";
