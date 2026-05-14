@@ -692,10 +692,11 @@ export default function IntegrationsPage() {
             </div>
           </div>
 
-          {/* MCP Section */}
-          <McpSection />
         </>
       )}
+
+      {/* MCP — visible pour tous les plans */}
+      <McpSection />
     </div>
   );
 }
