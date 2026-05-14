@@ -10,6 +10,13 @@ async function getDB() {
   return (await createClient()) as any;
 }
 
+async function getAuthenticatedClinicId(db: any): Promise<string | null> {
+  const { data: authData } = await db.auth.getUser();
+  if (!authData.user) return null;
+  const { data: userData } = await db.from("users").select("clinic_id").eq("id", authData.user.id).single();
+  return userData?.clinic_id ?? null;
+}
+
 export async function getAvailabilityRules(clinicId: string): Promise<AvailabilityRule[]> {
   const db = await getDB();
   const { data } = await db
@@ -25,10 +32,13 @@ export async function upsertAvailabilityRule(
   data: z.infer<typeof availabilityRuleSchema> & { id?: string }
 ): Promise<ApiResponse> {
   const db = await getDB();
+  // C5 fix: ownership check
+  const userClinicId = await getAuthenticatedClinicId(db);
+  if (!userClinicId || userClinicId !== clinicId) {
+    return { success: false, error: "Unauthorized" };
+  }
   const validated = availabilityRuleSchema.safeParse(data);
   if (!validated.success) {
-    console.error("[availability] validation failed:", JSON.stringify(validated.error.errors));
-    console.error("[availability] input data:", JSON.stringify(data));
     return { success: false, error: validated.error.errors[0].message + " | field: " + validated.error.errors[0].path.join(".") };
   }
 
@@ -41,7 +51,6 @@ export async function upsertAvailabilityRule(
     break_end: validated.data.break_end || null,
     is_active: validated.data.is_active,
   };
-  console.log("[availability] saving payload:", JSON.stringify(payload));
 
   let error;
 
@@ -84,6 +93,11 @@ export async function addBlockedDate(
   data: z.infer<typeof blockedDateSchema>
 ): Promise<ApiResponse> {
   const db = await getDB();
+  // C5 fix: ownership check
+  const userClinicId = await getAuthenticatedClinicId(db);
+  if (!userClinicId || userClinicId !== clinicId) {
+    return { success: false, error: "Unauthorized" };
+  }
   const validated = blockedDateSchema.safeParse(data);
   if (!validated.success) {
     return { success: false, error: validated.error.errors[0].message };
@@ -99,7 +113,10 @@ export async function addBlockedDate(
 
 export async function removeBlockedDate(blockedDateId: string): Promise<ApiResponse> {
   const db = await getDB();
-  const { error } = await db.from("blocked_dates").delete().eq("id", blockedDateId);
+  // C5 fix: scope delete to caller's clinic to prevent IDOR
+  const userClinicId = await getAuthenticatedClinicId(db);
+  if (!userClinicId) return { success: false, error: "Not authenticated" };
+  const { error } = await db.from("blocked_dates").delete().eq("id", blockedDateId).eq("clinic_id", userClinicId);
   if (error) return { success: false, error: error.message };
   return { success: true };
 }

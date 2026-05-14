@@ -1,18 +1,23 @@
 "use client";
 
 import { useState, useEffect, useCallback, useTransition } from "react";
-import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { ethers } from "ethers";
 import { createStripeCheckoutSession, type StripePlan } from "@/actions/stripe-checkout";
+import { sendEnterpriseContactRequest, type EnterpriseContactData } from "@/actions/enterprise-contact";
+import { getClinicQuotaUsage, type QuotaUsage } from "@/actions/quota";
 import {
   CheckCircle, Zap, Building2, ArrowRight, Copy, Check,
   ExternalLink, AlertCircle, X, Wallet, ShieldCheck,
-  Loader2, RefreshCw, AlertTriangle, CreditCard,
+  Loader2, RefreshCw, AlertTriangle, CreditCard, Send,
+  Users, Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { format, parseISO } from "date-fns";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { format, parseISO, differenceInDays, isPast } from "date-fns";
 import { useTranslations } from "next-intl";
 
 // ── Crypto config ─────────────────────────────────────────────────────────────
@@ -70,6 +75,14 @@ const PLANS = [
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+async function fetchClinicId(): Promise<string | null> {
+  const supabase = createClient() as ReturnType<typeof createClient>;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data } = await (supabase as unknown as { from: (t: string) => { select: (s: string) => { eq: (c: string, v: string) => { single: () => Promise<{ data: { clinic_id: string } | null }> } } } }).from("users").select("clinic_id").eq("id", user.id).single();
+  return data?.clinic_id ?? null;
+}
+
 async function fetchSubscription() {
   const supabase = createClient() as ReturnType<typeof createClient>;
   const { data: { user } } = await supabase.auth.getUser();
@@ -104,10 +117,11 @@ type TxStep = "idle" | "connecting" | "switching" | "approving" | "sending" | "s
 
 interface CryptoPaymentModalProps {
   plan: typeof PLANS[0];
+  clinicId: string;
   onClose: () => void;
 }
 
-function CryptoPaymentModal({ plan, onClose }: CryptoPaymentModalProps) {
+function CryptoPaymentModal({ plan, clinicId, onClose }: CryptoPaymentModalProps) {
   const t = useTranslations('billing');
   const [step, setStep] = useState<TxStep>("idle");
   const [error, setError] = useState("");
@@ -200,7 +214,25 @@ function CryptoPaymentModal({ plan, onClose }: CryptoPaymentModalProps) {
       setStep("sending");
       const tx = await usdc.transfer(RECIPIENT, amount);
       const receipt = await tx.wait();
-      setTxHash(receipt.hash);
+      const hash = receipt.hash;
+      setTxHash(hash);
+
+      // Verify on-chain and activate subscription in DB
+      const verifyRes = await fetch("/api/webhooks/crypto", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          txHash: hash,
+          plan: plan.plan,
+          clinicId,
+          expectedAmountUsdc: plan.priceUsdc,
+        }),
+      });
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok || !verifyData.success) {
+        throw new Error(verifyData.error || "Vérification échouée. Contactez le support avec votre txHash.");
+      }
+
       setStep("success");
     } catch (e: unknown) {
       const rawMessage = (e as { reason?: string; message?: string })?.reason ?? (e instanceof Error ? e.message : "Transaction failed");
@@ -296,7 +328,7 @@ function CryptoPaymentModal({ plan, onClose }: CryptoPaymentModalProps) {
                   {usdcBalance !== null && (
                     <div className="flex items-center justify-between">
                       <p className="text-xs text-muted-foreground">{t('usdcBalance')}</p>
-                      <p className={`text-sm font-medium ${hasInsufficientBalance ? "text-red-500" : "text-green-600"}`}>
+                      <p className={`text-sm font-medium ${hasInsufficientBalance ? "text-destructive" : "text-primary"}`}>
                         {Number(usdcBalance).toFixed(2)} USDC
                       </p>
                     </div>
@@ -317,16 +349,16 @@ function CryptoPaymentModal({ plan, onClose }: CryptoPaymentModalProps) {
               )}
 
               {step === "error" && error && (
-                <div className="flex items-start gap-2 p-3 bg-red-50 rounded-xl border border-red-100">
-                  <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-red-600">{error}</p>
+                <div className="flex items-start gap-2 p-3 bg-destructive/10 rounded-xl border border-destructive/20">
+                  <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-destructive">{error}</p>
                 </div>
               )}
 
               {hasInsufficientBalance && isCorrectChain && (
-                <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-xl border border-amber-100">
-                  <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-amber-700">
+                <div className="flex items-start gap-2 p-3 bg-muted rounded-xl border border-border">
+                  <AlertTriangle className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-muted-foreground">
                     {t('insufficientBalance', { needed: plan.priceUsdc.toString(), balance: Number(usdcBalance).toFixed(2) })}
                     {' '}{t('getUsdc')} <a href="https://app.uniswap.org" target="_blank" rel="noopener noreferrer" className="underline font-medium">Uniswap</a>.
                   </p>
@@ -380,23 +412,253 @@ function CryptoPaymentModal({ plan, onClose }: CryptoPaymentModalProps) {
   );
 }
 
+// ── Quota Bar ─────────────────────────────────────────────────────────────────
+function QuotaBar({ current, limit, label, icon: Icon }: {
+  current: number;
+  limit: number | null;
+  label: string;
+  icon: React.ElementType;
+}) {
+  if (limit === null) {
+    return (
+      <div className="flex items-center gap-3">
+        <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-medium text-muted-foreground">{label}</span>
+            <span className="text-xs font-bold text-primary">Illimité</span>
+          </div>
+          <div className="h-1.5 bg-primary/20 rounded-full overflow-hidden">
+            <div className="h-full bg-primary rounded-full w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const percentage = Math.min((current / limit) * 100, 100);
+  const isWarning = percentage >= 80;
+  const isCritical = percentage >= 100;
+
+  return (
+    <div className="flex items-center gap-3">
+      <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-xs font-medium text-muted-foreground">{label}</span>
+          <span className={`text-xs font-bold ${isCritical ? "text-destructive" : isWarning ? "text-amber-500" : "text-foreground"}`}>
+            {current} / {limit}
+          </span>
+        </div>
+        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${isCritical ? "bg-destructive" : isWarning ? "bg-amber-500" : "bg-primary"}`}
+            style={{ width: `${percentage}%` }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Enterprise Contact Modal ───────────────────────────────────────────────────
+function EnterpriseContactModal({ onClose }: { onClose: () => void }) {
+  const [isPendingSubmit, startSubmitTransition] = useTransition();
+  const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [formData, setFormData] = useState<EnterpriseContactData>({
+    organizationName: "",
+    contactName: "",
+    contactRole: "",
+    email: "",
+    phone: "",
+    numberOfDoctors: "",
+    message: "",
+  });
+
+  const handleChange = (field: keyof EnterpriseContactData) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+      setFormData((prev) => ({ ...prev, [field]: e.target.value }));
+    };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitError(null);
+    startSubmitTransition(async () => {
+      const result = await sendEnterpriseContactRequest(formData);
+      if (result.success) {
+        setSubmitted(true);
+      } else {
+        setSubmitError(result.error ?? "Erreur lors de l'envoi.");
+      }
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+              <Building2 className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-bold text-foreground text-lg">Plan Enterprise</h3>
+              <p className="text-xs text-muted-foreground">Nous vous répondrons sous 24h</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-muted transition-colors"
+          >
+            <X className="w-4 h-4 text-muted-foreground" />
+          </button>
+        </div>
+
+        {submitted ? (
+          <div className="p-8 text-center space-y-4">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+              <CheckCircle className="w-8 h-8 text-primary" />
+            </div>
+            <h4 className="text-xl font-bold text-foreground">Message envoyé !</h4>
+            <p className="text-muted-foreground text-sm">
+              Notre équipe vous contactera sous 24h à l&apos;adresse <strong>{formData.email}</strong>.
+            </p>
+            <Button onClick={onClose} className="btn-primary mt-4">Fermer</Button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="p-6 space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-foreground">Organisation *</Label>
+                <Input
+                  required
+                  placeholder="Hôpital / Groupe médical"
+                  value={formData.organizationName}
+                  onChange={handleChange("organizationName")}
+                  className="rounded-xl border-border"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-foreground">Nb. de médecins *</Label>
+                <select
+                  required
+                  value={formData.numberOfDoctors}
+                  onChange={handleChange("numberOfDoctors")}
+                  className="w-full h-10 px-3 border border-border rounded-xl bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">Sélectionnez</option>
+                  <option value="11-25">11 – 25 médecins</option>
+                  <option value="26-50">26 – 50 médecins</option>
+                  <option value="51-100">51 – 100 médecins</option>
+                  <option value="100+">100+ médecins</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-foreground">Votre nom *</Label>
+                <Input
+                  required
+                  placeholder="Dr. Nom Prénom"
+                  value={formData.contactName}
+                  onChange={handleChange("contactName")}
+                  className="rounded-xl border-border"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-foreground">Poste / Rôle</Label>
+                <Input
+                  placeholder="Directeur médical, DSI..."
+                  value={formData.contactRole}
+                  onChange={handleChange("contactRole")}
+                  className="rounded-xl border-border"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-foreground">Email professionnel *</Label>
+                <Input
+                  required
+                  type="email"
+                  placeholder="contact@hopital.fr"
+                  value={formData.email}
+                  onChange={handleChange("email")}
+                  className="rounded-xl border-border"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-foreground">Téléphone</Label>
+                <Input
+                  placeholder="+33 6 00 00 00 00"
+                  value={formData.phone}
+                  onChange={handleChange("phone")}
+                  className="rounded-xl border-border"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold text-foreground">Votre besoin</Label>
+              <Textarea
+                rows={3}
+                placeholder="Décrivez votre contexte, vos besoins spécifiques, intégrations souhaitées..."
+                value={formData.message}
+                onChange={handleChange("message")}
+                className="rounded-xl border-border resize-none"
+              />
+            </div>
+
+            {submitError && (
+              <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-sm">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                {submitError}
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <Button type="button" variant="outline" onClick={onClose} className="flex-1 rounded-xl border-border">
+                Annuler
+              </Button>
+              <Button type="submit" disabled={isPendingSubmit} className="flex-1 btn-primary">
+                {isPendingSubmit ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Envoi...</>
+                ) : (
+                  <><Send className="w-4 h-4 mr-2" />Envoyer</>
+                )}
+              </Button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function BillingPage() {
   const t = useTranslations('billing');
   const [selectedCryptoPlan, setSelectedCryptoPlan] = useState<typeof PLANS[0] | null>(null);
+  const [showEnterpriseModal, setShowEnterpriseModal] = useState(false);
   const [hasMetaMask, setHasMetaMask] = useState(false);
   const [stripeLoadingPlan, setStripeLoadingPlan] = useState<string | null>(null);
   const [stripeError, setStripeError] = useState<string | null>(null);
+  const [stripeStatus, setStripeStatus] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     setHasMetaMask(typeof window !== "undefined" && !!(window as unknown as { ethereum?: unknown }).ethereum);
+    const params = new URLSearchParams(window.location.search);
+    setStripeStatus(params.get("stripe"));
   }, []);
 
-  const stripeStatus = searchParams.get("stripe");
-
   const { data: subscription } = useQuery({ queryKey: ["subscription"], queryFn: fetchSubscription });
+  const { data: clinicId } = useQuery({ queryKey: ["clinicId"], queryFn: fetchClinicId });
+  const { data: quotaUsage } = useQuery<QuotaUsage | null>({ queryKey: ["quotaUsage"], queryFn: getClinicQuotaUsage });
 
   const handleStripeCheckout = (plan: StripePlan) => {
     setStripeError(null);
@@ -415,46 +677,75 @@ export default function BillingPage() {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-5xl">
+    <div className="page-container max-w-5xl">
 
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-gradient-to-br from-primary/20 to-primary/5 rounded-xl flex items-center justify-center">
-          <Wallet className="w-5 h-5 text-primary" />
+      <div className="section-header">
+        <div className="icon-container">
+          <Wallet className="w-5 h-5 text-primary" strokeWidth={1.8} />
         </div>
         <div>
-          <h2 className="text-2xl font-semibold text-foreground tracking-tight">{t('title')}</h2>
-          <p className="text-muted-foreground text-sm">{t('subtitle')}</p>
+          <h2 className="section-title">{t('title')}</h2>
+          <p className="section-subtitle">{t('subtitle')}</p>
         </div>
       </div>
 
       {/* Stripe success / cancel banners */}
       {stripeStatus === "success" && (
-        <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-100 rounded-xl">
-          <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+        <div className="flex items-center gap-3 p-4 status-confirmed rounded-xl">
+          <CheckCircle className="w-5 h-5 flex-shrink-0" />
           <div>
-            <p className="text-sm font-medium text-green-800">{t('stripeSuccess')}</p>
-            <p className="text-xs text-green-600 mt-0.5">{t('stripeSuccessDesc')}</p>
+            <p className="text-sm font-medium">{t('stripeSuccess')}</p>
+            <p className="text-xs opacity-80 mt-0.5">{t('stripeSuccessDesc')}</p>
           </div>
         </div>
       )}
       {stripeStatus === "cancelled" && (
-        <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-100 rounded-xl">
-          <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0" />
-          <p className="text-sm text-amber-800">{t('stripeCancelled')}</p>
+        <div className="flex items-center gap-3 p-4 status-no_show rounded-xl">
+          <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+          <p className="text-sm">{t('stripeCancelled')}</p>
         </div>
       )}
       {stripeError && (
-        <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-100 rounded-xl">
-          <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-red-700">{stripeError}</p>
+        <div className="flex items-start gap-3 p-4 status-cancelled rounded-xl">
+          <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          <p className="text-sm font-medium">{stripeError}</p>
         </div>
       )}
 
-      {/* Current subscription */}
-      {subscription && (
-        <div className="rounded-2xl border border-border bg-gradient-to-r from-teal-50/50 to-background p-5">
-          <div className="flex items-center justify-between flex-wrap gap-3">
+      {/* Current subscription + quota */}
+      {subscription && (() => {
+        const expiry = parseISO(subscription.current_period_end);
+        const isExpired = isPast(expiry);
+        const daysLeft = differenceInDays(expiry, new Date());
+        const isExpiringSoon = !isExpired && daysLeft <= 7;
+        const isFree = subscription.plan === "free";
+
+        return (
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+
+          {/* Expiry warning banner — shown above the card when critical */}
+          {!isFree && (isExpired || isExpiringSoon) && (
+            <div className={`flex items-center gap-3 px-5 py-3 border-b ${
+              isExpired
+                ? "bg-destructive/8 border-destructive/20 text-destructive"
+                : "bg-amber-500/8 border-amber-500/20 text-amber-700 dark:text-amber-400"
+            }`}>
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              <p className="text-sm font-semibold flex-1">
+                {isExpired
+                  ? "Votre abonnement a expiré — l'accès aux fonctionnalités premium est limité."
+                  : daysLeft === 0
+                    ? "Votre abonnement expire aujourd'hui !"
+                    : `Votre abonnement expire dans ${daysLeft} jour${daysLeft > 1 ? "s" : ""}.`}
+              </p>
+              <span className="text-xs font-medium opacity-70 whitespace-nowrap">
+                {format(expiry, "d MMM yyyy")}
+              </span>
+            </div>
+          )}
+
+          <div className="p-5 flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/5 rounded-xl flex items-center justify-center">
                 {subscription.payment_provider === "stripe"
@@ -465,26 +756,94 @@ export default function BillingPage() {
               <div>
                 <h3 className="font-semibold text-foreground capitalize">Plan {subscription.plan}</h3>
                 <p className="text-sm text-muted-foreground">
-                  {t('renewsOn')} {format(parseISO(subscription.current_period_end), "d MMMM yyyy")}
-                  {" · "}
-                  <span className="capitalize">{subscription.payment_provider === "stripe" ? "Stripe" : "Crypto"}</span>
+                  {isFree
+                    ? "Plan gratuit · Aucun abonnement requis"
+                    : isExpired
+                      ? <span className="text-destructive font-medium">Expiré le {format(expiry, "d MMMM yyyy")}</span>
+                      : <>{t('renewsOn')} {format(expiry, "d MMMM yyyy")} · <span className="capitalize">{subscription.payment_provider === "stripe" ? "Stripe" : "Crypto"}</span></>
+                  }
                 </p>
               </div>
             </div>
-            <span className={`text-xs font-semibold px-3 py-1.5 rounded-lg border capitalize ${subscription.status === "active" ? "bg-teal-50 text-teal-700 border-teal-200" : "bg-red-50 text-red-600 border-red-100"}`}>
-              {subscription.status}
-            </span>
+            <div className="flex items-center gap-2">
+              {/* Days remaining pill */}
+              {!isFree && !isExpired && (
+                <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${
+                  isExpiringSoon
+                    ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400"
+                    : "bg-primary/8 border-primary/20 text-primary"
+                }`}>
+                  {daysLeft}j restants
+                </span>
+              )}
+              <span className={`text-xs font-semibold px-3 py-1.5 rounded-lg border capitalize ${
+                isExpired ? "status-cancelled" : subscription.status === "active" ? "status-confirmed" : "status-cancelled"
+              }`}>
+                {isExpired ? "expiré" : subscription.status}
+              </span>
+            </div>
           </div>
+
+          {quotaUsage && (() => {
+            const apptFull = quotaUsage.appointments.limit !== null && quotaUsage.appointments.current >= quotaUsage.appointments.limit;
+            const staffFull = quotaUsage.staff.limit !== null && quotaUsage.staff.current >= quotaUsage.staff.limit;
+            const apptWarn = quotaUsage.appointments.limit !== null && !apptFull && (quotaUsage.appointments.current / quotaUsage.appointments.limit) >= 0.8;
+            return (
+              <div className="border-t border-border">
+                {(apptFull || staffFull) && (
+                  <div className="px-5 pt-4">
+                    <div className="flex items-start gap-2.5 p-3 bg-destructive/8 border border-destructive/20 rounded-xl text-destructive">
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-bold">Limite atteinte</p>
+                        <p className="text-xs mt-0.5 opacity-80">
+                          {apptFull && "Vous ne pouvez plus accepter de nouveaux rendez-vous ce mois-ci. "}
+                          {staffFull && "Vous ne pouvez pas ajouter de nouveaux membres staff. "}
+                          Passez à un plan supérieur pour continuer.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {apptWarn && !apptFull && (
+                  <div className="px-5 pt-4">
+                    <div className="flex items-center gap-2.5 p-3 bg-amber-500/8 border border-amber-500/20 rounded-xl text-amber-700 dark:text-amber-400">
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                      <p className="text-xs font-semibold">
+                        Vous approchez de la limite — {quotaUsage.appointments.current} / {quotaUsage.appointments.limit} rendez-vous utilisés.
+                      </p>
+                    </div>
+                  </div>
+                )}
+                <div className="px-5 py-4 bg-muted/20 space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Utilisation ce mois-ci</p>
+                  <QuotaBar
+                    current={quotaUsage.appointments.current}
+                    limit={quotaUsage.appointments.limit}
+                    label="Rendez-vous"
+                    icon={Calendar}
+                  />
+                  <QuotaBar
+                    current={quotaUsage.staff.current}
+                    limit={quotaUsage.staff.limit}
+                    label="Comptes utilisateurs"
+                    icon={Users}
+                  />
+                </div>
+              </div>
+            );
+          })()}
         </div>
-      )}
+        );
+      })()}
 
       {/* MetaMask warning (only shown as info, not blocking) */}
       {!hasMetaMask && (
-        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-100 rounded-xl">
-          <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 p-4 bg-muted rounded-xl border border-border">
+          <AlertTriangle className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-amber-800">{t('metamaskNotDetected')}</p>
-            <p className="text-xs text-amber-600 mt-0.5">
+            <p className="text-sm font-medium text-foreground">{t('metamaskNotDetected')}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
               {t('metamaskInstall')}{" "}
               <a href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer" className="underline font-medium">
                 {t('metamaskDownload')}
@@ -497,7 +856,7 @@ export default function BillingPage() {
 
       {/* Payment method explanation */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="flex items-center gap-3 p-4 rounded-2xl border border-border bg-background hover:border-primary/20 transition-colors">
+        <div className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:border-primary/20 transition-colors">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center flex-shrink-0">
             <CreditCard className="w-5 h-5 text-primary" />
           </div>
@@ -506,7 +865,7 @@ export default function BillingPage() {
             <p className="text-xs text-muted-foreground mt-0.5">{t('stripeCardDesc')}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 p-4 rounded-2xl border border-border bg-background hover:border-primary/20 transition-colors">
+        <div className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:border-primary/20 transition-colors">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-violet-500/5 flex items-center justify-center flex-shrink-0">
             <span className="text-violet-600 text-xs font-bold">P</span>
           </div>
@@ -530,7 +889,7 @@ export default function BillingPage() {
           return (
             <div
               key={plan.plan}
-              className={`relative flex flex-col overflow-hidden rounded-2xl border transition-all duration-300 hover:shadow-lg hover:-translate-y-1
+              className={`relative flex flex-col overflow-hidden rounded-xl border transition-all duration-300 hover:shadow-lg hover:-translate-y-1
                 ${plan.popular
                   ? "border-primary/40 bg-gradient-to-b from-primary/[0.04] to-background shadow-md shadow-primary/5"
                   : "border-border bg-background hover:border-primary/20"
@@ -540,7 +899,7 @@ export default function BillingPage() {
               {/* Badge row — inside card, no overflow */}
               <div className="flex items-center justify-between px-5 pt-5 pb-0 min-h-[28px]">
                 {isCurrentPlan ? (
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-teal-700 bg-teal-50 border border-teal-200 px-2.5 py-1 rounded-md">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary bg-primary/10 border border-primary/15 px-2.5 py-1 rounded-md">
                     <CheckCircle className="w-3 h-3" />
                     {t('currentPlanBadge')}
                   </span>
@@ -612,7 +971,7 @@ export default function BillingPage() {
                         className={`w-full h-11 rounded-xl font-semibold text-sm shadow-sm transition-all duration-200 ${
                           plan.popular
                             ? "bg-primary text-white hover:bg-primary/90 shadow-primary/20 hover:shadow-md hover:shadow-primary/30"
-                            : "bg-foreground text-background hover:bg-foreground/90"
+                            : "bg-card text-foreground border border-border hover:bg-muted"
                         }`}
                         onClick={() => handleStripeCheckout(plan.plan as StripePlan)}
                         disabled={isPending && isStripeLoading}
@@ -647,7 +1006,7 @@ export default function BillingPage() {
       </div>
 
       {/* Enterprise CTA */}
-      <div className="rounded-2xl border border-border bg-gradient-to-r from-primary/[0.03] via-background to-primary/[0.03] p-6">
+      <div className="rounded-xl border border-border bg-card p-6">
         <div className="flex items-center gap-4 flex-wrap">
           <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
             <Building2 className="w-6 h-6 text-primary" />
@@ -656,14 +1015,22 @@ export default function BillingPage() {
             <h4 className="font-semibold text-foreground">{t('customPlan')}</h4>
             <p className="text-sm text-muted-foreground mt-0.5">{t('customPlanDescription')}</p>
           </div>
-          <Button variant="outline" className="rounded-xl border-primary/30 font-semibold text-primary hover:bg-primary hover:text-white transition-all duration-200 px-6">
+          <Button
+            variant="outline"
+            onClick={() => setShowEnterpriseModal(true)}
+            className="rounded-xl border-primary/30 font-semibold text-primary hover:bg-primary hover:text-white transition-all duration-200 px-6"
+          >
             <Building2 className="w-4 h-4 mr-2" />{t('contactEnterprise')}
           </Button>
         </div>
       </div>
 
       {selectedCryptoPlan && (
-        <CryptoPaymentModal plan={selectedCryptoPlan} onClose={() => setSelectedCryptoPlan(null)} />
+        <CryptoPaymentModal plan={selectedCryptoPlan} clinicId={clinicId ?? ""} onClose={() => setSelectedCryptoPlan(null)} />
+      )}
+
+      {showEnterpriseModal && (
+        <EnterpriseContactModal onClose={() => setShowEnterpriseModal(false)} />
       )}
     </div>
   );

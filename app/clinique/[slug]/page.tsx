@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { PublicClinicSite } from "@/components/clinic-website/public-clinic-site";
 import type { Metadata } from "next";
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const { data, success } = await getPublicWebsiteData(slug);
   
@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default async function PublicClinicPage({ params }: { params: { slug: string } }) {
+export default async function PublicClinicPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const { data, success } = await getPublicWebsiteData(slug);
 

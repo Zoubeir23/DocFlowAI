@@ -73,7 +73,7 @@ export function PublicClinicSite({
   services,
   doctor,
 }: PublicClinicSiteProps) {
-  const { style_config, hero_data, about_data, show_chat_widget, show_services } = website;
+  const { style_config, hero_data, about_data, contact_data, show_chat_widget, show_services } = website;
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -100,6 +100,23 @@ export function PublicClinicSite({
       };
     }
   }, [show_chat_widget, clinic.slug]);
+
+  const contactAddress = contact_data?.address || "";
+  const contactPhone = contact_data?.phone || "";
+  const contactSchedule = contact_data?.schedule || "Lundi – Vendredi · 8h – 19h";
+  const contactInsurance = contact_data?.insurance_info || "Conventionné secteur 1";
+
+  const openWidget = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (show_chat_widget) {
+      const iframe = document.getElementById("docflow-widget-iframe") as HTMLIFrameElement | null;
+      if (iframe?.contentWindow) {
+        iframe.contentWindow.postMessage({ type: "open" }, "*");
+        return;
+      }
+    }
+    document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
+  };
 
   const isPill = style_config.radius === "9999px" || style_config.radius === "50rem";
   const cardRadius = isPill ? "20px" : style_config.radius;
@@ -257,6 +274,7 @@ export function PublicClinicSite({
 
             <a
               href="#contact"
+              onClick={openWidget}
               className="hidden md:inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold shadow-md hover:shadow-lg hover:-translate-y-px transition-all duration-200 active:scale-[0.98]"
               style={{ backgroundColor: primary, color: ctaTextColor, borderRadius: style_config.radius }}
             >
@@ -303,7 +321,7 @@ export function PublicClinicSite({
             <div className="p-4 border-t border-gray-100">
               <a
                 href="#contact"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={(e) => { setMobileMenuOpen(false); openWidget(e); }}
                 className="flex items-center justify-center gap-2 w-full py-3.5 font-semibold text-[15px] shadow-md active:scale-[0.98] transition-all"
                 style={{ backgroundColor: primary, color: ctaTextColor, borderRadius: style_config.radius }}
               >
@@ -394,6 +412,7 @@ export function PublicClinicSite({
                 <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start ai4">
                   <a
                     href="#contact"
+                    onClick={openWidget}
                     className="inline-flex items-center justify-center gap-2 px-7 py-[14px] font-semibold text-sm shadow-xl hover:shadow-2xl hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200"
                     style={{ backgroundColor: primary, color: ctaTextColor, borderRadius: style_config.radius }}
                   >
@@ -868,17 +887,16 @@ export function PublicClinicSite({
                 <p className="text-white/60 text-base lg:text-lg leading-relaxed max-w-md mx-auto lg:mx-0">
                   Notre assistant IA est disponible 24h/24 et 7j/7 pour vous trouver le créneau idéal. Rapide, simple, sans attente.
                 </p>
-                {show_chat_widget && (
-                  <div className="flex justify-center lg:justify-start">
-                    <button
-                      className="inline-flex items-center gap-2 px-7 py-[14px] bg-white font-semibold text-sm hover:bg-white/92 hover:-translate-y-0.5 hover:shadow-xl transition-all duration-200 active:scale-[0.97]"
-                      style={{ color: primary, borderRadius: style_config.radius }}
-                    >
-                      <Calendar className="w-4 h-4" />
-                      Ouvrir l'assistant IA
-                    </button>
-                  </div>
-                )}
+                <div className="flex justify-center lg:justify-start">
+                  <button
+                    onClick={openWidget}
+                    className="inline-flex items-center gap-2 px-7 py-[14px] bg-white font-semibold text-sm hover:bg-white/92 hover:-translate-y-0.5 hover:shadow-xl transition-all duration-200 active:scale-[0.97]"
+                    style={{ color: primary, borderRadius: style_config.radius }}
+                  >
+                    <Calendar className="w-4 h-4" />
+                    {show_chat_widget ? "Ouvrir l'assistant IA" : "Prendre rendez-vous"}
+                  </button>
+                </div>
 
                 {/* Mini trust */}
                 <div className="flex flex-wrap justify-center lg:justify-start gap-5 pt-2">
@@ -906,17 +924,17 @@ export function PublicClinicSite({
                   {
                     icon: MapPin,
                     title: "Adresse",
-                    desc: "Communiquée à la confirmation de votre rendez-vous.",
+                    desc: contactAddress || "Communiquée à la confirmation de votre rendez-vous.",
                   },
                   {
                     icon: Clock,
                     title: "Horaires",
-                    desc: "Sur rendez-vous uniquement.\nLundi – Vendredi · 8h – 19h",
+                    desc: contactSchedule,
                   },
                   {
                     icon: Phone,
                     title: "Contact",
-                    desc: "Joignez-nous via l'assistant IA ou le formulaire en ligne.",
+                    desc: contactPhone || "Joignez-nous via l'assistant IA ou le formulaire en ligne.",
                   },
                 ].map(({ icon: Icon, title, desc }, i) => (
                   <div key={title}>
@@ -999,17 +1017,33 @@ export function PublicClinicSite({
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white/30 mb-4">Contact</p>
                 <div className="space-y-3 text-sm text-white/45">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-3.5 h-3.5 shrink-0" style={{ color: pa(0.6) }} />
-                    <span>Lun – Ven · 8h – 19h</span>
-                  </div>
+                  {contactSchedule && (
+                    <div className="flex items-start gap-2">
+                      <Clock className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: pa(0.6) }} />
+                      <span className="leading-relaxed">{contactSchedule.split("\n")[0]}</span>
+                    </div>
+                  )}
+                  {contactPhone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-3.5 h-3.5 shrink-0" style={{ color: pa(0.6) }} />
+                      <a href={`tel:${contactPhone}`} className="hover:text-white/70 transition-colors">{contactPhone}</a>
+                    </div>
+                  )}
+                  {contactAddress && (
+                    <div className="flex items-start gap-2">
+                      <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: pa(0.6) }} />
+                      <span className="leading-relaxed">{contactAddress}</span>
+                    </div>
+                  )}
+                  {contactInsurance && (
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-3.5 h-3.5 shrink-0" style={{ color: pa(0.6) }} />
+                      <span>{contactInsurance}</span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-2">
                     <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: pa(0.6) }} />
-                    <a href="#contact" className="hover:text-white/70 transition-colors">Prendre rendez-vous</a>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-3.5 h-3.5 shrink-0" style={{ color: pa(0.6) }} />
-                    <span>Conventionné secteur 1</span>
+                    <a href="#contact" onClick={openWidget} className="hover:text-white/70 transition-colors">Prendre rendez-vous</a>
                   </div>
                 </div>
               </div>

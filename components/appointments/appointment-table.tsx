@@ -24,12 +24,13 @@ interface AppointmentTableProps {
   onRefresh?: () => void;
 }
 
+/* Dark-mode safe status badge classes using CSS variables */
 const STATUS_STYLES: Record<string, string> = {
-  booked: "bg-teal-50 text-teal-700 border border-teal-100",
-  confirmed: "bg-emerald-50 text-emerald-700 border border-emerald-100",
-  completed: "bg-muted/50 text-foreground border border-border",
-  cancelled: "bg-red-50 text-red-600 border border-red-100",
-  no_show: "bg-amber-50 text-amber-700 border border-amber-100",
+  booked: "status-booked",
+  confirmed: "status-confirmed",
+  completed: "status-completed",
+  cancelled: "status-cancelled",
+  no_show: "status-no_show",
 };
 
 export function AppointmentTable({ appointments, loading, onRefresh }: AppointmentTableProps) {
@@ -62,7 +63,7 @@ export function AppointmentTable({ appointments, loading, onRefresh }: Appointme
     return (
       <div className="space-y-2">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-4 p-3.5 rounded-xl bg-muted/50/60">
+          <div key={i} className="flex items-center gap-4 p-3.5 rounded-xl bg-muted/30">
             <Skeleton className="h-9 w-9 rounded-xl" />
             <div className="flex-1 space-y-1.5">
               <Skeleton className="h-3.5 w-36 rounded-lg" />
@@ -88,119 +89,119 @@ export function AppointmentTable({ appointments, loading, onRefresh }: Appointme
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+    <div className="overflow-x-auto p-2">
+      <table className="w-full text-sm border-collapse">
         <thead>
-          <tr className="border-b border-border">
-            <th className="text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider pb-3 pr-4">{t('columns.patient')}</th>
-            <th className="text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider pb-3 pr-4">{t('columns.service')}</th>
-            <th className="text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider pb-3 pr-4">{t('columns.date')}</th>
-            <th className="text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider pb-3 pr-4">{t('columns.source')}</th>
-            <th className="text-left text-[11px] font-bold text-muted-foreground uppercase tracking-wider pb-3 pr-4">{t('columns.status')}</th>
-            <th className="pb-3 w-10" />
+          <tr className="border-b border-border/50">
+            <th className="text-left text-xs font-bold text-muted-foreground uppercase tracking-widest pb-4 px-4">{t('columns.patient')}</th>
+            <th className="text-left text-xs font-bold text-muted-foreground uppercase tracking-widest pb-4 px-4">{t('columns.service')}</th>
+            <th className="text-left text-xs font-bold text-muted-foreground uppercase tracking-widest pb-4 px-4">{t('columns.date')}</th>
+            <th className="text-left text-xs font-bold text-muted-foreground uppercase tracking-widest pb-4 px-4">{t('columns.source')}</th>
+            <th className="text-left text-xs font-bold text-muted-foreground uppercase tracking-widest pb-4 px-4">{t('columns.status')}</th>
+            <th className="pb-4 w-12" />
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-50">
+        <tbody className="divide-y divide-border/30">
           {appointments.map((appointment) => (
             <tr
               key={appointment.id}
-              className="hover:bg-teal-50/30 transition-colors group"
+              className="hover:bg-muted/30 transition-colors group"
             >
               {/* Patient */}
-              <td className="py-3.5 pr-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl gradient-brand flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+              <td className="py-4 px-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full gradient-brand flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-sm">
                     {appointment.patient?.full_name?.charAt(0)?.toUpperCase() || "P"}
                   </div>
                   <div>
-                    <p className="font-semibold text-foreground group-hover:text-teal-700 transition-colors">
+                    <p className="font-bold text-foreground group-hover:text-primary transition-colors text-[15px]">
                       {appointment.patient?.full_name}
                     </p>
-                    <p className="text-xs text-muted-foreground">{appointment.patient?.phone}</p>
+                    <p className="text-xs font-medium text-muted-foreground">{appointment.patient?.phone}</p>
                   </div>
                 </div>
               </td>
 
               {/* Service */}
-              <td className="py-3.5 pr-4">
-                <p className="font-medium text-foreground">{appointment.service?.name}</p>
-                <p className="text-xs text-muted-foreground">{appointment.service?.duration_minutes} min</p>
+              <td className="py-4 px-4">
+                <p className="font-bold text-foreground">{appointment.service?.name}</p>
+                <p className="text-xs font-medium text-muted-foreground">{appointment.service?.duration_minutes} min</p>
               </td>
 
               {/* Date & Time */}
-              <td className="py-3.5 pr-4">
-                <p className="font-medium text-foreground">
+              <td className="py-4 px-4">
+                <p className="font-bold text-foreground">
                   {format(parseISO(appointment.start_at), "MMM d, yyyy")}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs font-medium text-muted-foreground">
                   {format(parseISO(appointment.start_at), "h:mm a")} –{" "}
                   {format(parseISO(appointment.end_at), "h:mm a")}
                 </p>
               </td>
 
               {/* Source */}
-              <td className="py-3.5 pr-4">
+              <td className="py-4 px-4">
                 {appointment.source === "widget" ? (
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-100">
-                    <Bot className="w-3 h-3" /> {t('source.widget')}
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full status-booked">
+                    <Bot className="w-3.5 h-3.5" /> {t('source.widget')}
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-muted/50 text-muted-foreground border border-border">
-                    <Pencil className="w-3 h-3" /> {t('source.manual')}
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full status-completed">
+                    <Pencil className="w-3.5 h-3.5" /> {t('source.manual')}
                   </span>
                 )}
               </td>
 
               {/* Status */}
-              <td className="py-3.5 pr-4">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${STATUS_STYLES[appointment.status] || "bg-muted/50 text-muted-foreground border border-border"}`}>
+              <td className="py-4 px-4">
+                <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide ${STATUS_STYLES[appointment.status] || "status-completed"}`}>
                   {t(`status.${appointment.status === 'no_show' ? 'noShow' : appointment.status}`)}
                 </span>
               </td>
 
               {/* Actions */}
-              <td className="py-3.5">
+              <td className="py-4 px-4">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-teal-50 hover:text-teal-700"
+                      className="h-9 w-9 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted border border-transparent hover:border-border"
                       disabled={processingId === appointment.id}
                     >
-                      <MoreHorizontal className="w-4 h-4" />
+                      <MoreHorizontal className="w-5 h-5" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="rounded-xl border-border shadow-lg p-1 w-44">
                     <DropdownMenuItem
                       onClick={() => handleStatusChange(appointment.id, "confirmed")}
                       disabled={appointment.status === "confirmed"}
-                      className="rounded-lg text-sm cursor-pointer hover:bg-emerald-50 hover:text-emerald-700"
+                      className="rounded-lg text-sm font-medium cursor-pointer hover:bg-accent py-2"
                     >
-                      <CheckCircle className="w-4 h-4 mr-2 text-emerald-500" />
+                      <CheckCircle className="w-4 h-4 mr-2 text-primary" />
                       {t('actions.confirm')}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => handleStatusChange(appointment.id, "completed")}
                       disabled={appointment.status === "completed"}
-                      className="rounded-lg text-sm cursor-pointer hover:bg-teal-50 hover:text-teal-700"
+                      className="rounded-lg text-sm font-medium cursor-pointer hover:bg-accent py-2"
                     >
-                      <CheckCircle className="w-4 h-4 mr-2 text-teal-500" />
+                      <CheckCircle className="w-4 h-4 mr-2 text-muted-foreground" />
                       {t('actions.complete')}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => handleStatusChange(appointment.id, "no_show")}
                       disabled={appointment.status === "no_show"}
-                      className="rounded-lg text-sm cursor-pointer hover:bg-amber-50 hover:text-amber-700"
+                      className="rounded-lg text-sm font-medium cursor-pointer hover:bg-accent py-2"
                     >
-                      <AlertCircle className="w-4 h-4 mr-2 text-amber-500" />
+                      <AlertCircle className="w-4 h-4 mr-2 text-muted-foreground" />
                       {t('actions.noShow')}
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-muted" />
+                    <DropdownMenuSeparator className="bg-border" />
                     <DropdownMenuItem
                       onClick={() => handleStatusChange(appointment.id, "cancelled")}
                       disabled={appointment.status === "cancelled"}
-                      className="rounded-lg text-sm cursor-pointer hover:bg-red-50 text-red-500 hover:text-red-600"
+                      className="rounded-lg text-sm font-medium cursor-pointer text-destructive hover:bg-destructive/10 hover:text-destructive py-2"
                     >
                       <XCircle className="w-4 h-4 mr-2" />
                       {t('actions.cancel')}

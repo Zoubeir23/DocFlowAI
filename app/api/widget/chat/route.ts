@@ -1,6 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { widgetCorsResponse, withWidgetCors } from "@/lib/cors";
+import { checkWidgetChatRateLimit } from "@/lib/rate-limit";
+
+export async function OPTIONS() {
+  return widgetCorsResponse();
+}
 import { createAdminClient } from "@/lib/supabase/server";
 import { buildSystemPrompt } from "@/lib/ai/prompts";
 import { generateAIResponse } from "@/lib/ai/router";
@@ -17,26 +23,9 @@ const requestSchema = z.object({
   locale: z.enum(["fr", "en"]).optional().default("fr"),
 });
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const windowMs = 60 * 1000;
-  const maxRequests = 30;
-
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + windowMs });
-    return true;
-  }
-  if (entry.count >= maxRequests) return false;
-  entry.count++;
-  return true;
-}
-
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for") || "unknown";
-  if (!checkRateLimit(ip)) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
+  if (!(await checkWidgetChatRateLimit(ip))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
@@ -172,7 +161,8 @@ export async function POST(req: NextRequest) {
 
     if (action && action.intent === "create_booking" && action.data) {
       const data = action.data as Record<string, string>;
-      console.log("[booking] action data:", data);
+      // M6 fix: never log patient PII — log intent only
+      console.log("[booking] create_booking action received");
 
       if (data.patientName && data.patientPhone && data.startAt && data.endAt) {
         const service = (services as any[]).find(
@@ -180,8 +170,6 @@ export async function POST(req: NextRequest) {
             s.id === data.serviceId ||
             s.name.toLowerCase() === (data.serviceName || "").toLowerCase()
         );
-
-        console.log("[booking] matched service:", service?.id, service?.name);
 
         if (service) {
           const { data: result, error } = await db.rpc("create_booking_from_widget", {
@@ -194,8 +182,6 @@ export async function POST(req: NextRequest) {
             p_end_at: data.endAt,
             p_notes: null,
           });
-
-          console.log("[booking] rpc result:", result, "error:", error);
 
           if (!error && result) {
             const resultData = result as { appointment_id: string; patient_id: string };
@@ -219,11 +205,8 @@ export async function POST(req: NextRequest) {
             bookingResult = { success: false, error: error?.message || "Booking failed" };
           }
         } else {
-          console.log("[booking] no service matched. serviceId:", data.serviceId, "serviceName:", data.serviceName);
           bookingResult = { success: false, error: "Service not found" };
         }
-      } else {
-        console.log("[booking] missing required fields:", { patientName: data.patientName, patientPhone: data.patientPhone, startAt: data.startAt, endAt: data.endAt });
       }
     }
 
@@ -238,14 +221,14 @@ export async function POST(req: NextRequest) {
       .update({ messages: updatedMessages })
       .eq("id", conversation.id);
 
-    return NextResponse.json({
+    return withWidgetCors(NextResponse.json({
       message: text,
       conversationId: conversation.id,
       action,
       bookingResult,
-    });
+    }));
   } catch (error: any) {
     console.error("[WidgetChat] Error in chat route:", error);
-    return NextResponse.json({ error: error.message || "Internal AI Error" }, { status: 500 });
+    return withWidgetCors(NextResponse.json({ error: "Internal error" }, { status: 500 }));
   }
 }

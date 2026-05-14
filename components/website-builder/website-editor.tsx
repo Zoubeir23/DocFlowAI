@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { Globe, Layout, Palette, Settings, Type, User, Share, Link2 } from "lucide-react";
+import { Globe, Layout, Palette, Settings, Type, User, Share, Link2, MapPin, Phone, Clock, Shield, ExternalLink } from "lucide-react";
 import { ImageInputField } from "./image-input-field";
 import { cn } from "@/lib/utils";
 
@@ -165,14 +165,14 @@ export function WebsiteEditor({
               <div className="p-4 space-y-4">
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Biography</Label>
-                  <Textarea 
-                    value={website.about_data.bio || ""} 
+                  <Textarea
+                    value={website.about_data.bio || ""}
                     onChange={(e) => updateNested("about_data", "bio", e.target.value)}
                     className="resize-none bg-muted/50 border-border focus:ring-primary focus:border-primary font-medium p-3"
                     rows={5}
                   />
                 </div>
-                
+
                 <ImageInputField
                   label="Photo du médecin"
                   value={website.about_data.avatar || ""}
@@ -180,6 +180,87 @@ export function WebsiteEditor({
                   folder="doctor-photos"
                   hint="Photo portrait affichée dans la section Hero et À propos."
                 />
+              </div>
+            </div>
+
+            {/* Contact Section */}
+            <div className="card-panel">
+              <div className="card-panel-header px-4 py-3 bg-muted/30">
+                <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-primary" /> Informations de contact
+                </h3>
+              </div>
+              <div className="p-4 space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <MapPin className="w-3 h-3" /> Adresse
+                  </Label>
+                  <Input
+                    value={website.contact_data?.address || ""}
+                    onChange={(e) => updateNested("contact_data", "address", e.target.value)}
+                    className="h-10 bg-muted/50 border-border focus:ring-primary focus:border-primary font-medium"
+                    placeholder="123 rue de la Santé, 75014 Paris"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <Phone className="w-3 h-3" /> Téléphone
+                  </Label>
+                  <Input
+                    value={website.contact_data?.phone || ""}
+                    onChange={(e) => updateNested("contact_data", "phone", e.target.value)}
+                    className="h-10 bg-muted/50 border-border focus:ring-primary focus:border-primary font-medium"
+                    placeholder="+33 1 23 45 67 89"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <Clock className="w-3 h-3" /> Horaires d'ouverture
+                  </Label>
+                  <Textarea
+                    value={website.contact_data?.schedule || ""}
+                    onChange={(e) => updateNested("contact_data", "schedule", e.target.value)}
+                    className="resize-none bg-muted/50 border-border focus:ring-primary focus:border-primary font-medium p-3"
+                    rows={3}
+                    placeholder={"Lundi – Vendredi · 8h – 19h\nSamedi · 9h – 13h"}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <Shield className="w-3 h-3" /> Couverture & mutuelle
+                  </Label>
+                  <Input
+                    value={website.contact_data?.insurance_info || ""}
+                    onChange={(e) => updateNested("contact_data", "insurance_info", e.target.value)}
+                    className="h-10 bg-muted/50 border-border focus:ring-primary focus:border-primary font-medium"
+                    placeholder="Conventionné secteur 1 · Remboursé AM"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Services Section */}
+            <div className="card-panel">
+              <div className="card-panel-header px-4 py-3 bg-muted/30">
+                <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
+                  <Link2 className="w-4 h-4 text-primary" /> Services & Spécialités
+                </h3>
+              </div>
+              <div className="p-4 space-y-3">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Les services affichés sur votre site proviennent de votre catalogue de soins. Activez le toggle &quot;Services Catalog&quot; dans l&apos;onglet Settings pour les afficher.
+                </p>
+                <a
+                  href="/app/services"
+                  target="_blank"
+                  className="flex items-center justify-between w-full h-10 px-4 rounded-xl border border-border bg-muted/50 text-sm font-semibold text-foreground hover:bg-muted transition-colors group"
+                >
+                  <span>Gérer mes services</span>
+                  <ExternalLink className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                </a>
               </div>
             </div>
           </div>

@@ -1,6 +1,15 @@
 import type { EmailLocale } from "../types";
 import { formatDateTime } from "@/lib/utils";
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
 interface PatientConfirmationData {
   patientName: string;
   clinicName: string;
@@ -55,52 +64,58 @@ export function buildPatientConfirmationHtml(
   const s = STRINGS[locale];
   const formattedTime = formatDateTime(startAt);
 
+  // H1 fix: escape all user-supplied values before HTML interpolation
+  const safePatientName = escapeHtml(patientName);
+  const safeClinicName = escapeHtml(clinicName);
+  const safeServiceName = escapeHtml(serviceName);
+
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:40px 20px;">
+<body style="margin:0;padding:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:60px 20px;">
     <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 10px 40px -10px rgba(0,0,0,0.08);border:1px solid #f1f5f9;">
 
         <tr>
-          <td style="background:#2563eb;padding:32px 40px;text-align:center;">
-            <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;">${s.heading}</h1>
-            <p style="margin:8px 0 0;color:#bfdbfe;font-size:14px;">${clinicName}</p>
+          <td style="background:#0f172a;padding:48px 40px;text-align:center;">
+            <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:600;font-family:Georgia, serif;letter-spacing:0.5px;">${s.heading}</h1>
+            <div style="width:40px;height:2px;background:#e2e8f0;margin:16px auto;opacity:0.3;"></div>
+            <p style="margin:0;color:#cbd5e1;font-size:15px;letter-spacing:1px;text-transform:uppercase;">${safeClinicName}</p>
           </td>
         </tr>
 
         <tr>
-          <td style="padding:32px 40px;">
-            <p style="margin:0 0 16px;color:#374151;font-size:16px;">${s.greeting(patientName)}</p>
-            <p style="margin:0 0 24px;color:#6b7280;font-size:15px;line-height:1.6;">${s.intro}</p>
+          <td style="padding:40px 40px;">
+            <p style="margin:0 0 16px;color:#1e293b;font-size:16px;">${s.greeting(safePatientName)}</p>
+            <p style="margin:0 0 32px;color:#64748b;font-size:15px;line-height:1.6;">${s.intro}</p>
 
-            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;margin-bottom:24px;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #f1f5f9;border-radius:16px;margin-bottom:32px;">
               <tr>
-                <td style="padding:20px 24px;">
+                <td style="padding:24px 32px;">
                   <table width="100%" cellpadding="0" cellspacing="0">
                     <tr>
-                      <td style="padding:6px 0;border-bottom:1px solid #e0f2fe;">
-                        <span style="color:#6b7280;font-size:13px;">${s.labelService}</span>
+                      <td style="padding:12px 0;border-bottom:1px solid #f8fafc;">
+                        <span style="color:#94a3b8;font-size:12px;text-transform:uppercase;letter-spacing:1px;font-weight:600;">${s.labelService}</span>
                       </td>
-                      <td style="padding:6px 0;border-bottom:1px solid #e0f2fe;text-align:right;">
-                        <strong style="color:#111827;font-size:13px;">${serviceName}</strong>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style="padding:6px 0;border-bottom:1px solid #e0f2fe;">
-                        <span style="color:#6b7280;font-size:13px;">${s.labelDateTime}</span>
-                      </td>
-                      <td style="padding:6px 0;border-bottom:1px solid #e0f2fe;text-align:right;">
-                        <strong style="color:#111827;font-size:13px;">${formattedTime}</strong>
+                      <td style="padding:12px 0;border-bottom:1px solid #f8fafc;text-align:right;">
+                        <strong style="color:#0f172a;font-size:14px;font-weight:600;">${safeServiceName}</strong>
                       </td>
                     </tr>
                     <tr>
-                      <td style="padding:6px 0;">
-                        <span style="color:#6b7280;font-size:13px;">${s.labelClinic}</span>
+                      <td style="padding:12px 0;border-bottom:1px solid #f8fafc;">
+                        <span style="color:#94a3b8;font-size:12px;text-transform:uppercase;letter-spacing:1px;font-weight:600;">${s.labelDateTime}</span>
                       </td>
-                      <td style="padding:6px 0;text-align:right;">
-                        <strong style="color:#111827;font-size:13px;">${clinicName}</strong>
+                      <td style="padding:12px 0;border-bottom:1px solid #f8fafc;text-align:right;">
+                        <strong style="color:#0f172a;font-size:14px;font-weight:600;">${formattedTime}</strong>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:12px 0;">
+                        <span style="color:#94a3b8;font-size:12px;text-transform:uppercase;letter-spacing:1px;font-weight:600;">${s.labelClinic}</span>
+                      </td>
+                      <td style="padding:12px 0;text-align:right;">
+                        <strong style="color:#0f172a;font-size:14px;font-weight:600;">${safeClinicName}</strong>
                       </td>
                     </tr>
                   </table>
@@ -108,13 +123,13 @@ export function buildPatientConfirmationHtml(
               </tr>
             </table>
 
-            <p style="margin:0 0 8px;color:#6b7280;font-size:14px;line-height:1.6;">${s.instructions}</p>
+            <p style="margin:0 0 8px;color:#64748b;font-size:14px;line-height:1.7;">${s.instructions}</p>
           </td>
         </tr>
 
         <tr>
-          <td style="background:#f9fafb;padding:20px 40px;text-align:center;border-top:1px solid #f3f4f6;">
-            <p style="margin:0;color:#9ca3af;font-size:12px;">${s.footer}</p>
+          <td style="background:#f8fafc;padding:24px 40px;text-align:center;border-top:1px solid #f1f5f9;">
+            <p style="margin:0;color:#94a3b8;font-size:12px;letter-spacing:0.5px;">${s.footer}</p>
           </td>
         </tr>
       </table>

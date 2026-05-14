@@ -12,6 +12,13 @@ async function getDB() {
   return (await createClient()) as any;
 }
 
+async function getAuthenticatedClinicId(db: any): Promise<string | null> {
+  const { data: authData } = await db.auth.getUser();
+  if (!authData.user) return null;
+  const { data: userData } = await db.from("users").select("clinic_id").eq("id", authData.user.id).single();
+  return userData?.clinic_id ?? null;
+}
+
 export async function getPatients(
   clinicId: string,
   page = 1,
@@ -19,6 +26,11 @@ export async function getPatients(
   search = ""
 ): Promise<PaginatedResult<Patient>> {
   const db = await getDB();
+  // C5 fix: verify caller owns this clinic
+  const userClinicId = await getAuthenticatedClinicId(db);
+  if (!userClinicId || userClinicId !== clinicId) {
+    return { data: [], total: 0, page, pageSize, totalPages: 0 };
+  }
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
@@ -64,6 +76,11 @@ export async function createPatient(
   data: PatientInput
 ): Promise<ApiResponse<{ id: string }>> {
   const db = await getDB();
+  // C5 fix: ownership check
+  const userClinicId = await getAuthenticatedClinicId(db);
+  if (!userClinicId || userClinicId !== clinicId) {
+    return { success: false, error: "Unauthorized" };
+  }
   const validated = patientSchema.safeParse(data);
   if (!validated.success) {
     return { success: false, error: validated.error.errors[0].message };
@@ -84,7 +101,10 @@ export async function updatePatient(
   data: Partial<PatientInput>
 ): Promise<ApiResponse> {
   const db = await getDB();
-  const { error } = await db.from("patients").update(data).eq("id", patientId);
+  // C5 fix: scope update to caller's clinic
+  const userClinicId = await getAuthenticatedClinicId(db);
+  if (!userClinicId) return { success: false, error: "Not authenticated" };
+  const { error } = await db.from("patients").update(data).eq("id", patientId).eq("clinic_id", userClinicId);
   if (error) return { success: false, error: error.message };
   return { success: true };
 }

@@ -4,6 +4,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { appointmentSchema } from "@/lib/validations";
 import { sendNotification } from "@/lib/notifications";
+import { checkAppointmentQuota } from "@/lib/subscription/quota";
+import { dispatchWebhookEvent } from "@/lib/webhooks";
 import type { ApiResponse, AppointmentWithRelations } from "@/types";
 import type { z } from "zod";
 
@@ -28,6 +30,11 @@ export async function createAppointment(
     .single();
 
   if (!userData) return { success: false, error: "User not found" };
+
+  const quota = await checkAppointmentQuota(userData.clinic_id, db);
+  if (!quota.allowed) {
+    return { success: false, error: quota.reason ?? "Quota de rendez-vous atteint." };
+  }
 
   const validated = appointmentSchema.safeParse(data);
   if (!validated.success) {
@@ -66,6 +73,16 @@ export async function createAppointment(
       serviceName: apptData.service.name,
       startAt: appt.start_at,
     });
+
+    dispatchWebhookEvent(userData.clinic_id, "appointment.created", {
+      id: appt.id,
+      start_at: appt.start_at,
+      end_at: appt.end_at,
+      status: appt.status,
+      patient_name: apptData.patient.full_name,
+      patient_phone: apptData.patient.phone,
+      service_name: apptData.service.name,
+    }).catch(() => {});
   }
 
   return { success: true, data: { id: appt.id } };
@@ -76,8 +93,30 @@ export async function updateAppointmentStatus(
   status: "booked" | "confirmed" | "completed" | "cancelled" | "no_show"
 ): Promise<ApiResponse> {
   const db = await getDB();
-  const { error } = await db.from("appointments").update({ status }).eq("id", appointmentId);
-  if (error) return { success: false, error: error.message };
+  // M1 fix: resolve clinic_id from session before updating
+  const { data: authData } = await db.auth.getUser();
+  if (!authData.user) return { success: false, error: "Not authenticated" };
+  const { data: userData } = await db.from("users").select("clinic_id").eq("id", authData.user.id).single();
+  if (!userData) return { success: false, error: "User not found" };
+
+  const { error } = await db
+    .from("appointments")
+    .update({ status })
+    .eq("id", appointmentId)
+    .eq("clinic_id", userData.clinic_id);
+  if (error) return { success: false, error: "Erreur lors de la mise à jour." };
+
+  const webhookEvent = status === "cancelled"
+    ? "appointment.cancelled"
+    : status === "completed"
+      ? "appointment.completed"
+      : "appointment.updated";
+
+  dispatchWebhookEvent(userData.clinic_id, webhookEvent, {
+    id: appointmentId,
+    status,
+  }).catch(() => {});
+
   return { success: true };
 }
 
@@ -87,27 +126,42 @@ export async function updateAppointmentTime(
   endAt: string
 ): Promise<ApiResponse> {
   const db = await getDB();
+  // M1 fix: resolve clinic_id from session before updating
+  const { data: authData } = await db.auth.getUser();
+  if (!authData.user) return { success: false, error: "Not authenticated" };
+  const { data: userData } = await db.from("users").select("clinic_id").eq("id", authData.user.id).single();
+  if (!userData) return { success: false, error: "User not found" };
+
   const { error } = await db
     .from("appointments")
     .update({ start_at: startAt, end_at: endAt })
-    .eq("id", appointmentId);
-  if (error) return { success: false, error: error.message };
+    .eq("id", appointmentId)
+    .eq("clinic_id", userData.clinic_id);
+  if (error) return { success: false, error: "Erreur lors de la mise à jour." };
   return { success: true };
 }
 
 export async function cancelAppointment(appointmentId: string): Promise<ApiResponse> {
   const db = await getDB();
 
+  // M2 fix: auth check before fetching data
+  const { data: authData } = await db.auth.getUser();
+  if (!authData.user) return { success: false, error: "Not authenticated" };
+  const { data: userData } = await db.from("users").select("clinic_id").eq("id", authData.user.id).single();
+  if (!userData) return { success: false, error: "User not found" };
+
   const { data: appt } = await db
     .from("appointments")
     .select("*, patient:patients(*), service:services(*), clinic:clinics(*)")
     .eq("id", appointmentId)
+    .eq("clinic_id", userData.clinic_id)
     .single();
 
   const { error } = await db
     .from("appointments")
     .update({ status: "cancelled" })
-    .eq("id", appointmentId);
+    .eq("id", appointmentId)
+    .eq("clinic_id", userData.clinic_id);
 
   if (error) return { success: false, error: error.message };
 
@@ -123,6 +177,14 @@ export async function cancelAppointment(appointmentId: string): Promise<ApiRespo
       serviceName: apptData.service.name,
       startAt: apptData.start_at,
     });
+
+    dispatchWebhookEvent(userData.clinic_id, "appointment.cancelled", {
+      id: appointmentId,
+      status: "cancelled",
+      patient_name: apptData.patient.full_name,
+      service_name: apptData.service.name,
+      start_at: apptData.start_at,
+    }).catch(() => {});
   }
 
   return { success: true };
@@ -130,6 +192,12 @@ export async function cancelAppointment(appointmentId: string): Promise<ApiRespo
 
 export async function getDashboardStats(clinicId: string) {
   const db = await getDB();
+  // M3 fix: verify the caller owns this clinicId
+  const { data: authData } = await db.auth.getUser();
+  if (!authData.user) throw new Error("Not authenticated");
+  const { data: userData } = await db.from("users").select("clinic_id").eq("id", authData.user.id).single();
+  if (!userData || userData.clinic_id !== clinicId) throw new Error("Unauthorized");
+
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
   const tomorrowStr = new Date(today.getTime() + 86400000).toISOString().split("T")[0];

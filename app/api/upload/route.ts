@@ -5,6 +5,25 @@ const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"
 const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 const BUCKET = "clinic-assets";
 
+// H4 fix: whitelist of allowed folder values — never trust client input
+const ALLOWED_FOLDERS = new Set([
+  "avatars",
+  "logos",
+  "uploads",
+  "covers",
+  "hero-backgrounds",
+  "doctor-photos",
+]);
+
+// H5 fix: derive extension from validated MIME type, not filename
+const MIME_TO_EXTENSION: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+  "image/avif": "avif",
+};
+
 export async function POST(request: NextRequest) {
   const db = await createClient();
 
@@ -24,7 +43,13 @@ export async function POST(request: NextRequest) {
   }
 
   const file = formData.get("file");
-  const folder = (formData.get("folder") as string | null) || "uploads";
+  const rawFolder = (formData.get("folder") as string | null) || "uploads";
+
+  // H4 fix: reject any folder not in the whitelist
+  if (!ALLOWED_FOLDERS.has(rawFolder)) {
+    return NextResponse.json({ error: "Dossier de destination invalide." }, { status: 400 });
+  }
+  const folder = rawFolder;
 
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "Aucun fichier fourni" }, { status: 400 });
@@ -41,7 +66,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Fichier trop volumineux (max 5 Mo)" }, { status: 400 });
   }
 
-  const extension = file.name.split(".").pop() ?? "jpg";
+  // H5 fix: extension from MIME type, not from user-supplied filename
+  const extension = MIME_TO_EXTENSION[file.type] ?? "jpg";
   const fileName = `${folder}/${user.id}-${Date.now()}.${extension}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 

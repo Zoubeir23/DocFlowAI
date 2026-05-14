@@ -1,236 +1,676 @@
-# 🏥 DocFlow IA - SaaS Médical & Agent IA de Réservation
 
-Bienvenue dans le code source de **DocFlow IA**, une plateforme SaaS complète pour les médecins et les cliniques.  
-Elle permet de gérer les rendez-vous, les patients et intègre un Agent IA conversationnel (chatbot) installable sur n’importe quel site web, ainsi qu’un constructeur de site vitrine sans code.
+<div align="center">
 
-Ce document vous explique **pas à pas** comment installer, configurer et lancer le projet sur votre propre machine.
+<br/>
+
+<img src="public/logo.png" alt="DocFlow AI" width="220" />
+
+<br/>
+
+[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)](https://nextjs.org)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Supabase](https://img.shields.io/badge/Supabase-2.47-3ECF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38BDF8?style=flat-square&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![Stripe](https://img.shields.io/badge/Stripe-22-6772E5?style=flat-square&logo=stripe&logoColor=white)](https://stripe.com)
+
+<br/>
+
+> **Agent IA conversationnel · Gestion médicale · Website Builder · Paiements hybrides**  
+> *Une seule plateforme pour digitaliser entièrement un cabinet médical.*
+
+<br/>
+
+</div>
 
 ---
 
-## 📌 Fonctionnalités principales
-- **Agent IA multi-fournisseurs** : Claude, Gemini, OpenAI, Ollama (local).
-- **Tableau de bord médical** : calendrier, gestion des patients et des services.
-- **Créateur de site vitrine** (Website Builder) pour les cliniques.
-- **Paiements hybrides** : Stripe + crypto Web3.
-- **Emails dynamiques** : Google SMTP (gratuit jusqu'à 500 emails/jour) ou Resend.
+## Vue d'ensemble
+
+**DocFlow AI** est un SaaS clé-en-main conçu pour les médecins et cliniques.  
+Il combine un tableau de bord médical complet, un agent IA multi-fournisseurs capable de prendre des rendez-vous en autonomie, un constructeur de site vitrine sans code, et un système de paiement hybride (Stripe + crypto).
 
 ---
 
-## 🧰 1. Prérequis logiciels
-Avant de commencer, installez sur votre poste :
+## Fonctionnalités
 
-| Outil              | Version minimale | Lien de téléchargement                        |
-|--------------------|------------------|-----------------------------------------------|
-| Node.js            | 20 ou +          | https://nodejs.org/fr                         |
-| Git                | n’importe laquelle | https://git-scm.com                         |
-| Un éditeur de code | VS Code conseillé| https://code.visualstudio.com                |
+<table>
+<tr>
+<td width="50%">
 
-**Vérifiez que Node.js est bien installé :**
+**🤖 Agent IA Multi-Fournisseurs**
+- Claude (Anthropic), Gemini (Google), OpenAI, Ollama (local)
+- Prise de rendez-vous 100% autonome par chat
+- Widget `<iframe>` intégrable sur n'importe quel site
+- Prompts personnalisables par clinique
+
+</td>
+<td width="50%">
+
+**📅 Tableau de Bord Médical**
+- Calendrier interactif des rendez-vous
+- Gestion complète des patients (CRUD + historique)
+- Catalogue de services & durées configurables
+- Statistiques et métriques temps réel
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**🌐 Website Builder**
+- Éditeur visuel de site vitrine sans code
+- 3 templates premium (Éditorial, Premium, Clinique)
+- Upload d'images, couleurs, typographie
+- Publication en un clic sur URL personnalisée
+
+</td>
+<td width="50%">
+
+**💳 Paiements Hybrides**
+- Stripe (cartes bancaires, abonnements récurrents)
+- Web3 — USDC sur Polygon via MetaMask / WalletConnect
+- Webhooks sécurisés avec vérification de signature
+- Gestion des quotas par plan (Free / Starter / Pro / Enterprise)
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**📧 Emails Transactionnels**
+- Confirmation patient automatique après réservation
+- Notification médecin en temps réel
+- Google SMTP (500 emails/jour gratuit) ou Resend
+- Templates HTML bilingues (FR / EN)
+
+</td>
+<td width="50%">
+
+**🔐 Sécurité Production**
+- Row Level Security (RLS) Supabase sur toutes les tables
+- Guards d'ownership sur chaque action serveur
+- Headers CSP, HSTS, X-Frame-Options configurés
+- Rate limiting sur les endpoints publics widget
+
+</td>
+</tr>
+</table>
+
+---
+
+## Stack technique
+
+<table>
+<tr>
+<th>Couche</th>
+<th>Technologie</th>
+<th>Rôle</th>
+</tr>
+<tr>
+<td><b>Frontend</b></td>
+<td>Next.js 15, React 19, Tailwind CSS 3</td>
+<td>App Router, Server Components, SSR</td>
+</tr>
+<tr>
+<td><b>Langage</b></td>
+<td>TypeScript 5, Zod</td>
+<td>Typage strict, validation des entrées</td>
+</tr>
+<tr>
+<td><b>Base de données</b></td>
+<td>Supabase (PostgreSQL)</td>
+<td>Auth, BDD, Storage, RLS, RPC</td>
+</tr>
+<tr>
+<td><b>IA</b></td>
+<td>Claude, Gemini, OpenAI, Ollama</td>
+<td>Agent conversationnel & prise de RDV</td>
+</tr>
+<tr>
+<td><b>Paiements</b></td>
+<td>Stripe 22, wagmi, viem, Reown AppKit</td>
+<td>Cartes + crypto USDC Polygon</td>
+</tr>
+<tr>
+<td><b>Email</b></td>
+<td>Nodemailer (SMTP), Resend</td>
+<td>Notifications transactionnelles</td>
+</tr>
+<tr>
+<td><b>i18n</b></td>
+<td>next-intl 4</td>
+<td>FR / EN (interface + emails)</td>
+</tr>
+<tr>
+<td><b>Déploiement</b></td>
+<td>Vercel</td>
+<td>Edge, CDN mondial, preview deployments</td>
+</tr>
+</table>
+
+---
+
+## Prérequis
+
+| Outil | Version minimale | Lien |
+|---|---|---|
+| Node.js | **20+** | [nodejs.org](https://nodejs.org/fr) |
+| npm | **10+** | inclus avec Node.js |
+| Git | toute version | [git-scm.com](https://git-scm.com) |
+| Compte Supabase | — | [supabase.com](https://supabase.com) |
+
 ```bash
-node -v
-npm -v
+# Vérifier les versions installées
+node -v   # doit afficher v20.x.x ou supérieur
+npm -v    # doit afficher 10.x.x ou supérieur
 ```
 
 ---
 
-## 📦 2. Installation des dépendances
-1. Ouvrez un terminal dans le dossier racine du projet.
-2. Lancez :
-   ```bash
-   npm install
-   ```
-   Ceci installe toutes les bibliothèques nécessaires au fonctionnement du projet.
+## Installation rapide
 
----
+### 1. Cloner & installer
 
-## 🗄️ 3. Configuration de la base de données (Supabase)
-Supabase est une alternative open-source à Firebase. Elle fournit une base de données PostgreSQL, de l'authentification, du stockage de fichiers et des API en temps réel.
-
-### 3.1 Créer un compte Supabase
-- Rendez-vous sur [supabase.com](https://supabase.com)
-- Cliquez sur **"Start your project"**.
-- Connectez-vous avec GitHub, GitLab, Bitbucket ou email.
-
-### 3.2 Créer un nouveau projet
-- Cliquez sur **"New project"**.
-- Donnez-lui un nom, par exemple `docflow`.
-- Choisissez une région proche de vous.
-- Choisissez un mot de passe de base de données **fort** (notez-le, vous en aurez besoin plus tard).
-- Cliquez sur **"Create new project"** (l'initialisation prend environ 2 minutes).
-
-### 3.3 Exécuter les migrations SQL
-Les migrations sont des scripts qui créent les tables, les règles de sécurité et les fonctions nécessaires. Elles se trouvent dans le dossier `/supabase/migrations/` de ce projet.
-
-1. Dans le tableau de bord Supabase, allez dans le menu **SQL Editor** (éditeur SQL).
-2. Cliquez sur **"New query"**.
-3. **Copiez le contenu** du premier fichier de migration présent dans `/supabase/migrations/`.
-4. Collez-le dans l'éditeur.
-5. Cliquez sur le bouton **"Run"** (ou Ctrl + Entrée).
-6. Répétez l'opération pour chacun des fichiers du dossier, **dans l'ordre** (les noms commencent souvent par un horodatage, exécutez-les du plus ancien au plus récent).
-
-### 3.4 Créer un bucket de stockage public
-Le projet a besoin d'un espace pour stocker des fichiers (logos, photos, etc.).
-1. Dans le menu de gauche, cliquez sur **Storage**.
-2. Cliquez sur **"New bucket"**.
-3. Nommez-le (par exemple `public-assets`).
-4. Cochez **"Public bucket"** (les fichiers seront accessibles publiquement via une URL).
-5. Cliquez sur **"Create bucket"**.
-
----
-
-## ⚙️ 4. Variables d’environnement (fichier `.env.local`)
-Le fichier `.env.local` contient toutes les clés secrètes et identifiants de connexion. **Il ne doit jamais être partagé ni versionné sur Git.** Il est déjà dans le `.gitignore` du projet.
-
-### 4.1 Où créer ce fichier ?
-À la racine du projet, créez un nouveau fichier nommé exactement `.env.local`.
-
-### 4.2 Contenu et explications détaillées
-
-#### A. Clés Supabase
+```bash
+git clone <url-du-repo> docflow-ai
+cd docflow-ai
+npm install
 ```
+
+### 2. Configurer Supabase
+
+1. Créez un projet sur [supabase.com](https://supabase.com) → **New project**
+2. Allez dans **SQL Editor** → **New query**
+3. Exécutez chaque fichier du dossier `supabase/migrations/` **dans l'ordre** :
+
+```
+supabase/migrations/
+├── 001_initial_schema.sql      ← tables principales
+├── 002_rls_policies.sql        ← sécurité Row Level Security
+├── 003_functions.sql           ← fonctions PostgreSQL (booking, etc.)
+├── 004_stripe_subscriptions.sql
+└── 005_website_builder.sql
+```
+
+4. Allez dans **Storage** → **New bucket**
+   - Nom : `clinic-assets`
+   - Type : **Public bucket** ✅
+
+### 3. Créer le fichier `.env.local`
+
+À la racine du projet (même niveau que `package.json`), créez un fichier nommé **exactement** `.env.local`.
+
+> ⚠️ Ce fichier ne doit **jamais** être partagé ni poussé sur Git. Il est déjà dans le `.gitignore`.
+
+---
+
+<details>
+<summary><b>📋 Bloc 1 — Supabase (obligatoire)</b></summary>
+
+#### Ce que vous allez coller dans `.env.local`
+
+```env
+NEXT_PUBLIC_SUPABASE_URL="https://xxxxxxxxxxxx.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+SUPABASE_SERVICE_ROLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+#### Comment obtenir ces 3 valeurs
+
+1. Connectez-vous sur [supabase.com](https://supabase.com) et ouvrez votre projet.
+2. Dans la barre latérale gauche, cliquez sur l'icône **engrenage ⚙️** tout en bas → **"Project Settings"**.
+3. Dans le sous-menu qui s'ouvre, cliquez sur **"API"** (pas "Auth", pas "Database" — "API").
+4. Vous voyez maintenant 3 blocs :
+
+| Ce que vous voyez sur la page | Variable `.env.local` |
+|---|---|
+| **Project URL** (ex: `https://abcdefgh.supabase.co`) | `NEXT_PUBLIC_SUPABASE_URL` |
+| **Project API keys → anon public** (commence par `eyJ...`) | `NEXT_PUBLIC_SUPABASE_ANON_KEY` |
+| **Project API keys → service_role** (commence par `eyJ...`) | `SUPABASE_SERVICE_ROLE_KEY` |
+
+5. Cliquez sur le bouton **"Copy"** à droite de chaque valeur et collez-la dans `.env.local`.
+
+> ⚠️ La clé `service_role` a des droits d'administrateur complets sur votre base de données. Ne l'utilisez jamais dans du code côté client (navigateur). Dans ce projet, elle est uniquement utilisée dans les Server Actions et les routes API serveur.
+
+</details>
+
+---
+
+<details>
+<summary><b>🤖 Bloc 2 — Intelligence Artificielle (obligatoire)</b></summary>
+
+Vous devez choisir **un seul fournisseur IA** pour commencer. Mettez sa valeur dans `ACTIVE_AI_PROVIDER` et ajoutez uniquement la clé correspondante.
+
+```env
+# Choisir : claude | gemini | openai | ollama
+ACTIVE_AI_PROVIDER="claude"
+```
+
+---
+
+### Option A — Claude d'Anthropic (recommandé)
+
+1. Allez sur [console.anthropic.com](https://console.anthropic.com) et créez un compte (ou connectez-vous).
+2. Dans le menu de gauche, cliquez sur **"API Keys"**.
+3. Cliquez sur **"Create Key"**, donnez-lui un nom (ex: `docflow-local`), puis cliquez sur **"Create Key"**.
+4. **Copiez immédiatement** la clé affichée — elle ne sera plus jamais visible après fermeture de cette fenêtre.
+5. Collez-la dans `.env.local` :
+
+```env
+ANTHROPIC_API_KEY="sk-ant-api03-..."
+```
+
+> La clé ressemble à : `sk-ant-api03-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX`
+
+---
+
+### Option B — Gemini de Google (gratuit avec quota)
+
+1. Allez sur [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey).
+2. Connectez-vous avec votre compte Google.
+3. Cliquez sur **"Create API key"**.
+4. Sélectionnez un projet Google Cloud existant ou laissez-en créer un automatiquement.
+5. La clé s'affiche sous la forme `AIzaSy...` — copiez-la.
+
+```env
+GEMINI_API_KEY="AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+```
+
+> La clé ressemble à : `AIzaSy` suivi de 33 caractères alphanumériques.
+
+---
+
+### Option C — OpenAI (ChatGPT)
+
+1. Allez sur [platform.openai.com/api-keys](https://platform.openai.com/api-keys).
+2. Connectez-vous (ou créez un compte sur [platform.openai.com](https://platform.openai.com)).
+3. Cliquez sur **"+ Create new secret key"**, donnez-lui un nom, puis cliquez sur **"Create secret key"**.
+4. **Copiez immédiatement** la clé — elle ne sera plus jamais affichée.
+
+```env
+OPENAI_API_KEY="sk-proj-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+```
+
+> ⚠️ OpenAI requiert un solde de crédit > 0 pour que l'API fonctionne. Allez dans **Billing** et ajoutez au moins 5 $ de crédit.
+
+---
+
+### Option D — Ollama (local, 100% gratuit, aucune clé nécessaire)
+
+Ollama exécute un modèle IA directement sur votre ordinateur, sans envoi de données à l'extérieur.
+
+1. Téléchargez et installez Ollama depuis [ollama.com](https://ollama.com) (Mac, Linux ou Windows).
+2. Lancez l'application Ollama (une icône apparaît dans la barre des tâches).
+3. Ouvrez un terminal et téléchargez un modèle :
+
+```bash
+ollama pull llama3        # modèle généraliste (4.7 Go)
+# ou, si vous avez peu de RAM :
+ollama pull llama3:8b     # version plus légère
+```
+
+4. Vérifiez qu'Ollama est bien lancé :
+
+```bash
+curl http://localhost:11434/api/tags
+# Doit répondre avec la liste des modèles installés
+```
+
+```env
+OLLAMA_BASE_URL="http://localhost:11434"
+```
+
+> Ollama doit rester **démarré** pendant toute l'utilisation de DocFlow AI.
+
+</details>
+
+---
+
+<details>
+<summary><b>📧 Bloc 3 — Email (obligatoire pour les notifications)</b></summary>
+
+Deux variables communes quel que soit le fournisseur choisi :
+
+```env
+ACTIVE_EMAIL_PROVIDER="smtp"       # smtp | resend
+ADMIN_EMAIL="vous@votre-domaine.com"  # adresse qui reçoit les alertes admin
+```
+
+> `ADMIN_EMAIL` est l'adresse qui reçoit les demandes Enterprise et les alertes système. Elle est différente de l'adresse d'envoi.
+
+---
+
+### Option A — Google SMTP via Gmail (recommandé, gratuit jusqu'à 500 emails/jour)
+
+> Vous utilisez votre propre adresse Gmail comme expéditeur. Google exige un **mot de passe d'application** distinct de votre mot de passe Gmail habituel.
+
+**Étape 1 — Activer la validation en deux étapes** *(obligatoire pour créer un mot de passe d'application)*
+
+1. Allez sur [myaccount.google.com](https://myaccount.google.com).
+2. Dans le menu gauche, cliquez sur **"Sécurité"**.
+3. Dans la section *"Comment vous connecter à Google"*, cliquez sur **"Validation en deux étapes"**.
+4. Suivez les instructions pour l'activer si ce n'est pas déjà fait.
+
+**Étape 2 — Créer un mot de passe d'application**
+
+1. Toujours sur [myaccount.google.com](https://myaccount.google.com) → **"Sécurité"**.
+2. Dans la barre de recherche en haut de la page des paramètres Google, tapez : `mots de passe des applications`
+3. Cliquez sur le résultat **"Mots de passe des applications"** (ou allez directement sur [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)).
+4. Dans le champ **"Nom de l'application"**, tapez `DocFlow` puis cliquez sur **"Créer"**.
+5. Google affiche un mot de passe de **16 caractères** en 4 groupes de 4 lettres (ex: `abcd efgh ijkl mnop`).
+6. **Copiez ce mot de passe en supprimant les espaces** → vous obtenez 16 caractères collés (ex: `abcdefghijklmnop`).
+
+```env
+SMTP_GOOGLE_EMAIL="votre.adresse@gmail.com"
+GOOGLE_APP_PASSWORD="abcdefghijklmnop"
+```
+
+> ⚠️ Le mot de passe d'application doit être collé **sans espaces**. Les 4 groupes affichés par Google sont uniquement pour la lisibilité.
+
+---
+
+### Option B — Resend (alternatif, domaine personnalisé)
+
+1. Créez un compte sur [resend.com](https://resend.com).
+2. Dans le tableau de bord, allez dans **"API Keys"** → **"Create API Key"**.
+3. Donnez-lui un nom (ex: `docflow`), choisissez les permissions **"Full access"**, puis cliquez **"Add"**.
+4. Copiez la clé affichée (commence par `re_`).
+
+```env
+ACTIVE_EMAIL_PROVIDER="resend"
+RESEND_API_KEY="re_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+```
+
+</details>
+
+---
+
+<details>
+<summary><b>💳 Bloc 4 — Stripe (paiements par carte)</b></summary>
+
+> Utilisez le mode **Test** pendant le développement. Aucune vraie transaction n'aura lieu.
+
+#### Clés API Stripe
+
+1. Créez un compte sur [dashboard.stripe.com/register](https://dashboard.stripe.com/register).
+2. Une fois connecté, vérifiez que le bouton en haut à droite indique **"Mode test"** (fond orange). Si vous voyez "Mode production", cliquez dessus pour basculer en test.
+3. Dans le menu gauche, cliquez sur **"Développeurs"** → **"Clés API"**.
+4. Vous voyez deux clés :
+
+| Clé visible sur Stripe | Variable `.env.local` |
+|---|---|
+| **Clé publiable** (commence par `pk_test_`) | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` |
+| **Clé secrète** (commence par `sk_test_`, cliquez "Afficher") | `STRIPE_SECRET_KEY` |
+
+```env
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_51XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+STRIPE_SECRET_KEY="sk_test_51XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+```
+
+#### Clé de signature Webhook (pour les paiements en local)
+
+Le webhook permet à Stripe de notifier votre application quand un paiement réussit. En local, vous avez besoin de la Stripe CLI.
+
+**Installer la Stripe CLI :**
+
+```bash
+# macOS
+brew install stripe/stripe-cli/stripe
+
+# Windows (avec Scoop)
+scoop install stripe
+
+# Linux
+# Télécharger depuis https://stripe.com/docs/stripe-cli
+```
+
+**Démarrer l'écoute des webhooks :**
+
+```bash
+# Se connecter à votre compte Stripe
+stripe login
+
+# Démarrer le tunnel (laissez cette commande tourner en arrière-plan)
+stripe listen --forward-to localhost:3000/api/webhooks/stripe
+```
+
+La console affiche une ligne comme :
+```
+> Ready! Your webhook signing secret is whsec_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+```
+
+Copiez cette valeur :
+
+```env
+STRIPE_WEBHOOK_SECRET="whsec_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+```
+
+> ⚠️ Cette commande `stripe listen` doit rester active dans un terminal pendant tout votre développement. Elle crée un tunnel entre les serveurs Stripe et votre machine locale.
+
+</details>
+
+---
+
+<details>
+<summary><b>🔗 Bloc 5 — Web3 / Paiements crypto (optionnel)</b></summary>
+
+Ce bloc est nécessaire uniquement si vous souhaitez activer les paiements en USDC (stablecoin) sur la blockchain Polygon. Vous pouvez ignorer ce bloc si vous n'utilisez que Stripe.
+
+#### WalletConnect Project ID
+
+WalletConnect permet aux utilisateurs de connecter leur portefeuille (MetaMask, Coinbase Wallet, etc.) à DocFlow AI.
+
+1. Allez sur [cloud.walletconnect.com](https://cloud.walletconnect.com) et créez un compte.
+2. Cliquez sur **"Create project"**.
+3. Donnez un nom au projet (ex: `DocFlow AI`) et sélectionnez le type **"App"**.
+4. Cliquez sur **"Create"**.
+5. Votre **Project ID** s'affiche sur la page du projet (une chaîne de 32 caractères hexadécimaux).
+
+```env
+NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID="a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6"
+```
+
+#### Adresse du portefeuille administrateur
+
+C'est l'adresse Ethereum/Polygon sur laquelle vous recevrez les paiements USDC.
+
+1. Ouvrez MetaMask (extension Chrome ou application mobile).
+2. Cliquez sur votre nom de compte en haut (ex: "Account 1").
+3. Copiez l'adresse affichée (commence par `0x`, fait 42 caractères).
+
+```env
+NEXT_PUBLIC_ADMIN_WALLET_ADDRESS="0xAbCdEf1234567890AbCdEf1234567890AbCdEf12"
+```
+
+#### Prix des plans en USDC
+
+Définissez les tarifs de vos abonnements (en dollars, 1 USDC = 1 USD) :
+
+```env
+NEXT_PUBLIC_PLAN_STARTER_PRICE="49"
+NEXT_PUBLIC_PLAN_PROFESSIONAL_PRICE="99"
+NEXT_PUBLIC_PLAN_ENTERPRISE_PRICE="299"
+```
+
+</details>
+
+---
+
+#### Exemple de fichier `.env.local` complet
+
+Voici un modèle prêt à copier-coller. Remplacez chaque `...` par vos vraies valeurs :
+
+```env
+# ─── Supabase ────────────────────────────────────────────
 NEXT_PUBLIC_SUPABASE_URL="https://xxxxxxxxxxxx.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJI..."
 SUPABASE_SERVICE_ROLE_KEY="eyJhbGciOiJI..."
-```
-**Comment les obtenir ?**
-1. Dans votre projet Supabase, cliquez sur l’icône d’engrenage **"Settings"** (paramètres) en bas à gauche.
-2. Sélectionnez **"API"**.
-3. Copiez :
-   - **Project URL** → à coller dans `NEXT_PUBLIC_SUPABASE_URL`
-   - **anon public key** → à coller dans `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - **service_role secret key** (à utiliser avec précaution, elle a tous les droits) → à coller dans `SUPABASE_SERVICE_ROLE_KEY`
 
-#### B. Fournisseur d’Intelligence Artificielle
-```
-ACTIVE_AI_PROVIDER="claude"      # ou "gemini", "openai", "ollama"
-```
-Vous devez choisir le fournisseur que vous voulez utiliser. Vous n’avez pas besoin de toutes les clés ci-dessous, seulement celle correspondant au fournisseur activé, mais c’est plus simple de toutes les mettre.
+# ─── Intelligence Artificielle ───────────────────────────
+ACTIVE_AI_PROVIDER="claude"
+ANTHROPIC_API_KEY="sk-ant-api03-..."
+# GEMINI_API_KEY="AIzaSy..."
+# OPENAI_API_KEY="sk-proj-..."
+# OLLAMA_BASE_URL="http://localhost:11434"
 
-**Claude (Anthropic) :**
-```
-ANTHROPIC_API_KEY="sk-ant-api..."
-```
-- Allez sur [console.anthropic.com](https://console.anthropic.com)
-- Créez un compte ou connectez-vous.
-- Allez dans "API Keys" et générez une clé.
-
-**Google Gemini :**
-```
-GEMINI_API_KEY="AIzaSy..."
-```
-- Allez sur [makersuite.google.com/app/apikey](https://makersuite.google.com/app/apikey) (Google AI Studio).
-- Cliquez sur **"Create API Key"**.
-- Sélectionnez un projet Google Cloud existant ou créez-en un nouveau.
-
-**OpenAI (ChatGPT) :**
-```
-OPENAI_API_KEY="sk-..."
-```
-- Allez sur [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
-- Connectez-vous (ou inscrivez-vous).
-- Cliquez sur **"Create new secret key"**.
-
-**Ollama (IA locale, gratuite) :**
-```
-OLLAMA_BASE_URL="http://localhost:11434"
-```
-- Installez Ollama depuis [ollama.com](https://ollama.com)
-- Lancez l’application, puis dans un terminal : `ollama pull llama3` (ou autre modèle).
-- L’URL par défaut est bien `http://localhost:11434`.
-
-#### C. Clés Email (Google SMTP recommandé)
-```
+# ─── Email ───────────────────────────────────────────────
 ACTIVE_EMAIL_PROVIDER="smtp"
-GOOGLE_EMAIL="ma.clinique@gmail.com"
-GOOGLE_APP_PASSWORD="xxxxxxxxxxxxxxx"
-```
-Pour utiliser votre adresse Gmail afin d’envoyer des emails (jusqu’à 500 par jour gratuitement) :
+ADMIN_EMAIL="admin@votre-domaine.com"
+SMTP_GOOGLE_EMAIL="votre.clinique@gmail.com"
+GOOGLE_APP_PASSWORD="motdepasseapplication"
+# RESEND_API_KEY="re_..."
 
-1. Connectez-vous à votre compte Google.
-2. Allez dans **"Gérer votre compte Google" > "Sécurité"**.
-3. Activez la **validation en deux étapes** si ce n’est pas déjà fait.
-4. Dans la barre de recherche des paramètres, tapez "mots de passe des applications".
-5. Cliquez sur **"Mots de passe des applications"**.
-6. Sélectionnez "Autre (nom personnalisé)", donnez un nom par exemple `DocFlow` et cliquez sur **Générer**.
-7. Copiez le mot de passe de 16 caractères (espaces exclus) et collez-le dans `GOOGLE_APP_PASSWORD`.
-8. `GOOGLE_EMAIL` est simplement l’adresse Gmail utilisée.
-
-#### D. Paiements Stripe
-```
+# ─── Stripe ──────────────────────────────────────────────
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_..."
 STRIPE_SECRET_KEY="sk_test_..."
 STRIPE_WEBHOOK_SECRET="whsec_..."
-```
-**Obtenir les clés Stripe (mode test) :**
-1. Allez sur [dashboard.stripe.com/register](https://dashboard.stripe.com/register) et créez un compte (gratuit).
-2. Passez en mode **"Test"** (bascule en haut à droite).
-3. Dans le menu gauche, allez dans **"Développeurs" > "Clés API"**.
-4. Copiez la **clé publique** (pk_test_...) dans `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`.
-5. Copiez la **clé secrète** (sk_test_...) dans `STRIPE_SECRET_KEY`.
-6. Pour le webhook, rendez-vous dans **"Développeurs" > "Webhooks"**, créez un endpoint pointant vers `http://votredomaine/api/webhooks/stripe` (en local, utilisez l’extension Stripe CLI).
-   - Installez [Stripe CLI](https://stripe.com/docs/stripe-cli)
-   - Lancez `stripe listen --forward-to localhost:3000/api/webhooks/stripe`
-   - La console affichera un secret `whsec_...`, copiez-le dans `STRIPE_WEBHOOK_SECRET`.
 
-#### E. Paiements Web3 (WalletConnect / MetaMask)
+# ─── Web3 (optionnel) ────────────────────────────────────
+NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID="..."
+NEXT_PUBLIC_ADMIN_WALLET_ADDRESS="0x..."
+NEXT_PUBLIC_PLAN_STARTER_PRICE="49"
+NEXT_PUBLIC_PLAN_PROFESSIONAL_PRICE="99"
+NEXT_PUBLIC_PLAN_ENTERPRISE_PRICE="299"
 ```
-NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID="votre_wallet_connect_id"
-NEXT_PUBLIC_ADMIN_WALLET_ADDRESS="0xVotreAdresseMetamaskIci"
-```
-1. Allez sur [cloud.walletconnect.com](https://cloud.walletconnect.com/).
-2. Connectez-vous et créez un projet.
-3. Récupérez le **Project ID** et collez-le dans `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID`.
-4. Utilisez votre adresse Ethereum (MetaMask) dans `NEXT_PUBLIC_ADMIN_WALLET_ADDRESS` (pour recevoir les paiements en crypto).
 
----
+### 4. Lancer l'application
 
-## 💻 5. Lancement de l’application
-Assurez-vous d'avoir correctement rempli votre fichier `.env.local`.  
-Dans le terminal, à la racine du projet, exécutez :
 ```bash
+# Développement (hot reload)
 npm run dev
+
+# Production
+npm run build && npm start
 ```
-Ouvrez votre navigateur sur [http://localhost:3000](http://localhost:3000).  
-La première compilation peut prendre une à deux minutes.
+
+Ouvrir **[http://localhost:3000](http://localhost:3000)**
 
 ---
 
-## 🩺 6. Tester le logiciel pas à pas
-Voici comment vérifier que tout fonctionne :
+## Parcours de test
 
-1. **Créer un compte clinique**  
-   - Sur la page d'accueil, cliquez sur "Créer un compte".  
-   - Utilisez une adresse email de test (ex: `test@docflow.com`) et un mot de passe.
-
-2. **Onboarding**  
-   - Après connexion, vous arrivez sur un formulaire où vous entrez le nom de votre clinique fictive, par exemple `"Cabinet Dentaire Paris"`.
-
-3. **Tableau de bord médecin**  
-   - Vous accédez à l’espace de gestion complet : agenda, patients, services.
-
-4. **Test de l’Agent IA**  
-   - Allez dans les paramètres IA ("AI Settings").  
-   - Copiez le code `iframe` fourni.  
-   - Collez ce code dans un fichier HTML local ou sur un site test : un widget chatbot apparaît, relié à votre clinique, capable de prendre des rendez-vous.
-
-5. **Website Builder**  
-   - Dans le menu, ouvrez l’onglet "Site Web".  
-   - Construisez une page vitrine à l’aide de l’éditeur intégré.
+```
+1. /signup          → Créer un compte médecin
+2. /onboarding      → Nommer la clinique, configurer le fuseau horaire
+3. /app/dashboard   → Tableau de bord principal
+4. /app/settings    → Configurer les disponibilités & services
+5. /app/ai-settings → Personnaliser l'agent IA, copier l'iframe widget
+6. /app/website-builder → Créer la page vitrine, publier
+7. /clinique/[slug] → Voir la page publique de la clinique
+8. /widget/[slug]   → Tester le widget IA en autonomie
+```
 
 ---
 
-## 🔐 Rappels de sécurité
-- Ne commitez jamais le fichier `.env.local` (il est déjà dans `.gitignore`).
-- La clé `SUPABASE_SERVICE_ROLE_KEY` ne doit jamais être exposée côté client. Elle est utilisée uniquement dans les routes API ou les fonctions serveur.
-- Utilisez toujours des clés de test (`pk_test`, `sk_test`) en développement.
+## Déploiement Vercel
+
+```bash
+# Installer la CLI Vercel
+npm i -g vercel
+
+# Déployer
+vercel
+
+# Configurer les variables d'environnement
+vercel env add NEXT_PUBLIC_SUPABASE_URL
+# ... répéter pour chaque variable
+```
+
+Ou via l'interface Vercel : **Settings → Environment Variables** — importer toutes les variables du fichier `.env.local`.
+
+> **Important** : En production, configurez le webhook Stripe avec votre vraie URL Vercel (`https://votreapp.vercel.app/api/webhooks/stripe`) et remplacez les clés `pk_test` / `sk_test` par les clés live.
 
 ---
 
-## 🆘 Besoin d’aide ?
-Si vous rencontrez un problème, vérifiez :
-- Que votre fichier `.env.local` existe bien et est correctement rempli.
-- Que Node.js a bien la version 20 ou supérieure.
-- Que vous avez exécuté toutes les migrations SQL dans Supabase.
-- Que vous avez créé le bucket de stockage en mode public.
+## Structure du projet
 
-Bonne découverte de DocFlow IA !
+```
+docflow-ai/
+├── app/
+│   ├── (app)/app/          # Pages authentifiées (dashboard, patients, etc.)
+│   ├── api/                # Routes API (widget, webhooks, upload)
+│   ├── clinique/[slug]/    # Page publique de la clinique
+│   ├── widget/[slug]/      # Widget IA intégrable
+│   └── page.tsx            # Landing page
+├── actions/                # Server Actions Next.js
+├── components/
+│   ├── layout/             # Sidebar, Topbar, Header
+│   ├── widget/             # Composant chatbot widget
+│   └── website-builder/    # Éditeur de site vitrine
+├── lib/
+│   ├── ai/                 # Router multi-fournisseurs IA
+│   ├── email/              # Templates et envoi d'emails
+│   ├── slots.ts            # Génération des créneaux disponibles
+│   └── subscription/       # Gestion des quotas par plan
+├── supabase/migrations/    # Scripts SQL (à exécuter dans l'ordre)
+└── messages/               # Traductions FR / EN (next-intl)
+```
+
+---
+
+## Sécurité
+
+- **`.env.local`** : ne jamais committer — déjà dans `.gitignore`
+- **`SUPABASE_SERVICE_ROLE_KEY`** : serveur uniquement, jamais côté client
+- **Clés Stripe** : utiliser `pk_test` / `sk_test` en développement uniquement
+- **RLS Supabase** : activé sur toutes les tables — chaque clinique ne voit que ses données
+- Les endpoints widget (`/api/widget/*`) ont un rate limiter dédié (10 req/min en booking, 30 req/min en chat)
+
+---
+
+## Aide & dépannage
+
+<details>
+<summary><b>L'application ne démarre pas</b></summary>
+
+- Vérifier que `.env.local` existe à la racine et contient au minimum les clés Supabase
+- Vérifier `node -v` ≥ 20
+- Supprimer `.next/` et relancer : `rm -rf .next && npm run dev`
+
+</details>
+
+<details>
+<summary><b>Erreur Supabase "relation does not exist"</b></summary>
+
+Les migrations SQL n'ont pas toutes été exécutées. Reprendre depuis l'étape **3.3** en exécutant chaque fichier `supabase/migrations/*.sql` dans l'ordre numérique.
+
+</details>
+
+<details>
+<summary><b>Le widget IA ne répond pas</b></summary>
+
+- Vérifier que `ACTIVE_AI_PROVIDER` est défini et que la clé API correspondante est présente
+- Tester la clé API directement sur la console du fournisseur
+- Vérifier les logs dans la console Next.js
+
+</details>
+
+<details>
+<summary><b>Les emails ne partent pas</b></summary>
+
+- Vérifier que `ADMIN_EMAIL` est défini
+- Pour Gmail : le mot de passe d'application doit être sans espaces (16 caractères collés)
+- Vérifier que la validation en deux étapes est activée sur le compte Google
+
+</details>
+
+<details>
+<summary><b>Upload d'images bloqué</b></summary>
+
+- Vérifier que le bucket `clinic-assets` existe dans Supabase Storage et est en mode **Public**
+- Vérifier les politiques RLS Storage dans Supabase : l'utilisateur authentifié doit avoir les droits `INSERT` et `SELECT`
+
+</details>
+
+---
+
+<div align="center">
+
+<br/>
+
+Construit avec Next.js · Supabase · Claude · Stripe
+
+<br/>
+
+</div>

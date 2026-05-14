@@ -1,7 +1,7 @@
--- Enable UUID extension
+-- Extension UUID
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Clinics table
+-- Table des cliniques
 CREATE TABLE clinics (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE clinics (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Users (clinic staff) table
+-- Table des utilisateurs (personnel de la clinique)
 CREATE TABLE users (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   clinic_id UUID NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
@@ -22,7 +22,7 @@ CREATE TABLE users (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Patients table
+-- Table des patients
 CREATE TABLE patients (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   clinic_id UUID NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
@@ -33,7 +33,7 @@ CREATE TABLE patients (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Services table
+-- Table des services
 CREATE TABLE services (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   clinic_id UUID NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
@@ -44,7 +44,7 @@ CREATE TABLE services (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Availability rules table
+-- Table des règles de disponibilité
 CREATE TABLE availability_rules (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   clinic_id UUID NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
@@ -57,7 +57,7 @@ CREATE TABLE availability_rules (
   UNIQUE (clinic_id, day_of_week)
 );
 
--- Blocked dates table
+-- Table des dates bloquées
 CREATE TABLE blocked_dates (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   clinic_id UUID NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
@@ -67,7 +67,7 @@ CREATE TABLE blocked_dates (
   UNIQUE (clinic_id, date)
 );
 
--- Appointments table
+-- Table des rendez-vous
 CREATE TABLE appointments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   clinic_id UUID NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
@@ -81,7 +81,7 @@ CREATE TABLE appointments (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- AI conversations table
+-- Table des conversations IA
 CREATE TABLE ai_conversations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   clinic_id UUID NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
@@ -91,7 +91,7 @@ CREATE TABLE ai_conversations (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Clinic settings table
+-- Table des paramètres de la clinique
 CREATE TABLE clinic_settings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   clinic_id UUID NOT NULL REFERENCES clinics(id) ON DELETE CASCADE UNIQUE,
@@ -105,7 +105,7 @@ CREATE TABLE clinic_settings (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Subscriptions table
+-- Table des abonnements
 CREATE TABLE subscriptions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   clinic_id UUID NOT NULL REFERENCES clinics(id) ON DELETE CASCADE UNIQUE,
@@ -116,7 +116,7 @@ CREATE TABLE subscriptions (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Indexes
+-- Index de performance
 CREATE INDEX idx_appointments_clinic_id ON appointments(clinic_id);
 CREATE INDEX idx_appointments_patient_id ON appointments(patient_id);
 CREATE INDEX idx_appointments_start_at ON appointments(start_at);
@@ -126,7 +126,7 @@ CREATE INDEX idx_patients_phone ON patients(phone);
 CREATE INDEX idx_ai_conversations_clinic_id ON ai_conversations(clinic_id);
 CREATE INDEX idx_ai_conversations_patient_temp_id ON ai_conversations(patient_temp_id);
 
--- Trigger to update updated_at
+-- Trigger de mise à jour automatique de updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN

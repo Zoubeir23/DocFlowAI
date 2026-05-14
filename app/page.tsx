@@ -31,11 +31,10 @@ export default async function HomePage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border transition-all">
         <div className="w-full max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <Image src="/logo.png" alt="Icon" width={24} height={24} className="object-contain dark:brightness-0 dark:invert" />
+          <Link href="/" className="flex items-center group">
+            <div className="group-hover:scale-105 transition-transform">
+              <Image src="/logo.png" alt="DocFlow IA" width={140} height={36} className="object-contain dark:brightness-0 dark:invert" />
             </div>
-            <span className="font-bold text-xl tracking-tight">DocFlow <span className="text-primary">IA</span></span>
           </Link>
           
           <div className="hidden md:flex items-center gap-8">
@@ -102,14 +101,14 @@ export default async function HomePage() {
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
                 {isLoggedIn ? (
                   <Link href="/app/dashboard">
-                    <button className="w-full sm:w-auto bg-foreground text-background hover:bg-foreground/90 px-8 py-4 rounded-full text-base font-bold shadow-xl flex items-center justify-center gap-2 transition-all hover:scale-105">
+                    <button className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-4 rounded-full text-base font-bold shadow-xl shadow-primary/20 flex items-center justify-center gap-2 transition-all hover:scale-105">
                       <LayoutDashboard className="w-5 h-5" />
                       Voir mon tableau de bord
                     </button>
                   </Link>
                 ) : (
                   <Link href="/signup">
-                    <button className="w-full sm:w-auto bg-foreground text-background hover:bg-foreground/90 px-8 py-4 rounded-full text-base font-bold shadow-xl flex items-center justify-center gap-2 transition-all hover:scale-105">
+                    <button className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-4 rounded-full text-base font-bold shadow-xl shadow-primary/20 flex items-center justify-center gap-2 transition-all hover:scale-105">
                       {t("hero.ctaPrimary")} <ArrowRight className="w-5 h-5" />
                     </button>
                   </Link>
@@ -258,14 +257,14 @@ export default async function HomePage() {
             </div>
 
             {/* Bento 5: Security & Analytics */}
-            <div className="bg-gradient-to-br from-slate-900 to-slate-800 dark:from-muted/50 dark:to-muted rounded-3xl p-8 lg:p-10 border border-border shadow-sm hover:shadow-xl transition-shadow relative overflow-hidden group">
-              <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center mb-8 border border-white/20">
-                <ShieldCheck className="w-7 h-7 text-white" />
+            <div className="bg-card rounded-3xl p-8 lg:p-10 border border-border shadow-sm hover:shadow-xl transition-shadow relative overflow-hidden group">
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-8 border border-primary/20">
+                <ShieldCheck className="w-7 h-7 text-primary" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-4">{t("features.securityTitle")}</h3>
-              <p className="text-slate-300 leading-relaxed mb-6">{t("features.securityDesc")}</p>
-              <div className="pt-6 border-t border-white/10">
-                <div className="flex items-center gap-3 text-emerald-400 font-bold">
+              <h3 className="text-xl font-bold text-foreground mb-4">{t("features.securityTitle")}</h3>
+              <p className="text-muted-foreground leading-relaxed mb-6">{t("features.securityDesc")}</p>
+              <div className="pt-6 border-t border-border">
+                <div className="flex items-center gap-3 text-primary font-bold">
                   <TrendingUp className="w-5 h-5" /> 100% HIPAA Compliant
                 </div>
               </div>
