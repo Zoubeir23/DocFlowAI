@@ -4,10 +4,11 @@ import { useCallback, useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format, parseISO } from 'date-fns'
 import { toast } from 'sonner'
-import { CalendarDays, Clock, User, Stethoscope } from 'lucide-react'
+import { CalendarDays, Clock, User, HeartPulse, Lock, Zap } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { updateAppointmentTime, updateAppointmentStatus } from '@/actions/appointments'
 import { Button } from '@/components/ui/button'
+import { useTranslations, useLocale } from 'next-intl'
 import {
   Dialog,
   DialogContent,
@@ -16,19 +17,20 @@ import {
 } from '@/components/ui/dialog'
 import type { AppointmentWithRelations } from '@/types'
 import { getStatusColor, getStatusLabel } from '@/lib/utils'
+import Link from 'next/link'
 
-async function fetchClinicId() {
+async function fetchClinicInfo(): Promise<{ clinicId: string; plan: string } | null> {
   const supabase = createClient() as any
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
-  const { data } = await supabase
-    .from('users')
-    .select('clinic_id')
-    .eq('id', user.id)
+  const { data: userData } = await supabase.from('users').select('clinic_id').eq('id', user.id).single()
+  if (!userData) return null
+  const { data: sub } = await supabase
+    .from('subscriptions')
+    .select('plan')
+    .eq('clinic_id', userData.clinic_id)
     .single()
-  return data?.clinic_id || null
+  return { clinicId: userData.clinic_id, plan: sub?.plan ?? 'free' }
 }
 
 async function fetchCalendarAppointments(clinicId: string) {
@@ -50,22 +52,27 @@ const STATUS_COLORS = {
   no_show: '#f59e0b',
 }
 
-const STATUS_LABELS: Record<string, { label: string; dot: string }> = {
-  booked: { label: 'Booked', dot: 'bg-cyan-500' },
-  confirmed: { label: 'Confirmed', dot: 'bg-teal-500' },
-  completed: { label: 'Completed', dot: 'bg-slate-400' },
-  cancelled: { label: 'Cancelled', dot: 'bg-red-400' },
-  no_show: { label: 'No Show', dot: 'bg-amber-400' },
+const STATUS_LABELS: Record<string, { labelKey: any; className: string }> = {
+  booked: { labelKey: 'statusBooked', className: 'status-booked' },
+  confirmed: { labelKey: 'statusConfirmed', className: 'status-confirmed' },
+  completed: { labelKey: 'statusCompleted', className: 'status-completed' },
+  cancelled: { labelKey: 'statusCancelled', className: 'status-cancelled' },
+  no_show: { labelKey: 'statusNoShow', className: 'status-no_show' },
 }
 
 export default function CalendarPage() {
+  const t = useTranslations('calendar')
+  const locale = useLocale()
   const [selectedAppt, setSelectedAppt] = useState<AppointmentWithRelations | null>(null)
   const queryClient = useQueryClient()
 
-  const { data: clinicId } = useQuery({
-    queryKey: ['clinicId'],
-    queryFn: fetchClinicId,
+  const { data: clinicInfo } = useQuery({
+    queryKey: ['clinicInfo'],
+    queryFn: fetchClinicInfo,
   })
+
+  const clinicId = clinicInfo?.clinicId
+  const isPaidPlan = clinicInfo?.plan !== undefined && clinicInfo.plan !== 'free'
 
   const { data: appointments = [], isLoading } = useQuery({
     queryKey: ['calendar-appointments', clinicId],
@@ -100,118 +107,154 @@ export default function CalendarPage() {
     end: appt.end_at,
     backgroundColor: STATUS_COLORS[appt.status] || STATUS_COLORS.booked,
     borderColor: STATUS_COLORS[appt.status] || STATUS_COLORS.booked,
+    textColor: '#ffffff',
     extendedProps: { appointment: appt },
   }))
 
   return (
-    <div className="p-6 h-full space-y-5">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 bg-[#14b8a6]/10 text-[#14b8a6] border border-[#14b8a6]/30 flex items-center justify-center">
-              <CalendarDays className="w-4 h-4 text-foreground" />
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* ── BOLD HERO HEADER ─────────────────────────────────────────────────── */}
+      <div className="relative overflow-hidden bg-card border-b border-border px-4 py-8 md:px-6 md:py-12 lg:px-10 lg:py-16 fade-in-up flex-shrink-0">
+        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="relative max-w-7xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <div className="inline-flex items-center gap-2 mb-2 md:mb-4">
+              <CalendarDays className="w-5 h-5 text-primary" strokeWidth={2} />
+              <span className="font-semibold text-xs text-primary uppercase tracking-[0.2em]">{t('agenda')}</span>
             </div>
-            <h2 className="text-2xl font-medium text-foreground tracking-tight">Calendar</h2>
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground tracking-tight mb-2 md:mb-3">
+              {t('title')}
+            </h1>
+            <p className="text-base md:text-lg text-muted-foreground font-medium">
+              {t('subtitle')}
+            </p>
           </div>
-          <p className="text-foreground/60 text-sm ml-10">
-            Drag to reschedule · Click to view details
-          </p>
+          
+          <div className="flex flex-col items-end gap-3">
+            {/* Plan badge */}
+            {!isPaidPlan && clinicInfo && (
+              <Link href="/app/billing"
+                className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-700 dark:text-amber-400 text-xs font-semibold hover:bg-amber-500/20 transition-colors">
+                <Lock className="w-3.5 h-3.5" />
+                Calendrier basique · <span className="underline">Passer au complet</span>
+              </Link>
+            )}
+            {isPaidPlan && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-600 text-xs font-semibold">
+                <Zap className="w-3.5 h-3.5" />
+                Calendrier complet
+              </div>
+            )}
+            {/* Legend */}
+            <div className="flex items-center gap-2 md:gap-3 flex-wrap bg-background/50 backdrop-blur border border-border p-2 md:p-3 rounded-2xl">
+              {Object.entries(STATUS_LABELS).map(([status, { labelKey, className }]) => (
+                <div key={status} className={`flex items-center gap-1.5 text-[10px] md:text-xs font-bold uppercase tracking-wider px-2 py-1 md:px-3 md:py-1.5 rounded-full shadow-sm ${className}`}>
+                  <span>{t(labelKey as any)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="flex items-center gap-4 flex-wrap">
-        {Object.entries(STATUS_LABELS).map(([status, { label, dot }]) => (
-          <div key={status} className="flex items-center gap-1.5 text-xs text-foreground/60">
-            <div className={`w-2.5 h-2.5 rounded-full ${dot}`} />
-            <span className="font-medium">{label}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Calendar card */}
-      <div className="glass-card rounded-none overflow-hidden">
-        <div className="p-4 fc-wrapper">
-          {!isLoading && (
-            <FullCalendarWrapper
-              events={events}
-              onEventClick={(appt) => setSelectedAppt(appt)}
-              onEventDrop={({ id, startAt, endAt }) =>
-                updateTimeMutation.mutate({ id, startAt, endAt })
-              }
-            />
-          )}
-          {isLoading && (
-            <div className="h-96 flex items-center justify-center text-foreground/50 text-sm">
-              Loading calendar...
-            </div>
-          )}
+      {/* ── CONTENT BODY ──────────────────────────────────────────────────────── */}
+      <div className="p-4 md:p-6 lg:p-10 max-w-7xl mx-auto space-y-6 md:space-y-8 fade-in-up flex-1 w-full" style={{ animationDelay: "0.1s" }}>
+        
+        {/* Mobile Swipe Hint */}
+        <div className="md:hidden flex items-center justify-center gap-2 text-xs font-bold text-muted-foreground bg-muted/30 py-2 rounded-xl border border-border">
+          <svg className="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+          {t('swipeHint')}
         </div>
+
+        {/* Calendar card */}
+        <div className="card-panel overflow-hidden w-full">
+          <div className="p-4 md:p-6 fc-wrapper overflow-x-auto scrollbar-hide">
+            <div className="min-w-[800px] md:min-w-0">
+              {!isLoading && (
+                <FullCalendarWrapper
+                  events={events}
+                  onEventClick={(appt) => setSelectedAppt(appt)}
+                  onEventDrop={({ id, startAt, endAt }) =>
+                    updateTimeMutation.mutate({ id, startAt, endAt })
+                  }
+                  locale={locale}
+                  isPaidPlan={isPaidPlan}
+                />
+              )}
+              {isLoading && (
+                <div className="h-96 flex items-center justify-center text-muted-foreground font-semibold">
+                  {t('loading')}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
       </div>
 
       {/* Detail modal */}
       <Dialog open={!!selectedAppt} onOpenChange={() => setSelectedAppt(null)}>
-        <DialogContent className="glass-card border-0 rounded-none p-0 overflow-hidden max-w-md">
+        <DialogContent className="glass-card border-border p-0 overflow-hidden max-w-md">
           {selectedAppt && (
             <>
-              <DialogHeader className="border-b border-foreground/10 bg-foreground/[0.02] p-6 pb-5">
-                <DialogTitle className="text-foreground text-lg font-medium">
-                  Appointment Details
+              <DialogHeader className="border-b border-border bg-muted/30 p-6 pb-5">
+                <DialogTitle className="text-foreground text-lg font-semibold">
+                  {t('detailsTitle')}
                 </DialogTitle>
-                <p className="text-teal-100/80 text-sm mt-0.5">
+                <p className="text-muted-foreground text-sm mt-0.5">
                   {format(parseISO(selectedAppt.start_at), 'EEEE, MMM d, yyyy')}
                 </p>
               </DialogHeader>
 
               <div className="p-6 space-y-5">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1.5 text-xs font-medium text-foreground/50 uppercase tracking-wide">
-                      <User className="w-3 h-3" /> Patient
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      <User className="w-3 h-3" /> {t('patient')}
                     </div>
                     <p className="font-medium text-foreground text-sm">
                       {selectedAppt.patient?.full_name}
                     </p>
-                    <p className="text-foreground/60 text-xs">{selectedAppt.patient?.phone}</p>
+                    <p className="text-muted-foreground text-xs">{selectedAppt.patient?.phone}</p>
                   </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1.5 text-xs font-medium text-foreground/50 uppercase tracking-wide">
-                      <Stethoscope className="w-3 h-3" /> Service
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      <HeartPulse className="w-3 h-3" /> {t('service')}
                     </div>
                     <p className="font-medium text-foreground text-sm">
                       {selectedAppt.service?.name}
                     </p>
-                    <p className="text-foreground/60 text-xs">
+                    <p className="text-muted-foreground text-xs">
                       {selectedAppt.service?.duration_minutes} min
                     </p>
                   </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1.5 text-xs font-medium text-foreground/50 uppercase tracking-wide">
-                      <Clock className="w-3 h-3" /> Time
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      <Clock className="w-3 h-3" /> {t('time')}
                     </div>
                     <p className="font-medium text-foreground text-sm">
                       {format(parseISO(selectedAppt.start_at), 'h:mm a')} &mdash;{' '}
                       {format(parseISO(selectedAppt.end_at), 'h:mm a')}
                     </p>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium text-foreground/50 uppercase tracking-wide">
-                      Status
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      {t('status')}
                     </p>
                     <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedAppt.status)}`}
+                      className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold status-${selectedAppt.status}`}
                     >
                       {getStatusLabel(selectedAppt.status)}
                     </span>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 pt-4 border-t border-foreground/10">
+                <div className="flex flex-wrap gap-2 pt-4 border-t border-border">
                   {selectedAppt.status !== 'confirmed' && (
                     <Button
                       size="sm"
-                      className="bg-transparent border border-[#14b8a6] text-[#14b8a6] h-8 text-xs px-4 uppercase tracking-widest hover:bg-[#14b8a6]/10 transition-colors"
+                      className="bg-primary text-primary-foreground hover:bg-primary/90 h-9 text-xs px-4 rounded-lg font-medium"
                       onClick={() =>
                         updateStatusMutation.mutate({
                           id: selectedAppt.id,
@@ -219,14 +262,14 @@ export default function CalendarPage() {
                         })
                       }
                     >
-                      Confirm
+                      {t('confirm')}
                     </Button>
                   )}
                   {selectedAppt.status !== 'completed' && (
                     <Button
                       size="sm"
                       variant="outline"
-                      className="rounded-none h-8 text-xs border-foreground/10 text-foreground/70 hover:border-[#14b8a6]/50 hover:text-teal-700"
+                      className="rounded-lg h-9 text-xs border-border text-foreground hover:bg-accent font-medium"
                       onClick={() =>
                         updateStatusMutation.mutate({
                           id: selectedAppt.id,
@@ -234,14 +277,14 @@ export default function CalendarPage() {
                         })
                       }
                     >
-                      Mark Completed
+                      {t('markCompleted')}
                     </Button>
                   )}
                   {selectedAppt.status !== 'no_show' && (
                     <Button
                       size="sm"
                       variant="outline"
-                      className="rounded-none h-8 text-xs border-foreground/10 text-foreground/70 hover:border-amber-300 hover:text-amber-700"
+                      className="rounded-lg h-9 text-xs border-border text-foreground hover:bg-accent font-medium"
                       onClick={() =>
                         updateStatusMutation.mutate({
                           id: selectedAppt.id,
@@ -249,13 +292,13 @@ export default function CalendarPage() {
                         })
                       }
                     >
-                      No Show
+                      {t('noShow')}
                     </Button>
                   )}
                   <Button
                     size="sm"
                     variant="destructive"
-                    className="rounded-none h-8 text-xs"
+                    className="rounded-lg h-9 text-xs font-medium"
                     onClick={() =>
                       updateStatusMutation.mutate({
                         id: selectedAppt.id,
@@ -263,7 +306,7 @@ export default function CalendarPage() {
                       })
                     }
                   >
-                    Cancel
+                    {t('cancel')}
                   </Button>
                 </div>
               </div>
@@ -275,54 +318,71 @@ export default function CalendarPage() {
   )
 }
 
+import FullCalendar from '@fullcalendar/react'
+import dayGridPlugin from '@fullcalendar/daygrid'
+import timeGridPlugin from '@fullcalendar/timegrid'
+import interactionPlugin from '@fullcalendar/interaction'
+import frLocale from '@fullcalendar/core/locales/fr'
+
 function FullCalendarWrapper({
   events,
   onEventClick,
   onEventDrop,
+  locale,
+  isPaidPlan,
 }: {
   events: Record<string, unknown>[]
   onEventClick: (appt: AppointmentWithRelations) => void
   onEventDrop: (args: { id: string; startAt: string; endAt: string }) => void
+  locale: string
+  isPaidPlan: boolean
 }) {
-  const calendarModules = useCallback(async () => {
-    const [
-      { default: FC },
-      { default: dayGridPlugin },
-      { default: timeGridPlugin },
-      { default: interactionPlugin },
-    ] = await Promise.all([
-      import('@fullcalendar/react'),
-      import('@fullcalendar/daygrid'),
-      import('@fullcalendar/timegrid'),
-      import('@fullcalendar/interaction'),
-    ])
-
-    return { FC, dayGridPlugin, timeGridPlugin, interactionPlugin }
-  }, [])
-
-  const [modules, setModules] = useState<Awaited<ReturnType<typeof calendarModules>> | null>(null)
   const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
     setIsMounted(true)
-    if (typeof window !== 'undefined' && !modules) {
-      calendarModules().then(setModules)
-    }
-  }, [modules, calendarModules])
+  }, [])
 
-  if (!isMounted || !modules) {
+  if (!isMounted) {
     return (
-      <div className="h-96 flex items-center justify-center text-foreground/50 text-sm">
-        Loading calendar...
+      <div className="h-96 flex items-center justify-center text-muted-foreground text-sm font-semibold">
+        Loading...
       </div>
     )
   }
 
-  const { FC, dayGridPlugin, timeGridPlugin, interactionPlugin } = modules
+  // Basique (Free) : vue mois uniquement, lecture seule
+  if (!isPaidPlan) {
+    return (
+      <FullCalendar
+        plugins={[dayGridPlugin, interactionPlugin]}
+        locales={[frLocale]}
+        locale={locale.includes('fr') ? 'fr' : 'en'}
+        initialView="dayGridMonth"
+        headerToolbar={{
+          left: 'prev,next today',
+          center: 'title',
+          right: '',
+        }}
+        events={events}
+        editable={false}
+        droppable={false}
+        eventClick={(info) => {
+          const appt = info.event.extendedProps?.appointment as AppointmentWithRelations
+          if (appt) onEventClick(appt)
+        }}
+        height="auto"
+        nowIndicator={true}
+      />
+    )
+  }
 
+  // Complet (Starter+) : toutes les vues + drag & drop
   return (
-    <FC
+    <FullCalendar
       plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+      locales={[frLocale]}
+      locale={locale.includes('fr') ? 'fr' : 'en'}
       initialView="timeGridWeek"
       headerToolbar={{
         left: 'prev,next today',

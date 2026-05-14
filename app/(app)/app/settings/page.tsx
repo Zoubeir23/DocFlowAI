@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Plus, Trash2, Save, Calendar, Clock, Settings } from 'lucide-react'
+import { Plus, Trash2, Save, CalendarDays, Clock, Settings2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import {
   getAvailabilityRules,
@@ -95,21 +95,21 @@ function AvailabilityRow({
 
   return (
     <div
-      className={`rounded-none border transition-all duration-200 ${isActive ? 'bg-background border-foreground/10 shadow-none' : 'bg-foreground/[0.02] border-foreground/10'}`}
+      className={`rounded-xl border transition-all duration-200 ${isActive ? 'bg-card border-border' : 'bg-muted/30 border-border'}`}
     >
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3">
           <Switch
             checked={isActive}
             onCheckedChange={setIsActive}
-            className="data-[state=checked]:bg-teal-500"
+            className="data-[state=checked]:bg-primary"
           />
           <div className="flex items-center gap-2">
-            <span className="w-8 h-8 rounded-none bg-teal-50 text-teal-700 text-xs font-medium flex items-center justify-center border border-foreground/10">
+            <span className="w-9 h-9 rounded-lg bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center border border-primary/15">
               {dayShort}
             </span>
             <span
-              className={`font-medium text-sm ${isActive ? 'text-foreground/80' : 'text-foreground/50'}`}
+              className={`font-medium text-sm ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}
             >
               {label}
             </span>
@@ -120,52 +120,52 @@ function AvailabilityRow({
           variant="outline"
           onClick={handleSave}
           disabled={saving}
-          className="h-7 rounded-none text-xs border-foreground/10 hover:border-[#14b8a6]/40 hover:bg-[#14b8a6]/[0.03] hover:text-teal-700 font-medium"
+          className="h-8 rounded-lg text-xs border-border hover:bg-accent hover:text-foreground font-medium"
         >
           <Save className="w-3 h-3 mr-1" />
           {saving ? t('saving') : t('save')}
         </Button>
       </div>
       {isActive && (
-        <div className="grid grid-cols-2 gap-3 px-4 pb-4 border-t border-foreground/10 pt-3">
+        <div className="grid grid-cols-2 gap-3 px-4 pb-4 border-t border-border pt-3">
           <div className="space-y-1">
-            <Label className="text-xs font-medium text-foreground/60">{t('open')}</Label>
+            <Label className="text-xs font-medium text-muted-foreground">{t('open')}</Label>
             <Input
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              className="h-8 text-sm rounded-none border-foreground/10 focus:ring-0 focus:border-[#14b8a6]"
+              className="h-9 text-sm rounded-lg border-border focus:ring-primary focus:border-primary"
             />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs font-medium text-foreground/60">{t('close')}</Label>
+            <Label className="text-xs font-medium text-muted-foreground">{t('close')}</Label>
             <Input
               type="time"
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
-              className="h-8 text-sm rounded-none border-foreground/10 focus:ring-0 focus:border-[#14b8a6]"
+              className="h-9 text-sm rounded-lg border-border focus:ring-primary focus:border-primary"
             />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs font-medium text-foreground/60">
+            <Label className="text-xs font-medium text-muted-foreground">
               {t('breakStart')} <span className="text-muted-foreground">({t('optional')})</span>
             </Label>
             <Input
               type="time"
               value={breakStart}
               onChange={(e) => setBreakStart(e.target.value)}
-              className="h-8 text-sm rounded-none border-foreground/10 focus:ring-0 focus:border-[#14b8a6]"
+              className="h-9 text-sm rounded-lg border-border focus:ring-primary focus:border-primary"
             />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs font-medium text-foreground/60">
+            <Label className="text-xs font-medium text-muted-foreground">
               {t('breakEnd')} <span className="text-muted-foreground">({t('optional')})</span>
             </Label>
             <Input
               type="time"
               value={breakEnd}
               onChange={(e) => setBreakEnd(e.target.value)}
-              className="h-8 text-sm rounded-none border-foreground/10 focus:ring-0 focus:border-[#14b8a6]"
+              className="h-9 text-sm rounded-lg border-border focus:ring-primary focus:border-primary"
             />
           </div>
         </div>
@@ -221,40 +221,40 @@ export default function SettingsPage() {
   const getRuleForDay = (day: number) => rules.find((r) => r.day_of_week === day)
 
   return (
-    <div className="p-6 space-y-6 max-w-[1400px]">
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 bg-[#14b8a6]/10 text-[#14b8a6] border border-[#14b8a6]/30 flex items-center justify-center">
-          <Settings className="w-4 h-4 text-foreground" />
+    <div className="page-container">
+      <div className="section-header">
+        <div className="icon-container">
+          <Settings2 className="w-5 h-5 text-primary" strokeWidth={1.8} />
         </div>
         <div>
-          <h2 className="text-2xl font-medium text-foreground tracking-tight">{t('title')}</h2>
-          <p className="text-foreground/60 text-sm">{t('subtitle')}</p>
+          <h2 className="section-title">{t('title')}</h2>
+          <p className="section-subtitle">{t('subtitle')}</p>
         </div>
       </div>
 
       <Tabs defaultValue="availability">
-        <TabsList className="bg-muted/80 rounded-none p-1 h-auto gap-1">
+        <TabsList className="bg-muted/50 rounded-xl p-1 h-auto gap-1">
           <TabsTrigger
             value="availability"
-            className="rounded-none text-sm font-medium data-[state=active]:bg-background data-[state=active]:text-[#14b8a6] data-[state=active]:shadow-none text-foreground/60 px-4 py-2"
+            className="rounded-lg text-sm font-medium data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-sm text-muted-foreground px-4 py-2"
           >
             <Clock className="w-3.5 h-3.5 mr-1.5" />
             {t('availability')}
           </TabsTrigger>
           <TabsTrigger
             value="blocked"
-            className="rounded-none text-sm font-medium data-[state=active]:bg-background data-[state=active]:text-[#14b8a6] data-[state=active]:shadow-none text-foreground/60 px-4 py-2"
+            className="rounded-lg text-sm font-medium data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-sm text-muted-foreground px-4 py-2"
           >
-            <Calendar className="w-3.5 h-3.5 mr-1.5" />
+            <CalendarDays className="w-3.5 h-3.5 mr-1.5" />
             {t('blockedDates')}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="availability" className="mt-5">
-          <div className="glass-card rounded-none overflow-hidden">
-            <div className="px-6 py-4 border-b border-foreground/10">
-              <h3 className="font-medium text-foreground">{t('weeklySchedule')}</h3>
-              <p className="text-xs text-foreground/50 mt-0.5">
+          <div className="glass-card overflow-hidden">
+            <div className="px-6 py-4 border-b border-border">
+              <h3 className="font-semibold text-foreground">{t('weeklySchedule')}</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {t('weeklyScheduleDesc')}
               </p>
             </div>
@@ -279,10 +279,10 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="blocked" className="mt-5">
-          <div className="glass-card rounded-none overflow-hidden">
-            <div className="px-6 py-4 border-b border-foreground/10">
-              <h3 className="font-medium text-foreground">{t('blockedDatesHolidays')}</h3>
-              <p className="text-xs text-foreground/50 mt-0.5">
+          <div className="glass-card overflow-hidden">
+            <div className="px-6 py-4 border-b border-border">
+              <h3 className="font-semibold text-foreground">{t('blockedDatesHolidays')}</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {t('blockedDatesDesc')}
               </p>
             </div>
@@ -293,13 +293,13 @@ export default function SettingsPage() {
                   value={newBlockedDate}
                   onChange={(e) => setNewBlockedDate(e.target.value)}
                   min={new Date().toISOString().split('T')[0]}
-                  className="w-auto rounded-none border-foreground/10 focus:ring-0 focus:border-[#14b8a6]"
+                  className="w-auto rounded-xl border-border focus:ring-primary focus:border-primary"
                 />
                 <Input
                   placeholder={t('reasonOptional')}
                   value={newBlockedReason}
                   onChange={(e) => setNewBlockedReason(e.target.value)}
-                  className="flex-1 min-w-[160px] rounded-none border-foreground/10 focus:ring-0 focus:border-[#14b8a6]"
+                  className="flex-1 min-w-[160px] rounded-xl border-border focus:ring-primary focus:border-primary"
                 />
                 <Button
                   onClick={() => addBlockedMutation.mutate()}
@@ -311,9 +311,9 @@ export default function SettingsPage() {
                 </Button>
               </div>
               {blockedDates.length === 0 ? (
-                <div className="text-center py-10 text-foreground/50">
-                  <div className="w-12 h-12 rounded-none bg-background border border-foreground/10 flex items-center justify-center mx-auto mb-3">
-                    <Calendar className="w-6 h-6 text-muted-foreground" />
+                <div className="text-center py-10 text-muted-foreground">
+                  <div className="w-12 h-12 rounded-xl bg-muted border border-border flex items-center justify-center mx-auto mb-3">
+                    <CalendarDays className="w-6 h-6 text-muted-foreground" />
                   </div>
                   <p className="text-sm font-medium">{t('noBlockedDates')}</p>
                   <p className="text-xs mt-0.5 text-muted-foreground">{t('noBlockedDatesDesc')}</p>
@@ -323,7 +323,7 @@ export default function SettingsPage() {
                   {blockedDates.map((bd) => (
                     <div
                       key={bd.id}
-                      className="flex items-center justify-between p-3.5 bg-red-50/60 border border-red-100 rounded-none group hover:bg-red-50 transition-colors"
+                      className="flex items-center justify-between p-3.5 rounded-xl border border-border bg-muted/30 group hover:bg-accent transition-colors"
                     >
                       <div>
                         <p className="font-medium text-sm text-foreground">
@@ -334,12 +334,12 @@ export default function SettingsPage() {
                             day: 'numeric',
                           })}
                         </p>
-                        {bd.reason && <p className="text-xs text-foreground/60 mt-0.5">{bd.reason}</p>}
+                        {bd.reason && <p className="text-xs text-muted-foreground mt-0.5">{bd.reason}</p>}
                       </div>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0 rounded-none text-red-400 hover:text-red-600 hover:bg-red-100 opacity-0 group-hover:opacity-100 transition-all"
+                        className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
                         onClick={() => removeBlockedMutation.mutate(bd.id)}
                       >
                         <Trash2 className="w-3.5 h-3.5" />

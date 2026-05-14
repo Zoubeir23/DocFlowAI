@@ -37,10 +37,10 @@ export async function createStripeCheckoutSession(
   }
 
   const priceId = STRIPE_PLAN_PRICE_IDS[plan];
-  if (!priceId) {
+  if (!priceId || priceId.startsWith("price_...") || priceId === "price_") {
     return {
       checkoutUrl: null,
-      error: `STRIPE_PRICE_ID_${plan.toUpperCase()} n'est pas configuré dans les variables d'environnement`,
+      error: "Le paiement en ligne n'est pas encore disponible. Contactez-nous pour souscrire à un abonnement.",
     };
   }
 

@@ -3,18 +3,30 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendNotification } from "@/lib/notifications";
+import { checkAppointmentQuota } from "@/lib/subscription/quota";
+import { widgetCorsResponse, withWidgetCors } from "@/lib/cors";
+import { checkWidgetBookRateLimit } from "@/lib/rate-limit";
+
+export async function OPTIONS() {
+  return widgetCorsResponse();
+}
 
 const bookingSchema = z.object({
   clinicSlug: z.string(),
   serviceId: z.string().uuid(),
   startAt: z.string(),
   endAt: z.string(),
-  patientName: z.string().min(1),
-  patientPhone: z.string().min(1),
-  patientEmail: z.string().optional(),
+  patientName: z.string().min(1).max(200),
+  patientPhone: z.string().min(1).max(30),
+  patientEmail: z.string().email().optional().or(z.literal("")),
 });
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
+  if (!(await checkWidgetBookRateLimit(ip))) {
+    return NextResponse.json({ error: "Trop de requêtes. Réessayez dans une minute." }, { status: 429 });
+  }
+
   let body: unknown;
   try {
     body = await req.json();
@@ -53,6 +65,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Service not found" }, { status: 404 });
   }
 
+  const quota = await checkAppointmentQuota(clinic.id, db);
+  if (!quota.allowed) {
+    return NextResponse.json({ error: quota.reason ?? "Quota de rendez-vous atteint." }, { status: 429 });
+  }
+
   const { data: result, error } = await db.rpc("create_booking_from_widget", {
     p_clinic_id: clinic.id,
     p_patient_name: patientName,
@@ -65,8 +82,9 @@ export async function POST(req: NextRequest) {
   });
 
   if (error) {
+    // H3 fix: never expose raw DB error messages to clients
     console.error("[book] rpc error:", error);
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: "Erreur lors de la réservation. Veuillez réessayer." }, { status: 400 });
   }
 
   const resultData = result as { appointment_id: string; patient_id: string };
@@ -90,9 +108,9 @@ export async function POST(req: NextRequest) {
     doctorEmail: ownerUser?.email || undefined,
   });
 
-  return NextResponse.json({
+  return withWidgetCors(NextResponse.json({
     success: true,
     appointmentId: resultData.appointment_id,
     patientId: resultData.patient_id,
-  });
+  }));
 }

@@ -66,6 +66,12 @@ export async function initializeClinicWebsite(templateId: string = "medical-mode
       diplomas: [],
       avatar: doctorAvatar,
     },
+    contact_data: {
+      address: "",
+      phone: "",
+      schedule: "Lundi – Vendredi · 8h – 19h\nSamedi · 9h – 13h",
+      insurance_info: "Conventionné secteur 1 · Remboursé Assurance Maladie",
+    },
     style_config: template.data.style_config,
     is_published: false,
   };

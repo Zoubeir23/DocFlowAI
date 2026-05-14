@@ -1,4 +1,4 @@
--- Function to create booking from widget (bypasses RLS with service role)
+-- Fonction de création de rendez-vous depuis le widget (contourne la RLS via le rôle service)
 CREATE OR REPLACE FUNCTION create_booking_from_widget(
   p_clinic_id UUID,
   p_patient_name TEXT,
@@ -15,7 +15,7 @@ DECLARE
   v_appointment_id UUID;
   v_service_duration INTEGER;
 BEGIN
-  -- Upsert patient
+  -- Insertion ou mise à jour du patient
   INSERT INTO patients (clinic_id, full_name, phone, email)
   VALUES (p_clinic_id, p_patient_name, p_patient_phone, p_patient_email)
   ON CONFLICT (clinic_id, phone) DO UPDATE
@@ -23,14 +23,14 @@ BEGIN
         email = COALESCE(EXCLUDED.email, patients.email)
   RETURNING id INTO v_patient_id;
 
-  -- If no patient was upserted, find by phone
+  -- Si aucun patient retourné, recherche par téléphone
   IF v_patient_id IS NULL THEN
     SELECT id INTO v_patient_id
     FROM patients
     WHERE clinic_id = p_clinic_id AND phone = p_patient_phone;
   END IF;
 
-  -- Create appointment
+  -- Création du rendez-vous
   INSERT INTO appointments (
     clinic_id, patient_id, service_id, status, source,
     start_at, end_at, notes
@@ -48,10 +48,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Add unique constraint for patient phone per clinic
+-- Contrainte d'unicité : un patient par numéro de téléphone par clinique
 ALTER TABLE patients ADD CONSTRAINT patients_clinic_phone_unique UNIQUE (clinic_id, phone);
 
--- Function to get available slots for a date
+-- Fonction de récupération des informations d'une clinique par slug
 CREATE OR REPLACE FUNCTION get_clinic_info_by_slug(p_slug TEXT)
 RETURNS JSON AS $$
 DECLARE
@@ -80,6 +80,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
--- Grant execute on functions to anon role (for widget)
+-- Autorisation d'exécution pour le rôle anonyme (utilisé par le widget public)
 GRANT EXECUTE ON FUNCTION create_booking_from_widget TO anon;
 GRANT EXECUTE ON FUNCTION get_clinic_info_by_slug TO anon;

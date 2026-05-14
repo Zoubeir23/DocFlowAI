@@ -30,19 +30,50 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const { pathname } = request.nextUrl;
   const protectedPaths = ["/app"];
   const authPaths = ["/login", "/signup"];
-  const isProtected = protectedPaths.some((p) =>
-    request.nextUrl.pathname.startsWith(p)
-  );
-  const isAuthPath = authPaths.some((p) =>
-    request.nextUrl.pathname.startsWith(p)
-  );
+  const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
+  const isAuthPath = authPaths.some((p) => pathname.startsWith(p));
+  const isAdminPath = pathname.startsWith("/admin");
 
-  if (!user && isProtected) {
+  // Unauthenticated — redirect to login
+  if (!user && (isProtected || isAdminPath)) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
+  }
+
+  // Admin area — require super_admin role
+  if (user && isAdminPath) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: userData } = await (supabase as any)
+      .from("users")
+      .select("role, is_active")
+      .eq("id", user.id)
+      .single();
+
+    if (!userData || userData.role !== "super_admin") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/app/dashboard";
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // App area — check is_active to block disabled accounts
+  if (user && isProtected) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: userData } = await (supabase as any)
+      .from("users")
+      .select("is_active")
+      .eq("id", user.id)
+      .single();
+
+    if (userData && userData.is_active === false) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/blocked";
+      return NextResponse.redirect(url);
+    }
   }
 
   if (user && isAuthPath) {

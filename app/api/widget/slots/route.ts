@@ -3,8 +3,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { generateAvailableSlots } from "@/lib/slots";
 import type { AvailabilityRule, BlockedDate, Appointment } from "@/types";
+import { widgetCorsResponse } from "@/lib/cors";
+import { checkWidgetSlotsRateLimit } from "@/lib/rate-limit";
+
+export async function OPTIONS() {
+  return widgetCorsResponse();
+}
 
 export async function GET(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
+  if (!(await checkWidgetSlotsRateLimit(ip))) {
+    return NextResponse.json({ error: "Trop de requêtes. Réessayez dans une minute." }, { status: 429 });
+  }
+
   const { searchParams } = new URL(req.url);
   const clinicSlug = searchParams.get("clinicSlug");
   const serviceId = searchParams.get("serviceId");

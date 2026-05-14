@@ -18,27 +18,31 @@ export function StatCard({
   change,
 }: StatCardProps) {
   return (
-    <div className="p-5 group cursor-default bg-card">
-      <div className="flex items-start justify-between mb-4">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">{title}</p>
-        <div className="w-9 h-9 flex items-center justify-center bg-primary/10 rounded-lg">
-          <Icon className="w-4 h-4 text-primary" strokeWidth={1.5} />
+    <div className="card-stat group flex flex-col justify-between">
+      <div className="flex items-start justify-between mb-8">
+        <div className="icon-box group-hover:scale-110 transition-transform duration-300 shadow-sm border border-primary/10">
+          <Icon className="w-5 h-5 text-primary" strokeWidth={2} />
         </div>
+        {change && (
+          <div className={cn(
+            "flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider",
+            change.trend === "up" ? "bg-primary/10 text-primary border border-primary/20" : 
+            change.trend === "down" ? "bg-destructive/10 text-destructive border border-destructive/20" : "bg-muted text-muted-foreground border border-border"
+          )}>
+            {change.trend === "up" ? "↗" : change.trend === "down" ? "↘" : "→"}
+            <span className="ml-0.5">{change.value}</span>
+          </div>
+        )}
       </div>
       
-      <div className="text-3xl font-semibold text-foreground leading-none mb-2 tracking-tight">
-        {value}
-      </div>
-      
-      {change && (
-        <p className={cn(
-          "text-xs font-medium uppercase tracking-wide",
-          change.trend === "up" ? "text-primary" : 
-          change.trend === "down" ? "text-destructive" : "text-muted-foreground"
-        )}>
-          {change.trend === "up" ? "+" : change.trend === "down" ? "-" : ""}{change.value}
+      <div className="mt-auto">
+        <div className="text-4xl md:text-5xl font-bold tracking-tight text-foreground mb-2" style={{ fontFeatureSettings: '"tnum" 1' }}>
+          {value}
+        </div>
+        <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+          {title}
         </p>
-      )}
+      </div>
     </div>
   );
 }
