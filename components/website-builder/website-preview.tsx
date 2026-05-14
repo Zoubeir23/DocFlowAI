@@ -1,133 +1,360 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { Calendar, Star, Shield, Clock, MapPin } from "lucide-react";
+
+function hexToRgba(hex: string, alpha: number): string {
+  const cleaned = hex.replace("#", "");
+  const full =
+    cleaned.length === 3
+      ? cleaned
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : cleaned;
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return `rgba(37, 99, 235, ${alpha})`;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 export function WebsitePreview({ website }: { website: any }) {
   const { style_config, hero_data, about_data } = website;
+  const primary = style_config.primary || "#2563eb";
+  const pa = (a: number) => hexToRgba(primary, a);
+  const isPill = style_config.radius === "9999px" || style_config.radius === "50rem";
+  const cardRadius = isPill ? "16px" : style_config.radius;
 
-  // Apply CSS variables to a wrapper div based on the style config
-  const customStyles = {
-    "--tw-color-primary": style_config.primary,
-    "--tw-color-accent": style_config.accent,
-    "--tw-radius": style_config.radius,
-  } as React.CSSProperties;
+  const clinicLetter = (hero_data.title || "M").charAt(0).toUpperCase();
 
   return (
-    <div className="w-full h-full bg-muted/20 relative rounded-tl-2xl overflow-hidden border-t border-l border-border flex flex-col">
-      {/* Browser mockup header */}
-      <div className="h-12 bg-background border-b border-border flex items-center px-4 gap-4 z-10">
+    <div className="w-full h-full bg-muted/20 relative rounded-tl-2xl rounded-tr-2xl overflow-hidden border border-border flex flex-col shadow-2xl">
+
+      {/* Browser chrome */}
+      <div className="h-11 bg-background border-b border-border flex items-center px-4 gap-3 z-20 shrink-0">
         <div className="flex gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-red-400" />
-          <div className="w-3 h-3 rounded-full bg-yellow-400" />
-          <div className="w-3 h-3 rounded-full bg-green-400" />
+          <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+          <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
+          <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
         </div>
-        <div className="flex-1 max-w-xl mx-auto h-7 bg-muted rounded-md flex items-center justify-center px-3 text-xs text-muted-foreground truncate">
-          mysite.docflow.ai
+        <div className="flex-1 max-w-xs mx-auto h-6 bg-muted/50 rounded-md flex items-center justify-center text-[10px] font-medium text-muted-foreground border border-border truncate px-2">
+          votre-site.docflow.ai
         </div>
       </div>
 
-      {/* Preview Content (Iframe or direct render) */}
-      {/* We do a direct render for real-time preview feeling */}
-      <div 
-        className="flex-1 overflow-y-auto bg-white dark:bg-zinc-950"
-        style={customStyles}
+      {/* Preview content */}
+      <div
+        className="flex-1 overflow-y-auto text-[#1C1C27] antialiased"
+        style={{
+          backgroundColor: "#F8F7F4",
+          fontFamily: `'${style_config.fontBody || "DM Sans"}', system-ui, sans-serif`,
+        }}
       >
-        <div 
-          className="min-h-screen relative" 
-          style={{ fontFamily: style_config.fontBody }}
+        {/* Nav */}
+        <header
+          className="sticky top-0 z-50 flex items-center justify-between px-5 py-3.5 bg-white/95 border-b border-gray-100 shadow-sm"
         >
-          {/* Mock Header */}
-          <header className="absolute top-0 left-0 right-0 z-10 px-8 py-6 flex items-center justify-between">
-            <div className="text-xl font-bold" style={{ color: style_config.primary }}>
-              {hero_data.title}
+          <div className="flex items-center gap-2">
+            <div
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black"
+              style={{ backgroundColor: primary }}
+            >
+              {clinicLetter}
             </div>
-            <nav className="flex items-center gap-6 text-sm font-medium">
-              <a href="#" className="hover:opacity-70 transition-opacity">About</a>
-              <a href="#" className="hover:opacity-70 transition-opacity">Services</a>
-              <a 
-                href="#" 
-                className="px-5 py-2.5 text-white transition-opacity hover:opacity-90"
-                style={{ backgroundColor: style_config.primary, borderRadius: style_config.radius }}
-              >
-                {hero_data.ctaPrimary}
-              </a>
-            </nav>
-          </header>
+            <span
+              className="text-sm font-semibold text-[#1C1C27] truncate max-w-[120px]"
+              style={{ fontFamily: `'${style_config.fontHead || "Fraunces"}', Georgia, serif` }}
+            >
+              {hero_data.title || "Cabinet"}
+            </span>
+          </div>
+          <div className="flex items-center gap-4">
+            {["Accueil", "Cabinet", "Contact"].map((l) => (
+              <span key={l} className="text-[10px] font-medium text-[#1C1C27]/45 hidden sm:inline">
+                {l}
+              </span>
+            ))}
+            <div
+              className="px-3 py-1.5 text-white text-[10px] font-semibold shadow"
+              style={{ backgroundColor: primary, borderRadius: style_config.radius }}
+            >
+              {hero_data.ctaPrimary || "Prendre RDV"}
+            </div>
+          </div>
+        </header>
 
-          {/* Hero Section */}
-          <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 px-8 min-h-[600px] flex items-center">
-            {hero_data.bgImage && (
-              <div className="absolute inset-0 z-0">
-                <img 
-                  src={hero_data.bgImage} 
-                  alt="Hero Background" 
-                  className="w-full h-full object-cover opacity-20"
+        {/* Hero */}
+        <section className="relative px-5 py-10 overflow-hidden min-h-[260px] flex items-center">
+          {/* Blob bg */}
+          <div
+            className="absolute top-0 right-0 w-48 h-48 rounded-full -z-10 blur-[60px] opacity-15"
+            style={{ backgroundColor: primary }}
+          />
+          <div
+            className="absolute inset-0 -z-10 opacity-[0.025]"
+            style={{
+              backgroundImage: `radial-gradient(circle, #1C1C27 1px, transparent 1px)`,
+              backgroundSize: "24px 24px",
+            }}
+          />
+
+          {hero_data.bgImage && (
+            <div className="absolute inset-0 -z-20">
+              <img
+                src={hero_data.bgImage}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-[#F8F7F4]/92" />
+            </div>
+          )}
+
+          <div className="flex items-center gap-6 w-full">
+            {/* Left text */}
+            <div className="flex-1 space-y-3">
+              <div
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[8px] font-semibold uppercase tracking-widest"
+                style={{ color: primary, backgroundColor: pa(0.1), border: `1px solid ${pa(0.2)}` }}
+              >
+                <span
+                  className="w-1 h-1 rounded-full inline-block"
+                  style={{ backgroundColor: primary }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white dark:to-zinc-950" />
+                Cabinet Médical
               </div>
-            )}
-            <div className="max-w-4xl relative z-10">
-              <h1 
-                className="text-5xl lg:text-7xl font-bold tracking-tight mb-6"
-                style={{ fontFamily: style_config.fontHead }}
+
+              <h1
+                className="font-bold leading-tight text-[#1C1C27]"
+                style={{
+                  fontFamily: `'${style_config.fontHead || "Fraunces"}', Georgia, serif`,
+                  fontSize: "clamp(16px, 3vw, 26px)",
+                }}
               >
                 {hero_data.title}
               </h1>
-              <p className="text-xl lg:text-2xl text-muted-foreground mb-10 max-w-2xl">
-                {hero_data.subtitle}
+
+              <p className="text-[10px] text-[#1C1C27]/50 leading-relaxed max-w-[200px]">
+                {(hero_data.subtitle || "").slice(0, 100)}
+                {(hero_data.subtitle || "").length > 100 ? "…" : ""}
               </p>
-              <div className="flex items-center gap-4">
-                <button 
-                  className="px-8 py-4 text-white text-lg font-medium transition-transform hover:-translate-y-0.5"
-                  style={{ backgroundColor: style_config.primary, borderRadius: style_config.radius }}
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <div
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-white text-[9px] font-semibold shadow"
+                  style={{ backgroundColor: primary, borderRadius: style_config.radius }}
                 >
-                  {hero_data.ctaPrimary}
-                </button>
+                  <Calendar className="w-2.5 h-2.5" />
+                  {hero_data.ctaPrimary || "Prendre RDV"}
+                </div>
                 {hero_data.ctaSecondary && (
-                  <button 
-                    className="px-8 py-4 text-lg font-medium border-2 transition-colors hover:bg-muted"
-                    style={{ 
-                      borderColor: style_config.primary, 
-                      color: style_config.primary,
-                      borderRadius: style_config.radius 
+                  <div
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-[9px] font-semibold border"
+                    style={{
+                      borderColor: pa(0.3),
+                      color: primary,
+                      borderRadius: style_config.radius,
                     }}
                   >
                     {hero_data.ctaSecondary}
-                  </button>
+                  </div>
                 )}
+              </div>
+
+              {/* Mini stats */}
+              <div className="flex gap-4 pt-2 border-t border-gray-200">
+                {[
+                  { v: "15+", l: "Ans" },
+                  { v: "10k+", l: "Patients" },
+                  { v: "98%", l: "Satisfaction" },
+                ].map((s) => (
+                  <div key={s.l}>
+                    <div
+                      className="text-sm font-bold text-[#1C1C27]"
+                      style={{ fontFamily: `'${style_config.fontHead || "Fraunces"}', Georgia, serif` }}
+                    >
+                      {s.v}
+                    </div>
+                    <div className="text-[8px] text-[#1C1C27]/40">{s.l}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right image */}
+            <div className="relative shrink-0 w-28 sm:w-36">
+              {about_data?.avatar || hero_data.bgImage ? (
+                <img
+                  src={about_data?.avatar || hero_data.bgImage}
+                  alt=""
+                  className="w-full aspect-[4/5] object-cover shadow-lg"
+                  style={{ borderRadius: "18px" }}
+                />
+              ) : (
+                <div
+                  className="w-full aspect-[4/5] flex items-center justify-center shadow"
+                  style={{
+                    borderRadius: "18px",
+                    background: `linear-gradient(135deg, ${pa(0.15)}, ${pa(0.05)})`,
+                    border: `1px solid ${pa(0.15)}`,
+                  }}
+                >
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white text-base font-black"
+                    style={{ backgroundColor: primary }}
+                  >
+                    {clinicLetter}
+                  </div>
+                </div>
+              )}
+
+              {/* Floating badges */}
+              <div className="absolute -bottom-3 -left-3 bg-white rounded-xl p-2 shadow border border-gray-100">
+                <div className="flex items-center gap-1.5">
+                  <Shield className="w-3 h-3 text-emerald-500" />
+                  <span className="text-[8px] font-bold">Certifié</span>
+                </div>
+              </div>
+
+              <div className="absolute -top-3 -right-2 bg-white rounded-xl p-2 shadow border border-gray-100">
+                <div className="flex gap-0.5 mb-0.5">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Star key={i} className="w-2 h-2 fill-amber-400 text-amber-400" />
+                  ))}
+                </div>
+                <div className="text-[8px] font-bold">4.9/5</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Trust bar */}
+        <div className="bg-white border-y border-gray-100 px-5 py-3">
+          <div className="flex items-center gap-4 overflow-hidden">
+            {["Conventionné S.1", "Remboursé AM", "RDV en ligne"].map((t) => (
+              <div key={t} className="flex items-center gap-1.5 shrink-0">
+                <div
+                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ backgroundColor: primary }}
+                />
+                <span className="text-[9px] text-[#1C1C27]/50 font-medium whitespace-nowrap">{t}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* About preview */}
+        {(about_data?.bio || about_data?.avatar) && (
+          <section className="px-5 py-8 bg-white border-t border-gray-100">
+            <div className="flex items-start gap-5">
+              {about_data?.avatar ? (
+                <img
+                  src={about_data.avatar}
+                  alt=""
+                  className="w-20 aspect-[3/4] object-cover shadow flex-shrink-0"
+                  style={{ borderRadius: "14px" }}
+                />
+              ) : (
+                <div
+                  className="w-20 aspect-[3/4] flex-shrink-0 flex items-center justify-center"
+                  style={{ borderRadius: "14px", backgroundColor: pa(0.08) }}
+                >
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-black"
+                    style={{ backgroundColor: primary }}
+                  >
+                    {clinicLetter}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex-1 space-y-2">
+                <div
+                  className="text-[8px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-full inline-block"
+                  style={{ color: primary, backgroundColor: pa(0.08) }}
+                >
+                  Notre cabinet
+                </div>
+                <div
+                  className="text-sm font-bold text-[#1C1C27] leading-tight"
+                  style={{ fontFamily: `'${style_config.fontHead || "Fraunces"}', Georgia, serif` }}
+                >
+                  À propos du cabinet
+                </div>
+                <p className="text-[9px] text-[#1C1C27]/50 leading-relaxed line-clamp-3">
+                  {about_data?.bio || ""}
+                </p>
+                <div className="flex gap-4 pt-2 border-t border-gray-100">
+                  {[{ v: "15+", l: "Ans" }, { v: "10k+", l: "Patients" }, { v: "98%", l: "Satisfaction" }].map(
+                    (s) => (
+                      <div key={s.l} className="text-center">
+                        <div className="text-xs font-bold" style={{ color: primary }}>
+                          {s.v}
+                        </div>
+                        <div className="text-[8px] text-[#1C1C27]/40">{s.l}</div>
+                      </div>
+                    )
+                  )}
+                </div>
               </div>
             </div>
           </section>
+        )}
 
-          {/* About Section preview */}
-          {(about_data.bio || about_data.avatar) && (
-            <section className="py-20 px-8 bg-muted/30">
-              <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-12">
-                {about_data.avatar && (
-                  <div className="w-48 h-48 lg:w-64 lg:h-64 flex-shrink-0">
-                    <img 
-                      src={about_data.avatar} 
-                      alt="Doctor" 
-                      className="w-full h-full object-cover shadow-xl"
-                      style={{ borderRadius: style_config.radius }}
-                    />
-                  </div>
-                )}
-                <div>
-                  <h2 
-                    className="text-3xl font-bold mb-6"
-                    style={{ fontFamily: style_config.fontHead }}
-                  >
-                    About The Doctor
-                  </h2>
-                  <p className="text-lg text-muted-foreground whitespace-pre-line leading-relaxed">
-                    {about_data.bio}
-                  </p>
+        {/* CTA section */}
+        <section
+          className="px-5 py-8 relative overflow-hidden"
+          style={{ backgroundColor: primary }}
+        >
+          <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-10 blur-[30px] bg-white" />
+          <div className="text-white space-y-3 relative z-10">
+            <div
+              className="text-base font-bold leading-tight"
+              style={{ fontFamily: `'${style_config.fontHead || "Fraunces"}', Georgia, serif` }}
+            >
+              Prêt à prendre rendez-vous ?
+            </div>
+            <p className="text-[9px] text-white/60 leading-relaxed">
+              Notre assistant IA disponible 24h/24 pour trouver le créneau idéal.
+            </p>
+            <div className="flex items-start gap-3">
+              <div
+                className="flex-1 rounded-xl p-3 border border-white/15"
+                style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
+              >
+                <div className="space-y-2.5">
+                  {[
+                    { icon: MapPin, label: "Adresse communiquée à la confirmation" },
+                    { icon: Clock, label: "Lundi — Vendredi, 8h — 19h" },
+                    { icon: Shield, label: "Conventionné secteur 1" },
+                  ].map(({ icon: Icon, label }) => (
+                    <div key={label} className="flex items-center gap-2">
+                      <Icon className="w-2.5 h-2.5 text-white/60 shrink-0" />
+                      <span className="text-[8px] text-white/50 leading-tight">{label}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </section>
-          )}
+            </div>
+          </div>
+        </section>
 
+        {/* Footer */}
+        <div className="bg-[#0F0F1A] px-5 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div
+              className="w-5 h-5 rounded flex items-center justify-center text-white text-[8px] font-black"
+              style={{ backgroundColor: primary }}
+            >
+              {clinicLetter}
+            </div>
+            <span className="text-[9px] text-white/40 font-medium truncate max-w-[100px]">
+              {hero_data.title || "Cabinet"}
+            </span>
+          </div>
+          <span className="text-[8px] text-white/25">
+            Propulsé par{" "}
+            <span className="text-white/40 font-semibold">DocFlow IA</span>
+          </span>
         </div>
       </div>
     </div>
