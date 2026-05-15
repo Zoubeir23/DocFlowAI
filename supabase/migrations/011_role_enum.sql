@@ -20,6 +20,7 @@ ALTER TABLE users ALTER COLUMN role SET DEFAULT 'owner'::user_role;
 
 CREATE TYPE staff_role AS ENUM ('receptionist', 'assistant');
 
+
 ALTER TABLE staff_invitations ALTER COLUMN role DROP DEFAULT;
 ALTER TABLE staff_invitations DROP CONSTRAINT IF EXISTS staff_invitations_role_check;
 ALTER TABLE staff_invitations ALTER COLUMN role TYPE staff_role USING role::staff_role;
