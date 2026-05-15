@@ -4,6 +4,33 @@ import { CheckCircle2, CheckCircle, Star } from 'lucide-react'
 import { LanguageSwitcher } from '@/components/layout/language-switcher'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import { getTranslations } from 'next-intl/server'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Tarifs DocFlow IA — Plans et abonnements logiciel médical',
+  description:
+    'Découvrez les plans DocFlow IA : plan gratuit, Starter à 49€/mois, Professionnel à 99€/mois et Entreprise. Logiciel de gestion de cabinet médical avec IA.',
+  alternates: {
+    canonical: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://docflow.ia'}/pricing`,
+  },
+  openGraph: {
+    title: 'Tarifs DocFlow IA — Plans et abonnements',
+    description: 'Choisissez le plan DocFlow IA adapté à votre cabinet médical. Démarrez gratuitement, sans carte bancaire.',
+    url: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://docflow.ia'}/pricing`,
+  },
+}
+
+const pricingJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  name: 'Plans DocFlow IA',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Plan Gratuit', description: 'Jusqu\'à 50 rendez-vous/mois, 1 compte utilisateur', offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' } },
+    { '@type': 'ListItem', position: 2, name: 'Plan Starter', description: '200 rendez-vous/mois, 3 comptes staff', offers: { '@type': 'Offer', price: '49', priceCurrency: 'EUR' } },
+    { '@type': 'ListItem', position: 3, name: 'Plan Professionnel', description: 'Rendez-vous illimités, 10 comptes staff', offers: { '@type': 'Offer', price: '99', priceCurrency: 'EUR' } },
+    { '@type': 'ListItem', position: 4, name: 'Plan Entreprise', description: 'Illimité, support dédié, SSO', offers: { '@type': 'Offer', price: '299', priceCurrency: 'EUR' } },
+  ],
+}
 
 const PLAN_KEYS = ['free', 'starter', 'professional', 'enterprise'] as const
 const PRICES = { free: 0, starter: 49, professional: 99, enterprise: 299 }
@@ -15,7 +42,11 @@ export default async function PricingPage() {
 
   return (
     <div className="min-h-screen bg-background font-sans text-foreground selection:bg-teal-500/30 selection:text-teal-100">
-      
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(pricingJsonLd) }}
+      />
+
       {/* Navbar (Same as landing page) */}
       <nav className="sticky top-0 z-50 bg-background border-b border-foreground/15 h-16 flex items-center">
         <div className="w-full max-w-[1400px] mx-auto px-6 lg:px-12 flex items-center justify-between">

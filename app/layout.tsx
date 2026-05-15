@@ -25,20 +25,75 @@ const ibmMono = IBM_Plex_Mono({
   variable: "--font-ibm-mono",
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://docflow.ia";
+
 export const metadata: Metadata = {
-  title: "DocFlow IA - Assistant IA pour la gestion de cliniques",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "DocFlow IA — Logiciel de gestion de clinique avec IA",
+    template: "%s | DocFlow IA",
+  },
   description:
-    "AI-powered appointment booking system for doctors and clinics. Let patients book appointments 24/7 with intelligent automation.",
+    "DocFlow IA automatise la prise de rendez-vous médicaux 24h/24 grâce à l'intelligence artificielle. Gestion de cabinet, agenda intelligent et dossiers patients pour médecins et cliniques.",
   keywords: [
-    "medical booking",
-    "appointment scheduling",
-    "clinic management",
-    "AI booking",
-    "doctor appointments",
+    "logiciel cabinet médical",
+    "prise de rendez-vous en ligne",
+    "gestion clinique IA",
+    "agenda médical intelligent",
+    "assistant IA médecin",
+    "logiciel médical",
+    "booking médical automatique",
+    "dossier patient numérique",
   ],
+  authors: [{ name: "DocFlow IA" }],
+  creator: "DocFlow IA",
+  publisher: "DocFlow IA",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  openGraph: {
+    type: "website",
+    locale: "fr_FR",
+    alternateLocale: "en_US",
+    url: siteUrl,
+    siteName: "DocFlow IA",
+    title: "DocFlow IA — Logiciel de gestion de clinique avec IA",
+    description:
+      "Automatisez la prise de rendez-vous et la gestion de votre cabinet médical grâce à l'IA. Disponible 24h/24, 7j/7.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "DocFlow IA — Gestion de clinique intelligente",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "DocFlow IA — Logiciel de gestion de clinique avec IA",
+    description:
+      "Automatisez la prise de rendez-vous et la gestion de votre cabinet médical grâce à l'IA.",
+    images: ["/og-image.png"],
+  },
   icons: {
     icon: "/logo.png",
     apple: "/logo.png",
+  },
+  alternates: {
+    canonical: siteUrl,
+    languages: {
+      "fr": `${siteUrl}`,
+      "en": `${siteUrl}`,
+    },
   },
 };
 
