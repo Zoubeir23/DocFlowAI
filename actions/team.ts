@@ -286,6 +286,23 @@ export async function acceptInvitation(
   return { success: true, clinicId: invitation.clinic_id, role: invitation.role };
 }
 
+export async function getMyRole(): Promise<{ role: string; clinicId: string } | null> {
+  const supabase = await createClient();
+  const db = supabase as any;
+
+  const { data: authData } = await db.auth.getUser();
+  if (!authData.user) return null;
+
+  const { data: userData } = await db
+    .from("users")
+    .select("role, clinic_id")
+    .eq("id", authData.user.id)
+    .single();
+
+  if (!userData) return null;
+  return { role: userData.role, clinicId: userData.clinic_id };
+}
+
 export async function getInvitationByToken(
   token: string
 ): Promise<{ email: string; role: StaffRole; clinic_name: string; expires_at: string } | null> {

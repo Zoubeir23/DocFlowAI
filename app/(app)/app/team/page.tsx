@@ -8,6 +8,7 @@ import {
   inviteTeamMember,
   cancelInvitation,
   removeTeamMember,
+  getMyRole,
   type TeamMember,
   type StaffInvitation,
   type StaffRole,
@@ -184,6 +185,11 @@ export default function TeamPage() {
     queryFn: getClinicQuotaUsage,
   });
 
+  const { data: myRole } = useQuery({
+    queryKey: ["my-role"],
+    queryFn: getMyRole,
+  });
+
   const staffQuota = quotaUsage?.staff;
   const isQuotaFull = staffQuota?.limit !== null && staffQuota != null && members.length >= (staffQuota.limit ?? Infinity);
   const quotaPct = staffQuota?.limit ? (members.length / staffQuota.limit) * 100 : 0;
@@ -214,8 +220,7 @@ export default function TeamPage() {
     }
   };
 
-  const currentUser = members.find((m) => m.role === "owner");
-  const isOwner = !!currentUser;
+  const isOwner = myRole?.role === "owner" || myRole?.role === "super_admin";
   const currentPlan = staffQuota?.plan ?? "free";
   const isFreePlan = currentPlan === "free";
 
