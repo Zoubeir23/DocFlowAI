@@ -36,24 +36,46 @@ import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { useSidebarStore } from "@/lib/store/sidebar-store";
 import { differenceInDays, isPast, parseISO } from "date-fns";
+import { useRole } from "@/lib/hooks/use-role";
+import type { UserRole } from "@/lib/rbac";
 
-const NAV_ITEMS = [
-  { href: "/app/dashboard", labelKey: "dashboard", icon: LayoutGrid, group: "main" },
-  { href: "/app/calendar", labelKey: "calendar", icon: CalendarDays, group: "main" },
-  { href: "/app/appointments", labelKey: "appointments", icon: CalendarCheck2, group: "main" },
-  { href: "/app/patients", labelKey: "patients", icon: Users, group: "main" },
-  { href: "/app/services", labelKey: "services", icon: HeartPulse, group: "main" },
-  { href: "/app/analytics", labelKey: "analytics", icon: BarChart3, group: "main" },
-  { href: "/app/team", labelKey: "team", icon: UsersRound, group: "config" },
-  { href: "/app/clinics", labelKey: "clinics", icon: Building2, group: "config" },
-  { href: "/app/integrations", labelKey: "integrations", icon: Plug, group: "config" },
-  { href: "/app/support", labelKey: "support", icon: HeadphonesIcon, group: "config" },
-  { href: "/app/ai-settings", labelKey: "aiSettings", icon: Sparkles, group: "config" },
-  { href: "/app/website-builder", labelKey: "websiteBuilder", icon: Globe2, group: "config" },
-  { href: "/app/settings", labelKey: "settings", icon: Settings2, group: "config" },
-  { href: "/app/billing", labelKey: "billing", icon: CreditCard, group: "config" },
-  { href: "/app/profile", labelKey: "profile", icon: UserCircle2, group: "config" },
-] as const;
+type NavItem = {
+  href: string;
+  labelKey: string;
+  icon: React.ElementType;
+  group: "main" | "config";
+  minRole: UserRole;
+};
+
+const NAV_ITEMS: NavItem[] = [
+  { href: "/app/dashboard",      labelKey: "dashboard",      icon: LayoutGrid,      group: "main",   minRole: "receptionist" },
+  { href: "/app/calendar",       labelKey: "calendar",       icon: CalendarDays,    group: "main",   minRole: "receptionist" },
+  { href: "/app/appointments",   labelKey: "appointments",   icon: CalendarCheck2,  group: "main",   minRole: "receptionist" },
+  { href: "/app/patients",       labelKey: "patients",       icon: Users,           group: "main",   minRole: "receptionist" },
+  { href: "/app/services",       labelKey: "services",       icon: HeartPulse,      group: "main",   minRole: "owner" },
+  { href: "/app/analytics",      labelKey: "analytics",      icon: BarChart3,       group: "main",   minRole: "owner" },
+  { href: "/app/team",           labelKey: "team",           icon: UsersRound,      group: "config", minRole: "owner" },
+  { href: "/app/clinics",        labelKey: "clinics",        icon: Building2,       group: "config", minRole: "owner" },
+  { href: "/app/integrations",   labelKey: "integrations",   icon: Plug,            group: "config", minRole: "owner" },
+  { href: "/app/support",        labelKey: "support",        icon: HeadphonesIcon,  group: "config", minRole: "receptionist" },
+  { href: "/app/ai-settings",    labelKey: "aiSettings",     icon: Sparkles,        group: "config", minRole: "owner" },
+  { href: "/app/website-builder",labelKey: "websiteBuilder", icon: Globe2,          group: "config", minRole: "owner" },
+  { href: "/app/settings",       labelKey: "settings",       icon: Settings2,       group: "config", minRole: "owner" },
+  { href: "/app/billing",        labelKey: "billing",        icon: CreditCard,      group: "config", minRole: "owner" },
+  { href: "/app/profile",        labelKey: "profile",        icon: UserCircle2,     group: "config", minRole: "receptionist" },
+];
+
+const ROLE_HIERARCHY: Record<UserRole, number> = {
+  receptionist: 0,
+  assistant: 0,
+  owner: 1,
+  super_admin: 2,
+};
+
+function canSeeItem(userRole: UserRole | null, minRole: UserRole): boolean {
+  if (!userRole) return false;
+  return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[minRole];
+}
 
 interface SidebarProps {
   clinicName?: string;
@@ -213,6 +235,7 @@ export function Sidebar({ clinicName = "My Clinic" }: SidebarProps) {
   const supabase = createClient();
   const [collapsed, setCollapsed] = useState(false);
   const { isOpenMobile, setIsOpenMobile } = useSidebarStore();
+  const { role } = useRole();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -225,8 +248,8 @@ export function Sidebar({ clinicName = "My Clinic" }: SidebarProps) {
     setIsOpenMobile(false);
   }, [pathname, setIsOpenMobile]);
 
-  const mainItems = NAV_ITEMS.filter((i) => i.group === "main");
-  const configItems = NAV_ITEMS.filter((i) => i.group === "config");
+  const mainItems = NAV_ITEMS.filter((i) => i.group === "main" && canSeeItem(role, i.minRole));
+  const configItems = NAV_ITEMS.filter((i) => i.group === "config" && canSeeItem(role, i.minRole));
 
   return (
     <>

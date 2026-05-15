@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/types/supabase";
+import { canAccessRoute, type UserRole } from "@/lib/rbac";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -60,18 +61,24 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
-  // App area — check is_active to block disabled accounts
+  // App area — check is_active + role-based access control
   if (user && isProtected) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: userData } = await (supabase as any)
       .from("users")
-      .select("is_active")
+      .select("is_active, role")
       .eq("id", user.id)
       .single();
 
     if (userData && userData.is_active === false) {
       const url = request.nextUrl.clone();
       url.pathname = "/blocked";
+      return NextResponse.redirect(url);
+    }
+
+    if (userData && !canAccessRoute(userData.role as UserRole, pathname)) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/app/dashboard";
       return NextResponse.redirect(url);
     }
   }
