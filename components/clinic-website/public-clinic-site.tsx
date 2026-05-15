@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
-  ArrowRight,
   Menu,
   X,
   Calendar,
@@ -14,9 +13,11 @@ import {
   Award,
   ChevronRight,
   CheckCircle2,
-  Quote,
   Phone,
   Stethoscope,
+  ArrowUpRight,
+  Heart,
+  Users,
 } from "lucide-react";
 
 interface PublicClinicSiteProps {
@@ -32,7 +33,7 @@ function hexToRgba(hex: string, alpha: number): string {
   const r = parseInt(full.slice(0, 2), 16);
   const g = parseInt(full.slice(2, 4), 16);
   const b = parseInt(full.slice(4, 6), 16);
-  if (isNaN(r) || isNaN(g) || isNaN(b)) return `rgba(37,99,235,${alpha})`;
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return `rgba(255,45,120,${alpha})`;
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
@@ -42,37 +43,28 @@ function isLightColor(hex: string): boolean {
   const r = parseInt(full.slice(0, 2), 16);
   const g = parseInt(full.slice(2, 4), 16);
   const b = parseInt(full.slice(4, 6), 16);
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.65;
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.65;
 }
 
 const TESTIMONIALS = [
   {
-    text: "Accueil chaleureux, médecin très à l'écoute. J'ai enfin trouvé un praticien qui prend le temps d'expliquer chaque étape du traitement.",
+    text: "Accueil chaleureux, médecin très à l'écoute. J'ai enfin trouvé un praticien qui prend le temps d'expliquer chaque étape.",
     name: "Marie L.",
     context: "Patiente depuis 3 ans",
-    rating: 5,
   },
   {
-    text: "La prise de rendez-vous en ligne est un vrai gain de temps. Le cabinet est moderne et l'attente très raisonnable. Je recommande vivement.",
+    text: "La prise de rendez-vous en ligne est un vrai gain de temps. Cabinet moderne, attente très raisonnable.",
     name: "Thomas B.",
     context: "Patient régulier",
-    rating: 5,
   },
   {
-    text: "Suivi sérieux et professionnel. Le médecin est disponible et réactif. Rassurée après chaque consultation, je ne changerais pour rien au monde.",
+    text: "Suivi sérieux et professionnel. Rassurée après chaque consultation, je ne changerais pour rien au monde.",
     name: "Fatou D.",
     context: "Recommandée par un ami",
-    rating: 5,
   },
 ];
 
-export function PublicClinicSite({
-  website,
-  clinic,
-  services,
-  doctor,
-}: PublicClinicSiteProps) {
+export function PublicClinicSite({ website, clinic, services, doctor }: PublicClinicSiteProps) {
   const { style_config, hero_data, about_data, contact_data, show_chat_widget, show_services } = website;
 
   const [isScrolled, setIsScrolled] = useState(false);
@@ -118,140 +110,107 @@ export function PublicClinicSite({
     document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const isPill = style_config.radius === "9999px" || style_config.radius === "50rem";
-  const cardRadius = isPill ? "20px" : style_config.radius;
-  const primary = style_config.primary || "#2563eb";
+  const primary = style_config.primary || "#FF2D78";
+  const teal = "#26C6DA";
+  const cream = "#F5F0E8";
+  const dark = "#1A1A2E";
   const pa = (a: number) => hexToRgba(primary, a);
-  const ctaTextColor = isLightColor(primary) ? "#1C1C27" : "#ffffff";
+  const ctaTextColor = isLightColor(primary) ? "#1A1A2E" : "#ffffff";
+  const clinicInitial = (clinic.name || "M").charAt(0).toUpperCase();
 
   const navLinks = [
     { label: "Accueil", href: "#hero" },
-    ...(show_services && services.length > 0
-      ? [{ label: "Spécialités", href: "#services" }]
-      : []),
-    ...((about_data?.bio || about_data?.avatar)
-      ? [{ label: "Cabinet", href: "#about" }]
-      : []),
+    ...(show_services && services.length > 0 ? [{ label: "Spécialités", href: "#services" }] : []),
+    ...((about_data?.bio || about_data?.avatar) ? [{ label: "Cabinet", href: "#about" }] : []),
     { label: "Contact", href: "#contact" },
   ];
 
-  const clinicInitial = (clinic.name || "M").charAt(0).toUpperCase();
-  const headFont = style_config.fontHead || "Fraunces";
-  const bodyFont = style_config.fontBody || "DM Sans";
-
   return (
-    <div
-      className="min-h-screen bg-[#F8F7F4] text-[#1C1C27] antialiased scroll-smooth"
-      style={{ overflowX: "hidden" }}
-    >
-      {/* ── Google Fonts + global CSS ── */}
+    <div className="min-h-screen antialiased scroll-smooth" style={{ backgroundColor: cream, color: dark, overflowX: "hidden" }}>
+
+      {/* ── Google Fonts ── */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,400;1,9..144,700&family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,700&family=Syne:wght@400;600;700;800&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
 
         :root {
           --cp: ${primary};
-          --cr: ${style_config.radius};
+          --teal: ${teal};
+          --cream: ${cream};
+          --dark: ${dark};
         }
 
-        .ch  { font-family: '${headFont}', 'Fraunces', Georgia, serif; }
-        .cb  { font-family: '${bodyFont}', 'DM Sans', system-ui, sans-serif; }
+        .bbn  { font-family: 'Bebas Neue', 'Impact', sans-serif; letter-spacing: 0.03em; }
+        .pfdi { font-family: 'Playfair Display', Georgia, serif; }
+        .dms  { font-family: 'DM Sans', system-ui, sans-serif; }
 
-        /* Section anchors with nav offset */
         #hero, #services, #about, #testimonials, #contact {
           scroll-margin-top: 80px;
         }
 
-        /* Animations */
         @keyframes _float {
-          0%,100% { transform: translateY(0) rotate(0deg); }
-          50%      { transform: translateY(-9px) rotate(1.5deg); }
+          0%,100% { transform: translateY(0); }
+          50%      { transform: translateY(-10px); }
         }
         @keyframes _float2 {
-          0%,100% { transform: translateY(0) rotate(0deg); }
-          50%      { transform: translateY(-6px) rotate(-1deg); }
+          0%,100% { transform: translateY(0); }
+          50%      { transform: translateY(-6px); }
         }
         @keyframes _in {
-          from { opacity:0; transform:translateY(28px); }
+          from { opacity:0; transform:translateY(32px); }
           to   { opacity:1; transform:translateY(0); }
-        }
-        @keyframes _pingg {
-          75%,100% { transform:scale(2.2); opacity:0; }
         }
         @keyframes _marquee {
           from { transform: translateX(0); }
           to   { transform: translateX(-50%); }
         }
-
-        .af  { animation: _float  5.5s ease-in-out infinite; }
-        .af2 { animation: _float2 5.5s ease-in-out infinite 2s; }
-        .ai1 { animation: _in 0.65s cubic-bezier(0.22,1,0.36,1) both; }
-        .ai2 { animation: _in 0.65s cubic-bezier(0.22,1,0.36,1) 0.12s both; }
-        .ai3 { animation: _in 0.65s cubic-bezier(0.22,1,0.36,1) 0.24s both; }
-        .ai4 { animation: _in 0.65s cubic-bezier(0.22,1,0.36,1) 0.36s both; }
-        .ap  { animation: _pingg 1.4s cubic-bezier(0,0,0.2,1) infinite; }
-
-        .marquee-track { animation: _marquee 28s linear infinite; }
-
-        /* Mobile drawer */
-        .drawer {
-          transform: translateX(100%);
-          transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+        @keyframes _ping {
+          75%,100% { transform:scale(2.2); opacity:0; }
         }
+
+        .af   { animation: _float  6s ease-in-out infinite; }
+        .af2  { animation: _float2 5s ease-in-out infinite 1.5s; }
+        .ai1  { animation: _in 0.7s cubic-bezier(0.22,1,0.36,1) both; }
+        .ai2  { animation: _in 0.7s cubic-bezier(0.22,1,0.36,1) 0.1s both; }
+        .ai3  { animation: _in 0.7s cubic-bezier(0.22,1,0.36,1) 0.2s both; }
+        .ai4  { animation: _in 0.7s cubic-bezier(0.22,1,0.36,1) 0.3s both; }
+        .marquee-track { animation: _marquee 30s linear infinite; }
+        .live-dot { animation: _ping 1.6s cubic-bezier(0,0,0.2,1) infinite; }
+
+        .drawer { transform: translateX(100%); transition: transform 0.32s cubic-bezier(0.4,0,0.2,1); }
         .drawer.open { transform: translateX(0); }
 
-        /* Service card accent */
-        .svc-card::before {
-          content:'';
-          position:absolute;
-          top:0; left:0; right:0;
-          height:3px;
-          background: var(--cp);
-          border-radius: 3px 3px 0 0;
-          opacity:0;
-          transition: opacity 0.25s ease;
+        .svc-pill {
+          transition: all 0.22s ease;
+          white-space: nowrap;
         }
-        .svc-card:hover::before { opacity:1; }
-
-        /* Grain overlay */
-        .grain::after {
-          content:'';
-          position:fixed;
-          inset:0;
-          pointer-events:none;
-          z-index:998;
-          opacity:0.025;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
-          background-repeat: repeat;
+        .svc-pill:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.12);
         }
-
-        /* Hover nav underline */
-        .nav-link span { transition: width 0.2s ease; }
-        .nav-link:hover span { width: 100% !important; }
       `}</style>
 
-      <div className="cb grain">
+      <div className="dms">
 
-        {/* ═══════════════════
-            NAV
-        ═══════════════════ */}
+        {/* ═══════ NAV ═══════ */}
         <header
           className={cn(
             "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
             isScrolled
-              ? "bg-white/96 backdrop-blur-lg shadow-[0_1px_0_rgba(0,0,0,0.07),0_2px_16px_rgba(0,0,0,0.05)] py-3"
-              : "bg-transparent py-5"
+              ? "py-3 shadow-[0_2px_20px_rgba(0,0,0,0.08)]"
+              : "py-5"
           )}
+          style={{ backgroundColor: isScrolled ? `${cream}f5` : "transparent", backdropFilter: isScrolled ? "blur(16px)" : "none" }}
         >
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
 
             <a href="#hero" className="flex items-center gap-2.5 shrink-0 group">
               <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shadow-md group-hover:scale-105 transition-transform duration-200"
+                className="w-9 h-9 rounded-lg flex items-center justify-center font-black text-sm shadow-md group-hover:scale-105 transition-transform duration-200 bbn"
                 style={{ backgroundColor: primary, color: ctaTextColor }}
               >
                 {clinicInitial}
               </div>
-              <span className="hidden sm:block ch font-semibold text-[#1C1C27] text-[15px] tracking-tight">
+              <span className="hidden sm:block bbn text-[18px] tracking-wide" style={{ color: dark }}>
                 {clinic.name}
               </span>
             </a>
@@ -261,13 +220,12 @@ export function PublicClinicSite({
                 <a
                   key={link.href}
                   href={link.href}
-                  className="nav-link relative text-sm font-medium text-[#1C1C27]/50 hover:text-[#1C1C27] transition-colors py-1"
+                  className="text-sm font-medium transition-colors hover:opacity-100"
+                  style={{ color: `${dark}80` }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = primary)}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = `${dark}80`)}
                 >
                   {link.label}
-                  <span
-                    className="absolute bottom-0 left-0 h-[1.5px] w-0 rounded-full"
-                    style={{ backgroundColor: primary }}
-                  />
                 </a>
               ))}
             </nav>
@@ -275,8 +233,8 @@ export function PublicClinicSite({
             <a
               href="#contact"
               onClick={openWidget}
-              className="hidden md:inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold shadow-md hover:shadow-lg hover:-translate-y-px transition-all duration-200 active:scale-[0.98]"
-              style={{ backgroundColor: primary, color: ctaTextColor, borderRadius: style_config.radius }}
+              className="hidden md:inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-full shadow-md hover:shadow-lg hover:-translate-y-px transition-all duration-200 active:scale-[0.97]"
+              style={{ backgroundColor: primary, color: ctaTextColor }}
             >
               <Calendar className="w-3.5 h-3.5" />
               {hero_data.ctaPrimary || "Prendre RDV"}
@@ -284,7 +242,8 @@ export function PublicClinicSite({
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-gray-200 shadow-sm"
+              className="md:hidden w-10 h-10 flex items-center justify-center rounded-xl border shadow-sm"
+              style={{ backgroundColor: cream, borderColor: `${dark}20` }}
               aria-label="Menu"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -295,13 +254,14 @@ export function PublicClinicSite({
         {/* Mobile drawer */}
         <div className={cn("fixed inset-0 z-40 md:hidden", mobileMenuOpen ? "pointer-events-auto" : "pointer-events-none")}>
           <div
-            className={cn("absolute inset-0 bg-black/45 backdrop-blur-sm transition-opacity duration-300", mobileMenuOpen ? "opacity-100" : "opacity-0")}
+            className={cn("absolute inset-0 backdrop-blur-sm transition-opacity duration-300", mobileMenuOpen ? "opacity-100" : "opacity-0")}
+            style={{ backgroundColor: "rgba(26,26,46,0.4)" }}
             onClick={() => setMobileMenuOpen(false)}
           />
-          <div className={cn("absolute right-0 top-0 bottom-0 w-[280px] bg-white shadow-2xl flex flex-col drawer", mobileMenuOpen && "open")}>
-            <div className="flex items-center justify-between px-5 py-5 border-b border-gray-100">
-              <span className="ch font-bold text-[#1C1C27] text-base">{clinic.name}</span>
-              <button onClick={() => setMobileMenuOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100">
+          <div className={cn("absolute right-0 top-0 bottom-0 w-[280px] flex flex-col drawer", mobileMenuOpen && "open")} style={{ backgroundColor: cream }}>
+            <div className="flex items-center justify-between px-5 py-5 border-b" style={{ borderColor: `${dark}10` }}>
+              <span className="bbn text-[20px]">{clinic.name}</span>
+              <button onClick={() => setMobileMenuOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-lg" style={{ backgroundColor: `${dark}08` }}>
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -311,19 +271,20 @@ export function PublicClinicSite({
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-between px-4 py-3.5 rounded-xl font-medium text-[15px] text-[#1C1C27] hover:bg-gray-50 transition-colors group"
+                  className="flex items-center justify-between px-4 py-3.5 rounded-xl font-medium text-[15px] transition-colors"
+                  style={{ color: dark }}
                 >
                   {link.label}
-                  <ChevronRight className="w-4 h-4 text-[#1C1C27]/25 group-hover:text-[#1C1C27]/50 transition-colors" />
+                  <ChevronRight className="w-4 h-4 opacity-25" />
                 </a>
               ))}
             </nav>
-            <div className="p-4 border-t border-gray-100">
+            <div className="p-4 border-t" style={{ borderColor: `${dark}10` }}>
               <a
                 href="#contact"
                 onClick={(e) => { setMobileMenuOpen(false); openWidget(e); }}
-                className="flex items-center justify-center gap-2 w-full py-3.5 font-semibold text-[15px] shadow-md active:scale-[0.98] transition-all"
-                style={{ backgroundColor: primary, color: ctaTextColor, borderRadius: style_config.radius }}
+                className="flex items-center justify-center gap-2 w-full py-3.5 font-bold text-[15px] rounded-full shadow-md transition-all active:scale-[0.98]"
+                style={{ backgroundColor: primary, color: ctaTextColor }}
               >
                 <Calendar className="w-4 h-4" />
                 {hero_data.ctaPrimary || "Prendre rendez-vous"}
@@ -333,79 +294,85 @@ export function PublicClinicSite({
         </div>
 
 
-        {/* ═══════════════════
-            HERO
-        ═══════════════════ */}
+        {/* ═══════ HERO ═══════ */}
         <section
           id="hero"
-          className="relative min-h-[100svh] flex items-center overflow-hidden pt-24 pb-16 px-4 sm:px-6 lg:px-8"
+          className="relative min-h-[100svh] flex items-center overflow-hidden pt-28 pb-16 px-4 sm:px-6 lg:px-8"
+          style={{ backgroundColor: cream }}
         >
-          {/* Background image overlay */}
-          {hero_data.bgImage && (
-            <div className="absolute inset-0 -z-20">
-              <img src={hero_data.bgImage} alt="" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-br from-[#F8F7F4]/98 via-[#F8F7F4]/94 to-[#F8F7F4]/80" />
-            </div>
-          )}
-
-          {/* Colour blobs */}
+          {/* Large decorative circle */}
           <div
-            className="absolute -top-20 -right-20 w-[55vw] max-w-[700px] h-[55vw] max-h-[700px] rounded-full -z-10 opacity-[0.12]"
-            style={{ backgroundColor: primary, filter: "blur(130px)" }}
+            className="absolute right-[-15vw] top-1/2 -translate-y-1/2 w-[80vw] max-w-[800px] h-[80vw] max-h-[800px] rounded-full -z-10 pointer-events-none"
+            style={{ border: `2px solid ${primary}18` }}
           />
           <div
-            className="absolute bottom-0 left-0 w-[30vw] max-w-[350px] h-[30vw] max-h-[350px] rounded-full -z-10 opacity-[0.06] bg-amber-300"
-            style={{ filter: "blur(80px)" }}
+            className="absolute right-[-5vw] top-1/2 -translate-y-1/2 w-[55vw] max-w-[580px] h-[55vw] max-h-[580px] rounded-full -z-10 pointer-events-none"
+            style={{ border: `1px solid ${primary}10` }}
           />
 
-          {/* Dot grid */}
+          {/* Big decorative number BG */}
           <div
-            className="absolute inset-0 -z-10 opacity-[0.03]"
-            style={{
-              backgroundImage: "radial-gradient(circle, #1C1C27 1.5px, transparent 1.5px)",
-              backgroundSize: "40px 40px",
-            }}
-          />
-
-          {/* Decorative large circle ring */}
-          <div
-            className="absolute right-[-8vw] top-1/2 -translate-y-1/2 w-[60vw] max-w-[680px] h-[60vw] max-h-[680px] rounded-full border -z-10 opacity-[0.06]"
-            style={{ borderColor: primary, borderWidth: "2px" }}
-          />
+            className="absolute left-[-2vw] bottom-[-4vw] bbn select-none pointer-events-none -z-10 leading-none"
+            style={{ fontSize: "clamp(12rem,30vw,28rem)", color: `${dark}04` }}
+            aria-hidden="true"
+          >
+            01
+          </div>
 
           <div className="max-w-6xl mx-auto w-full">
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] xl:grid-cols-[1fr_480px] gap-10 lg:gap-12 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_440px] xl:grid-cols-[1fr_500px] gap-10 lg:gap-16 items-center">
 
-              {/* ── Left content ── */}
+              {/* ── Left ── */}
               <div className="space-y-7 text-center lg:text-left">
 
-                {/* Badge */}
+                {/* Live badge */}
                 <div className="flex justify-center lg:justify-start ai1">
                   <span
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-semibold uppercase tracking-[0.15em] border"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-semibold uppercase tracking-[0.18em] border"
                     style={{ color: primary, backgroundColor: pa(0.07), borderColor: pa(0.18) }}
                   >
                     <span className="relative flex h-1.5 w-1.5">
-                      <span className="ap absolute inline-flex h-full w-full rounded-full opacity-60" style={{ backgroundColor: primary }} />
+                      <span className="live-dot absolute inline-flex h-full w-full rounded-full opacity-60" style={{ backgroundColor: primary }} />
                       <span className="relative inline-flex h-1.5 w-1.5 rounded-full" style={{ backgroundColor: primary }} />
                     </span>
-                    Cabinet médical · Consultation disponible
+                    Consultation disponible
                   </span>
                 </div>
 
-                {/* Heading */}
+                {/* Headline — Bebas Neue + Playfair italic mix */}
                 <div className="ai2">
                   <h1
-                    className="ch font-bold leading-[1.07] tracking-tight text-[#1C1C27]"
-                    style={{ fontSize: "clamp(2.4rem, 6.5vw, 4.5rem)" }}
+                    className="bbn leading-[0.95] tracking-wide"
+                    style={{ fontSize: "clamp(3.5rem,9vw,7.5rem)", color: dark }}
                   >
-                    {hero_data.title}
+                    {hero_data.title ? (
+                      <>
+                        {hero_data.title.split(" ").map((word: string, i: number) =>
+                          i === 1 ? (
+                            <span key={i} className="pfdi italic font-normal" style={{ color: primary }}>
+                              {" "}{word}{" "}
+                            </span>
+                          ) : (
+                            <span key={i}>{i === 0 ? word : ` ${word}`}</span>
+                          )
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        Votre santé{" "}
+                        <span className="pfdi italic font-normal" style={{ color: primary }}>entre</span>{" "}
+                        de bonnes mains
+                      </>
+                    )}
                   </h1>
                 </div>
 
                 {/* Subtitle */}
-                <p className="text-[#1C1C27]/55 text-base sm:text-[1.05rem] leading-relaxed max-w-lg mx-auto lg:mx-0 ai3">
-                  {hero_data.subtitle}
+                <p
+                  className="text-base sm:text-[1.05rem] leading-relaxed max-w-lg mx-auto lg:mx-0 ai3"
+                  style={{ color: `${dark}60` }}
+                >
+                  {hero_data.subtitle || "Un accompagnement médical personnalisé, disponible 24h/24 pour votre bien-être."}
                 </p>
 
                 {/* CTAs */}
@@ -413,8 +380,8 @@ export function PublicClinicSite({
                   <a
                     href="#contact"
                     onClick={openWidget}
-                    className="inline-flex items-center justify-center gap-2 px-7 py-[14px] font-semibold text-sm shadow-xl hover:shadow-2xl hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200"
-                    style={{ backgroundColor: primary, color: ctaTextColor, borderRadius: style_config.radius }}
+                    className="inline-flex items-center justify-center gap-2 px-8 py-4 font-bold text-sm rounded-full shadow-xl hover:shadow-2xl hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-200"
+                    style={{ backgroundColor: primary, color: ctaTextColor }}
                   >
                     <Calendar className="w-4 h-4" />
                     {hero_data.ctaPrimary || "Prendre rendez-vous"}
@@ -422,100 +389,111 @@ export function PublicClinicSite({
                   {hero_data.ctaSecondary && (
                     <a
                       href={show_services && services.length > 0 ? "#services" : "#about"}
-                      className="inline-flex items-center justify-center gap-2 px-7 py-[14px] font-semibold text-sm border-2 transition-all duration-200 hover:bg-[#1C1C27]/5 active:scale-[0.97]"
-                      style={{ borderColor: pa(0.3), color: primary, borderRadius: style_config.radius }}
+                      className="inline-flex items-center justify-center gap-2 px-8 py-4 font-bold text-sm rounded-full border-2 transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.97]"
+                      style={{ borderColor: `${dark}20`, color: dark }}
                     >
                       {hero_data.ctaSecondary}
-                      <ArrowRight className="w-4 h-4" />
+                      <ArrowUpRight className="w-4 h-4" />
                     </a>
                   )}
                 </div>
 
-                {/* Stats strip */}
-                <div className="flex flex-wrap justify-center lg:justify-start gap-x-10 gap-y-4 pt-5 border-t border-[#1C1C27]/08">
+                {/* Stats row */}
+                <div className="flex flex-wrap justify-center lg:justify-start gap-x-10 gap-y-5 pt-6 border-t" style={{ borderColor: `${dark}10` }}>
                   {[
                     { value: "15+", label: "Ans d'expérience" },
                     { value: "10k+", label: "Patients satisfaits" },
                     { value: "98%", label: "Taux de satisfaction" },
-                  ].map((s) => (
-                    <div key={s.label}>
-                      <div
-                        className="ch text-[2rem] sm:text-[2.25rem] font-bold leading-none text-[#1C1C27]"
-                      >
-                        {s.value}
+                  ].map((stat) => (
+                    <div key={stat.label}>
+                      <div className="bbn leading-none" style={{ fontSize: "clamp(2rem,4vw,2.75rem)", color: dark }}>
+                        {stat.value}
                       </div>
-                      <div className="text-xs text-[#1C1C27]/40 font-medium mt-1">{s.label}</div>
+                      <div className="text-xs font-medium mt-1" style={{ color: `${dark}45` }}>{stat.label}</div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* ── Right: image composition ── */}
+              {/* ── Right: photo + floating cards ── */}
               <div className="relative flex items-center justify-center order-first lg:order-last">
-                <div className="relative w-full max-w-[320px] sm:max-w-[380px] lg:max-w-full mx-auto">
+                <div className="relative w-full max-w-[320px] sm:max-w-[360px] lg:max-w-full mx-auto">
 
-                  {/* Offset colour block behind image */}
+                  {/* Colored offset block */}
                   <div
-                    className="absolute top-4 right-4 bottom-[-12px] left-[-12px] rounded-[28px] opacity-25"
-                    style={{ backgroundColor: primary }}
-                  />
-                  <div
-                    className="absolute top-[-12px] right-[-12px] bottom-4 left-4 rounded-[28px] opacity-10 border-2"
-                    style={{ borderColor: primary }}
+                    className="absolute -top-3 -right-3 bottom-3 left-3 rounded-[32px] -z-10"
+                    style={{ backgroundColor: pa(0.12) }}
                   />
 
-                  {/* Main image */}
+                  {/* Portrait */}
                   {about_data?.avatar ? (
                     <img
                       src={about_data.avatar}
                       alt={clinic.name}
-                      className="relative z-10 w-full aspect-[4/5] object-cover shadow-2xl"
-                      style={{ borderRadius: "24px" }}
+                      className="relative z-10 w-full aspect-[3/4] object-cover shadow-2xl"
+                      style={{ borderRadius: "28px" }}
                     />
                   ) : hero_data.bgImage ? (
                     <img
                       src={hero_data.bgImage}
                       alt={clinic.name}
-                      className="relative z-10 w-full aspect-[4/5] object-cover shadow-2xl"
-                      style={{ borderRadius: "24px" }}
+                      className="relative z-10 w-full aspect-[3/4] object-cover shadow-2xl"
+                      style={{ borderRadius: "28px" }}
                     />
                   ) : (
                     <div
-                      className="relative z-10 w-full aspect-[4/5] flex flex-col items-center justify-center shadow-xl"
-                      style={{
-                        borderRadius: "24px",
-                        background: `linear-gradient(135deg, ${pa(0.14)}, ${pa(0.05)})`,
-                        border: `1px solid ${pa(0.16)}`,
-                      }}
+                      className="relative z-10 w-full aspect-[3/4] flex flex-col items-center justify-center shadow-xl"
+                      style={{ borderRadius: "28px", background: `linear-gradient(145deg, ${pa(0.12)}, ${pa(0.04)})` }}
                     >
-                      <Stethoscope className="w-16 h-16 mb-4 opacity-20" style={{ color: primary }} />
-                      <p className="text-[#1C1C27]/35 text-sm font-medium">{clinic.name}</p>
+                      <Stethoscope className="w-20 h-20 mb-4 opacity-20" style={{ color: primary }} />
+                      <p className="font-semibold opacity-30">{clinic.name}</p>
                     </div>
                   )}
 
-                  {/* Floating: certified */}
-                  <div className="absolute -bottom-6 sm:-bottom-8 -left-4 sm:-left-8 z-20 bg-white rounded-2xl px-4 py-3 shadow-xl border border-gray-100/80 af">
+                  {/* Floating card: patients */}
+                  <div
+                    className="absolute -bottom-8 -left-6 sm:-left-10 z-20 rounded-2xl px-5 py-4 shadow-2xl af"
+                    style={{ backgroundColor: primary }}
+                  >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
-                        <Shield className="w-5 h-5 text-emerald-600" />
+                      <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                        <Users className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-[#1C1C27]">Médecin certifié</p>
-                        <p className="text-[10px] text-[#1C1C27]/40 mt-0.5">Ordre National des Médecins</p>
+                        <p className="bbn text-2xl text-white leading-none">10k+</p>
+                        <p className="text-[11px] text-white/70 font-medium mt-0.5">Patients suivis</p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Floating: rating */}
-                  <div className="absolute -top-6 sm:-top-8 -right-4 sm:-right-6 z-20 bg-white rounded-2xl px-4 py-3 shadow-xl border border-gray-100/80 af2">
-                    <div className="flex items-center gap-1 mb-1">
+                  {/* Floating card: rating */}
+                  <div
+                    className="absolute -top-8 -right-4 sm:-right-8 z-20 rounded-2xl px-5 py-4 shadow-2xl af2"
+                    style={{ backgroundColor: teal }}
+                  >
+                    <div className="flex items-center gap-1 mb-1.5">
                       {[1, 2, 3, 4, 5].map((i) => (
-                        <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
+                        <Star key={i} className="w-3 h-3 fill-white text-white" />
                       ))}
                     </div>
-                    <p className="text-xs font-bold text-[#1C1C27]">4.9 / 5</p>
-                    <p className="text-[10px] text-[#1C1C27]/40 mt-0.5">250+ avis patients</p>
+                    <p className="bbn text-2xl text-white leading-none">4.9</p>
+                    <p className="text-[11px] text-white/80 font-medium mt-0.5">250+ avis</p>
                   </div>
+
+                  {/* Floating card: certified */}
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 -right-4 sm:-right-8 z-20 rounded-2xl px-4 py-3 shadow-xl af"
+                    style={{ backgroundColor: cream, border: `1px solid ${dark}10`, animationDelay: "3s" }}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Shield className="w-5 h-5" style={{ color: primary }} />
+                      <div>
+                        <p className="text-xs font-bold" style={{ color: dark }}>Certifié</p>
+                        <p className="text-[10px]" style={{ color: `${dark}50` }}>Ordre des Médecins</p>
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
               </div>
 
@@ -524,26 +502,24 @@ export function PublicClinicSite({
         </section>
 
 
-        {/* ═══════════════════
-            TRUST MARQUEE
-        ═══════════════════ */}
-        <div className="bg-white border-y border-gray-100 py-4 overflow-hidden">
+        {/* ═══════ TRUST MARQUEE ═══════ */}
+        <div className="border-y overflow-hidden py-4" style={{ backgroundColor: dark, borderColor: `${cream}10` }}>
           <div className="flex" aria-hidden="true">
             <div className="marquee-track flex items-center shrink-0 gap-0">
-              {[...Array(2)].map((_, repeatIndex) => (
-                <div key={repeatIndex} className="flex items-center">
+              {[...Array(2)].map((_, ri) => (
+                <div key={ri} className="flex items-center">
                   {[
                     { icon: Shield, label: "Conventionné secteur 1" },
                     { icon: CheckCircle2, label: "Remboursé Assurance Maladie" },
                     { icon: Award, label: "Certifié Ordre des Médecins" },
                     { icon: Calendar, label: "RDV en ligne 24h/24" },
-                    { icon: Star, label: "4.9/5 sur 250+ avis" },
-                    { icon: Phone, label: "Réponse sous 24h" },
+                    { icon: Star, label: "4.9/5 · 250+ avis vérifiés" },
+                    { icon: Heart, label: "Soins personnalisés" },
                   ].map(({ icon: Icon, label }) => (
-                    <div key={label} className="flex items-center gap-2.5 text-sm font-medium text-[#1C1C27]/50 whitespace-nowrap px-8">
+                    <div key={label} className="flex items-center gap-2.5 text-sm font-medium whitespace-nowrap px-8" style={{ color: `${cream}60` }}>
                       <Icon className="w-3.5 h-3.5 shrink-0" style={{ color: primary }} />
                       {label}
-                      <span className="ml-8 text-[#1C1C27]/15">·</span>
+                      <span className="ml-8" style={{ color: `${cream}20` }}>·</span>
                     </div>
                   ))}
                 </div>
@@ -553,81 +529,81 @@ export function PublicClinicSite({
         </div>
 
 
-        {/* ═══════════════════
-            SERVICES
-        ═══════════════════ */}
+        {/* ═══════ SERVICES ═══════ */}
         {show_services && services.length > 0 && (
-          <section id="services" className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-[#F8F7F4]">
+          <section id="services" className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 overflow-hidden" style={{ backgroundColor: cream }}>
             <div className="max-w-6xl mx-auto">
 
-              {/* Header: editorial left-aligned */}
-              <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-14">
+              {/* Header */}
+              <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-16 relative">
+                {/* Giant bg number */}
+                <div
+                  className="absolute -top-8 right-0 bbn leading-none select-none pointer-events-none"
+                  style={{ fontSize: "clamp(6rem,15vw,12rem)", color: `${dark}04` }}
+                  aria-hidden="true"
+                >
+                  02
+                </div>
                 <div>
-                  <p
-                    className="text-[11px] font-semibold uppercase tracking-[0.18em] mb-3"
-                    style={{ color: primary }}
-                  >
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-3" style={{ color: primary }}>
                     Nos spécialités
                   </p>
-                  <h2
-                    className="ch font-bold text-[#1C1C27] leading-tight"
-                    style={{ fontSize: "clamp(2rem,4.5vw,3.5rem)" }}
-                  >
-                    Domaines d'expertise
+                  <h2 className="bbn leading-[0.95]" style={{ fontSize: "clamp(2.8rem,6vw,5rem)", color: dark }}>
+                    DOMAINES{" "}
+                    <span className="pfdi italic font-normal" style={{ color: primary }}>d'expertise</span>
                   </h2>
                 </div>
-                <p className="text-[#1C1C27]/50 text-base max-w-sm lg:text-right leading-relaxed">
-                  Des soins personnalisés et de haute qualité pour répondre à tous vos besoins médicaux.
+                <p className="text-base max-w-xs lg:text-right leading-relaxed" style={{ color: `${dark}55` }}>
+                  Des soins spécialisés et personnalisés pour chacun de vos besoins médicaux.
                 </p>
               </div>
 
-              {/* Numbered grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-gray-200/60">
+              {/* Service cards grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {services.map((service, index) => {
                   const emojiRegex = /^(\p{Emoji_Presentation}|\p{Extended_Pictographic})\s*(.*)$/u;
                   const match = service.name.match(emojiRegex);
                   const icon = match ? match[1] : "🩺";
                   const displayName = match ? match[2] : service.name;
                   const num = String(index + 1).padStart(2, "0");
+                  const isEven = index % 2 === 0;
 
                   return (
                     <div
                       key={service.id}
-                      className="svc-card relative bg-white p-7 lg:p-8 group overflow-hidden transition-all duration-300 hover:z-10 hover:shadow-[0_12px_48px_rgba(0,0,0,0.1)]"
+                      className="relative rounded-3xl p-7 overflow-hidden group transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                      style={{ backgroundColor: isEven ? `${dark}05` : pa(0.06), border: `1px solid ${dark}08` }}
                     >
                       {/* Large decorative number */}
                       <div
-                        className="absolute top-4 right-4 ch text-7xl font-black leading-none select-none transition-opacity duration-300"
-                        style={{ color: pa(0.06) }}
+                        className="absolute top-4 right-5 bbn leading-none select-none transition-opacity duration-300 group-hover:opacity-80"
+                        style={{ fontSize: "5rem", color: isEven ? `${dark}07` : pa(0.12) }}
                       >
                         {num}
                       </div>
 
-                      {/* Emoji icon */}
-                      <div
-                        className="w-12 h-12 flex items-center justify-center text-xl mb-6 rounded-xl transition-transform duration-300 group-hover:scale-110"
-                        style={{ backgroundColor: pa(0.08), borderRadius: "12px" }}
-                      >
-                        {icon}
-                      </div>
+                      {/* Icon */}
+                      <div className="text-3xl mb-5">{icon}</div>
 
-                      <h3 className="ch text-[1.15rem] font-bold text-[#1C1C27] mb-2 relative z-10">
+                      <h3 className="bbn text-[1.4rem] mb-2 relative z-10" style={{ color: dark }}>
                         {displayName}
                       </h3>
-                      <p className="text-sm text-[#1C1C27]/50 leading-relaxed relative z-10">
-                        {service.description ||
-                          "Consultation médicale spécialisée avec diagnostic précis et suivi personnalisé adapté à vos besoins."}
+                      <p className="text-sm leading-relaxed relative z-10" style={{ color: `${dark}55` }}>
+                        {service.description || "Consultation médicale spécialisée avec diagnostic précis et suivi personnalisé."}
                       </p>
 
-                      <div className="flex items-center justify-between mt-6 pt-5 border-t border-gray-100 text-xs font-semibold relative z-10">
-                        <span className="flex items-center gap-1.5 text-[#1C1C27]/40">
-                          <Clock className="w-3.5 h-3.5" />
+                      <div className="flex items-center gap-3 mt-6 relative z-10">
+                        <span
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
+                          style={{ backgroundColor: `${dark}08`, color: `${dark}60` }}
+                        >
+                          <Clock className="w-3 h-3" />
                           {service.duration_minutes} min
                         </span>
                         {service.price && (
                           <span
-                            className="px-3 py-1.5 rounded-full font-bold"
-                            style={{ color: primary, backgroundColor: pa(0.08) }}
+                            className="inline-flex px-3 py-1.5 rounded-full text-xs font-bold"
+                            style={{ backgroundColor: pa(0.1), color: primary }}
                           >
                             {service.price} €
                           </span>
@@ -642,50 +618,52 @@ export function PublicClinicSite({
         )}
 
 
-        {/* ═══════════════════
-            ABOUT
-        ═══════════════════ */}
+        {/* ═══════ ABOUT ═══════ */}
         {(about_data?.bio || about_data?.avatar) && (
-          <section id="about" className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-white relative overflow-hidden">
-            {/* Decorative accent stripe */}
-            <div
-              className="absolute left-0 top-0 bottom-0 w-1.5 hidden lg:block"
-              style={{ backgroundColor: primary }}
-            />
+          <section id="about" className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 relative overflow-hidden" style={{ backgroundColor: `${dark}04` }}>
 
-            <div className="max-w-6xl mx-auto">
+            {/* Giant bg number */}
+            <div
+              className="absolute right-[-2vw] top-1/2 -translate-y-1/2 bbn leading-none select-none pointer-events-none"
+              style={{ fontSize: "clamp(10rem,25vw,22rem)", color: `${dark}03` }}
+              aria-hidden="true"
+            >
+              03
+            </div>
+
+            <div className="max-w-6xl mx-auto relative z-10">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-20 items-center">
 
                 {/* Image */}
                 <div className="relative mx-auto w-full max-w-sm lg:max-w-none">
                   {about_data?.avatar ? (
                     <div className="relative">
-                      {/* Background square */}
+                      {/* Teal offset block */}
                       <div
-                        className="absolute inset-0 translate-x-5 translate-y-5 rounded-3xl"
-                        style={{ backgroundColor: pa(0.1) }}
+                        className="absolute -top-4 -left-4 w-2/3 h-2/3 rounded-3xl"
+                        style={{ backgroundColor: teal, opacity: 0.15 }}
+                      />
+                      {/* Pink offset block */}
+                      <div
+                        className="absolute -bottom-4 -right-4 w-1/2 h-1/2 rounded-3xl"
+                        style={{ backgroundColor: primary, opacity: 0.12 }}
                       />
                       <img
                         src={about_data.avatar}
-                        alt="Médecin"
+                        alt="Cabinet médical"
                         className="relative z-10 w-full aspect-[3/4] object-cover shadow-2xl"
-                        style={{ borderRadius: "24px" }}
+                        style={{ borderRadius: "28px" }}
                       />
-
                       {/* Experience badge */}
                       <div
-                        className="absolute -bottom-6 left-6 z-20 bg-white rounded-2xl px-5 py-4 shadow-xl border border-gray-100"
+                        className="absolute -bottom-6 left-8 z-20 rounded-2xl px-5 py-4 shadow-xl"
+                        style={{ backgroundColor: teal }}
                       >
-                        <div className="flex items-center gap-4">
-                          <div
-                            className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-                            style={{ backgroundColor: pa(0.1) }}
-                          >
-                            <Award className="w-6 h-6" style={{ color: primary }} />
-                          </div>
+                        <div className="flex items-center gap-3">
+                          <Award className="w-6 h-6 text-white" />
                           <div>
-                            <p className="ch text-2xl font-bold text-[#1C1C27] leading-none">15+</p>
-                            <p className="text-xs text-[#1C1C27]/45 mt-0.5">Ans d'expérience</p>
+                            <p className="bbn text-2xl text-white leading-none">15+</p>
+                            <p className="text-[11px] text-white/80 font-medium">Ans d'expérience</p>
                           </div>
                         </div>
                       </div>
@@ -693,11 +671,7 @@ export function PublicClinicSite({
                   ) : (
                     <div
                       className="w-full aspect-[3/4] flex flex-col items-center justify-center shadow-lg"
-                      style={{
-                        borderRadius: "24px",
-                        background: `linear-gradient(145deg, ${pa(0.1)}, ${pa(0.03)})`,
-                        border: `1px solid ${pa(0.12)}`,
-                      }}
+                      style={{ borderRadius: "28px", background: `linear-gradient(145deg, ${pa(0.1)}, ${pa(0.03)})` }}
                     >
                       <Stethoscope className="w-20 h-20 opacity-20" style={{ color: primary }} />
                     </div>
@@ -706,56 +680,47 @@ export function PublicClinicSite({
 
                 {/* Content */}
                 <div className="space-y-7 text-center lg:text-left">
-                  <p
-                    className="text-[11px] font-semibold uppercase tracking-[0.18em]"
-                    style={{ color: primary }}
-                  >
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: primary }}>
                     Notre cabinet
                   </p>
 
-                  <h2
-                    className="ch font-bold text-[#1C1C27] leading-tight"
-                    style={{ fontSize: "clamp(2rem,4.5vw,3.5rem)" }}
-                  >
-                    À propos du{" "}
-                    <span style={{ color: primary }}>cabinet</span>
+                  <h2 className="bbn leading-[0.95]" style={{ fontSize: "clamp(2.8rem,5.5vw,4.5rem)", color: dark }}>
+                    À PROPOS{" "}
+                    <span className="pfdi italic font-normal" style={{ color: primary }}>du cabinet</span>
                   </h2>
 
                   {/* Pull quote */}
-                  <blockquote
-                    className="relative pl-5 border-l-4 text-left"
-                    style={{ borderColor: primary }}
-                  >
-                    <Quote
-                      className="absolute -top-2 -left-1 w-5 h-5 opacity-20"
-                      style={{ color: primary }}
-                    />
-                    <p className="ch italic text-[#1C1C27]/70 text-base lg:text-lg leading-relaxed">
+                  <div className="relative pl-5 border-l-4 text-left" style={{ borderColor: primary }}>
+                    <p className="pfdi italic text-lg leading-relaxed" style={{ color: `${dark}70` }}>
                       {about_data?.bio
                         ? (about_data.bio.split(".")[0] + ".").trim()
                         : "Une médecine de qualité, au service de chaque patient."}
                     </p>
-                  </blockquote>
+                  </div>
 
                   {about_data?.bio && (
-                    <p className="text-[#1C1C27]/55 leading-relaxed text-base whitespace-pre-line">
+                    <p className="text-base leading-relaxed" style={{ color: `${dark}55` }}>
                       {about_data.bio.split(".").slice(1).join(".").trim()}
                     </p>
                   )}
 
                   {/* Stats */}
-                  <div className="grid grid-cols-3 gap-6 pt-6 border-t border-gray-100">
+                  <div className="grid grid-cols-3 gap-4 py-6 border-t border-b" style={{ borderColor: `${dark}10` }}>
                     {[
-                      { value: "15+", label: "Ans d'expérience" },
-                      { value: "10k+", label: "Patients traités" },
-                      { value: "98%", label: "Satisfaction" },
-                    ].map((s) => (
-                      <div key={s.label} className="text-center">
-                        <div className="ch text-2xl sm:text-3xl font-bold" style={{ color: primary }}>
-                          {s.value}
+                      { value: "15+", label: "Ans d'expérience", bg: pa(0.08), color: primary },
+                      { value: "10k+", label: "Patients traités", bg: `${teal}15`, color: teal },
+                      { value: "98%", label: "Satisfaction", bg: `${dark}06`, color: dark },
+                    ].map((stat) => (
+                      <div
+                        key={stat.label}
+                        className="text-center rounded-2xl py-4 px-2"
+                        style={{ backgroundColor: stat.bg }}
+                      >
+                        <div className="bbn text-2xl sm:text-3xl leading-none" style={{ color: stat.color }}>
+                          {stat.value}
                         </div>
-                        <div className="text-[11px] text-[#1C1C27]/40 font-medium mt-1 leading-tight">
-                          {s.label}
+                        <div className="text-[10px] font-medium mt-1.5 leading-tight" style={{ color: `${dark}50` }}>
+                          {stat.label}
                         </div>
                       </div>
                     ))}
@@ -769,8 +734,10 @@ export function PublicClinicSite({
                       "Écoute et accompagnement personnalisé",
                     ].map((item) => (
                       <div key={item} className="flex items-center gap-3 justify-center lg:justify-start">
-                        <CheckCircle2 className="w-4 h-4 shrink-0" style={{ color: primary }} />
-                        <span className="text-sm text-[#1C1C27]/60">{item}</span>
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: pa(0.1) }}>
+                          <CheckCircle2 className="w-3.5 h-3.5" style={{ color: primary }} />
+                        </div>
+                        <span className="text-sm font-medium" style={{ color: `${dark}65` }}>{item}</span>
                       </div>
                     ))}
                   </div>
@@ -782,21 +749,17 @@ export function PublicClinicSite({
         )}
 
 
-        {/* ═══════════════════
-            TESTIMONIALS
-        ═══════════════════ */}
-        <section id="testimonials" className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: pa(0.04) }}>
+        {/* ═══════ TESTIMONIALS ═══════ */}
+        <section id="testimonials" className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: cream }}>
           <div className="max-w-6xl mx-auto">
 
             <div className="text-center mb-14">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] mb-3" style={{ color: primary }}>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-3" style={{ color: primary }}>
                 Témoignages
               </p>
-              <h2
-                className="ch font-bold text-[#1C1C27] leading-tight"
-                style={{ fontSize: "clamp(2rem,4.5vw,3.5rem)" }}
-              >
-                Ce que disent nos patients
+              <h2 className="bbn leading-[0.95]" style={{ fontSize: "clamp(2.8rem,5.5vw,4.5rem)", color: dark }}>
+                CE QUE DISENT{" "}
+                <span className="pfdi italic font-normal" style={{ color: primary }}>nos patients</span>
               </h2>
             </div>
 
@@ -804,36 +767,28 @@ export function PublicClinicSite({
               {TESTIMONIALS.map((t, i) => (
                 <div
                   key={i}
-                  className="bg-white p-7 lg:p-8 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300 flex flex-col"
-                  style={{ borderRadius: cardRadius }}
+                  className="rounded-3xl p-7 lg:p-8 flex flex-col group hover:-translate-y-1 transition-all duration-300 hover:shadow-xl"
+                  style={{ backgroundColor: i === 1 ? primary : i === 2 ? teal : dark }}
                 >
                   {/* Stars */}
                   <div className="flex items-center gap-1 mb-5">
                     {[1, 2, 3, 4, 5].map((s) => (
-                      <Star key={s} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                      <Star key={s} className="w-4 h-4 fill-white text-white opacity-90" />
                     ))}
                   </div>
 
-                  {/* Large quote mark */}
-                  <div
-                    className="ch text-6xl font-black leading-none mb-2 select-none"
-                    style={{ color: pa(0.12) }}
-                  >
-                    "
-                  </div>
+                  {/* Large quote */}
+                  <div className="bbn text-7xl leading-none mb-2 select-none text-white opacity-20">"</div>
 
-                  <p className="text-[#1C1C27]/65 text-sm leading-relaxed flex-1">{t.text}</p>
+                  <p className="text-sm leading-relaxed flex-1 text-white opacity-80">{t.text}</p>
 
-                  <div className="flex items-center gap-3 mt-6 pt-5 border-t border-gray-100">
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
-                      style={{ backgroundColor: pa(0.1), color: primary }}
-                    >
+                  <div className="flex items-center gap-3 mt-6 pt-5 border-t border-white/15">
+                    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold shrink-0 text-white bbn">
                       {t.name.charAt(0)}
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-[#1C1C27]">{t.name}</p>
-                      <p className="text-[11px] text-[#1C1C27]/40">{t.context}</p>
+                      <p className="text-sm font-bold text-white">{t.name}</p>
+                      <p className="text-[11px] text-white/55">{t.context}</p>
                     </div>
                   </div>
                 </div>
@@ -843,62 +798,47 @@ export function PublicClinicSite({
         </section>
 
 
-        {/* ═══════════════════
-            CTA / CONTACT
-        ═══════════════════ */}
+        {/* ═══════ CONTACT / CTA ═══════ */}
         <section
           id="contact"
           className="relative py-20 lg:py-32 px-4 sm:px-6 lg:px-8 overflow-hidden"
           style={{ backgroundColor: primary }}
         >
           {/* White blobs */}
-          <div className="absolute -top-20 right-[-10%] w-[500px] h-[500px] rounded-full opacity-[0.07] bg-white blur-[100px] pointer-events-none" />
-          <div className="absolute bottom-[-10%] left-[-5%] w-[350px] h-[350px] rounded-full opacity-[0.07] bg-white blur-[80px] pointer-events-none" />
+          <div className="absolute -top-20 right-[-10%] w-[500px] h-[500px] rounded-full opacity-[0.06] bg-white blur-[100px] pointer-events-none" />
+          <div className="absolute bottom-[-10%] left-[-5%] w-[350px] h-[350px] rounded-full opacity-[0.06] bg-white blur-[80px] pointer-events-none" />
 
-          {/* Dot grid white */}
+          {/* Giant bg text */}
           <div
-            className="absolute inset-0 opacity-[0.04] pointer-events-none"
-            style={{
-              backgroundImage: "radial-gradient(circle, white 1.5px, transparent 1.5px)",
-              backgroundSize: "30px 30px",
-            }}
-          />
-
-          {/* Giant decorative text */}
-          <div
-            className="absolute right-0 bottom-0 ch font-black leading-none select-none pointer-events-none opacity-[0.04] text-white"
-            style={{ fontSize: "clamp(8rem,18vw,20rem)", lineHeight: 0.9 }}
+            className="absolute right-[-2vw] bottom-[-4vw] bbn leading-none select-none pointer-events-none opacity-[0.06] text-white"
+            style={{ fontSize: "clamp(8rem,20vw,20rem)" }}
             aria-hidden="true"
           >
             RDV
           </div>
 
           <div className="max-w-6xl mx-auto relative z-10">
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-12 items-start">
 
               {/* Left */}
               <div className="space-y-7 text-center lg:text-left">
-                <h2
-                  className="ch font-bold text-white leading-[1.05]"
-                  style={{ fontSize: "clamp(2.2rem,5vw,4rem)" }}
-                >
-                  Prêt à prendre<br />rendez-vous ?
+                <h2 className="bbn text-white leading-[0.95]" style={{ fontSize: "clamp(3rem,7vw,6rem)" }}>
+                  PRÊT À PRENDRE{" "}
+                  <span className="pfdi italic font-normal opacity-75">rendez-vous ?</span>
                 </h2>
-                <p className="text-white/60 text-base lg:text-lg leading-relaxed max-w-md mx-auto lg:mx-0">
-                  Notre assistant IA est disponible 24h/24 et 7j/7 pour vous trouver le créneau idéal. Rapide, simple, sans attente.
+                <p className="text-base lg:text-lg leading-relaxed max-w-md mx-auto lg:mx-0 text-white/60">
+                  Notre assistant IA est disponible 24h/24 pour vous trouver le créneau idéal. Rapide, simple, sans attente.
                 </p>
                 <div className="flex justify-center lg:justify-start">
                   <button
                     onClick={openWidget}
-                    className="inline-flex items-center gap-2 px-7 py-[14px] bg-white font-semibold text-sm hover:bg-white/92 hover:-translate-y-0.5 hover:shadow-xl transition-all duration-200 active:scale-[0.97]"
-                    style={{ color: primary, borderRadius: style_config.radius }}
+                    className="inline-flex items-center gap-2 px-8 py-4 bg-white font-bold text-sm rounded-full hover:bg-white/92 hover:-translate-y-0.5 hover:shadow-xl transition-all duration-200 active:scale-[0.97]"
+                    style={{ color: primary }}
                   >
                     <Calendar className="w-4 h-4" />
                     {show_chat_widget ? "Ouvrir l'assistant IA" : "Prendre rendez-vous"}
                   </button>
                 </div>
-
-                {/* Mini trust */}
                 <div className="flex flex-wrap justify-center lg:justify-start gap-5 pt-2">
                   {[
                     { icon: Shield, label: "Conventionné S.1" },
@@ -914,32 +854,17 @@ export function PublicClinicSite({
               </div>
 
               {/* Right: info card */}
-              <div
-                className="rounded-3xl p-6 lg:p-8 border border-white/20 space-y-6"
-                style={{ backgroundColor: "rgba(255,255,255,0.1)", backdropFilter: "blur(10px)" }}
-              >
-                <h3 className="ch text-white font-bold text-xl">Informations pratiques</h3>
+              <div className="rounded-3xl p-6 lg:p-8 space-y-6 border border-white/20" style={{ backgroundColor: "rgba(255,255,255,0.1)", backdropFilter: "blur(12px)" }}>
+                <h3 className="bbn text-white text-2xl">INFORMATIONS PRATIQUES</h3>
 
                 {[
-                  {
-                    icon: MapPin,
-                    title: "Adresse",
-                    desc: contactAddress || "Communiquée à la confirmation de votre rendez-vous.",
-                  },
-                  {
-                    icon: Clock,
-                    title: "Horaires",
-                    desc: contactSchedule,
-                  },
-                  {
-                    icon: Phone,
-                    title: "Contact",
-                    desc: contactPhone || "Joignez-nous via l'assistant IA ou le formulaire en ligne.",
-                  },
+                  { icon: MapPin, title: "Adresse", desc: contactAddress || "Communiquée à la confirmation de votre rendez-vous." },
+                  { icon: Clock, title: "Horaires", desc: contactSchedule },
+                  { icon: Phone, title: "Contact", desc: contactPhone || "Joignez-nous via l'assistant IA." },
                 ].map(({ icon: Icon, title, desc }, i) => (
                   <div key={title}>
                     {i > 0 && <div className="h-px bg-white/10" />}
-                    <div className="flex items-start gap-4 pt-[i === 0 ? 0 : 6px]">
+                    <div className="flex items-start gap-4 pt-1">
                       <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0 mt-0.5">
                         <Icon className="w-5 h-5 text-white/80" />
                       </div>
@@ -950,6 +875,13 @@ export function PublicClinicSite({
                     </div>
                   </div>
                 ))}
+
+                {contactInsurance && (
+                  <div className="flex items-center gap-3 pt-2 border-t border-white/10">
+                    <Shield className="w-4 h-4 text-white/60 shrink-0" />
+                    <span className="text-sm text-white/60 font-medium">{contactInsurance}</span>
+                  </div>
+                )}
               </div>
 
             </div>
@@ -957,37 +889,37 @@ export function PublicClinicSite({
         </section>
 
 
-        {/* ═══════════════════
-            FOOTER
-        ═══════════════════ */}
-        <footer className="bg-[#0C0C15] text-white pt-14 pb-8 px-4 sm:px-6 lg:px-8">
+        {/* ═══════ FOOTER ═══════ */}
+        <footer style={{ backgroundColor: dark, color: cream }} className="pt-14 pb-8 px-4 sm:px-6 lg:px-8">
           <div className="max-w-6xl mx-auto">
 
-            {/* Top grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-white/08">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b" style={{ borderColor: `${cream}08` }}>
 
               {/* Brand */}
               <div className="space-y-4 sm:col-span-2 lg:col-span-1">
                 <div className="flex items-center gap-2.5">
                   <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm"
+                    className="w-9 h-9 rounded-lg flex items-center justify-center font-black text-sm bbn"
                     style={{ backgroundColor: primary, color: ctaTextColor }}
                   >
                     {clinicInitial}
                   </div>
-                  <span className="ch font-semibold text-white/80">{clinic.name}</span>
+                  <span className="bbn text-[18px] opacity-80">{clinic.name}</span>
                 </div>
-                <p className="text-sm text-white/35 leading-relaxed max-w-[200px]">
+                <p className="text-sm leading-relaxed max-w-[200px]" style={{ color: `${cream}35` }}>
                   Cabinet médical dédié à votre santé et votre bien-être.
                 </p>
               </div>
 
-              {/* Navigation */}
+              {/* Nav */}
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white/30 mb-4">Navigation</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] mb-4" style={{ color: `${cream}30` }}>Navigation</p>
                 <div className="space-y-3">
                   {navLinks.map((l) => (
-                    <a key={l.href} href={l.href} className="block text-sm text-white/45 hover:text-white/75 transition-colors">
+                    <a key={l.href} href={l.href} className="block text-sm transition-colors" style={{ color: `${cream}45` }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = cream)}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = `${cream}45`)}
+                    >
                       {l.label}
                     </a>
                   ))}
@@ -997,14 +929,17 @@ export function PublicClinicSite({
               {/* Services */}
               {show_services && services.length > 0 && (
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white/30 mb-4">Spécialités</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] mb-4" style={{ color: `${cream}30` }}>Spécialités</p>
                   <div className="space-y-3">
                     {services.slice(0, 5).map((s) => {
                       const emojiRegex = /^(\p{Emoji_Presentation}|\p{Extended_Pictographic})\s*(.*)$/u;
                       const match = s.name.match(emojiRegex);
                       const name = match ? match[2] : s.name;
                       return (
-                        <a key={s.id} href="#services" className="block text-sm text-white/45 hover:text-white/75 transition-colors truncate">
+                        <a key={s.id} href="#services" className="block text-sm truncate transition-colors" style={{ color: `${cream}45` }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = cream)}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = `${cream}45`)}
+                        >
                           {name}
                         </a>
                       );
@@ -1013,52 +948,46 @@ export function PublicClinicSite({
                 </div>
               )}
 
-              {/* Contact info */}
+              {/* Contact */}
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white/30 mb-4">Contact</p>
-                <div className="space-y-3 text-sm text-white/45">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] mb-4" style={{ color: `${cream}30` }}>Contact</p>
+                <div className="space-y-3 text-sm" style={{ color: `${cream}45` }}>
                   {contactSchedule && (
                     <div className="flex items-start gap-2">
-                      <Clock className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: pa(0.6) }} />
-                      <span className="leading-relaxed">{contactSchedule.split("\n")[0]}</span>
+                      <Clock className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: pa(0.7) }} />
+                      <span>{contactSchedule.split("\n")[0]}</span>
                     </div>
                   )}
                   {contactPhone && (
                     <div className="flex items-center gap-2">
-                      <Phone className="w-3.5 h-3.5 shrink-0" style={{ color: pa(0.6) }} />
-                      <a href={`tel:${contactPhone}`} className="hover:text-white/70 transition-colors">{contactPhone}</a>
+                      <Phone className="w-3.5 h-3.5 shrink-0" style={{ color: pa(0.7) }} />
+                      <a href={`tel:${contactPhone}`} style={{ color: `${cream}45` }}>{contactPhone}</a>
                     </div>
                   )}
                   {contactAddress && (
                     <div className="flex items-start gap-2">
-                      <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: pa(0.6) }} />
-                      <span className="leading-relaxed">{contactAddress}</span>
-                    </div>
-                  )}
-                  {contactInsurance && (
-                    <div className="flex items-center gap-2">
-                      <Shield className="w-3.5 h-3.5 shrink-0" style={{ color: pa(0.6) }} />
-                      <span>{contactInsurance}</span>
+                      <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: pa(0.7) }} />
+                      <span>{contactAddress}</span>
                     </div>
                   )}
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: pa(0.6) }} />
-                    <a href="#contact" onClick={openWidget} className="hover:text-white/70 transition-colors">Prendre rendez-vous</a>
+                    <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: pa(0.7) }} />
+                    <a href="#contact" onClick={openWidget} style={{ color: `${cream}45` }}>Prendre rendez-vous</a>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Bottom bar */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 text-[12px] text-white/25">
+            {/* Bottom */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 text-[12px]" style={{ color: `${cream}25` }}>
               <span>© {new Date().getFullYear()} {clinic.name}. Tous droits réservés.</span>
               <div className="flex items-center gap-6">
-                <a href="#" className="hover:text-white/45 transition-colors">Mentions légales</a>
-                <a href="#" className="hover:text-white/45 transition-colors">Confidentialité</a>
+                <a href="#">Mentions légales</a>
+                <a href="#">Confidentialité</a>
               </div>
               <span>
                 Propulsé par{" "}
-                <a href="https://docflow.ai" className="text-white/45 hover:text-white/70 font-semibold transition-colors">
+                <a href="https://docflow.ai" className="font-semibold" style={{ color: `${cream}50` }}>
                   DocFlow IA
                 </a>
               </span>

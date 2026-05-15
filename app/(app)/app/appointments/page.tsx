@@ -98,7 +98,7 @@ export default function AppointmentsPage() {
         {/* Mobile Swipe Hint */}
         <div className="md:hidden flex items-center justify-center gap-2 text-[11px] font-bold text-muted-foreground bg-muted/30 py-1.5 rounded-xl border border-border">
           <svg className="w-3.5 h-3.5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
-          Faites glisser les filtres et le tableau
+          {t("swipeFiltersHint")}
         </div>
 
         {/* Filter tabs */}

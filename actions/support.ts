@@ -1,7 +1,7 @@
 "use server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { sendRawEmail } from "@/lib/email/router";
 
 export type SupportPriority = "low" | "normal" | "high" | "urgent";
@@ -98,6 +98,25 @@ export async function sendSupportTicket(
     </div>
   `;
 
+  // Sauvegarde en DB (non-bloquant)
+  try {
+    const adminDb = (await createAdminClient()) as any;
+    await adminDb.from("admin_messages").insert({
+      type: "support",
+      status: "open",
+      sender_name: context.fullName,
+      sender_email: context.email,
+      sender_plan: context.plan,
+      subject: data.subject,
+      body: data.message,
+      metadata: { priority: data.priority, ticketId, isPriority },
+      user_id: context.userId,
+    });
+  } catch (err) {
+    console.error("[sendSupportTicket] db save error:", err);
+  }
+
+  // Envoi email (non-bloquant)
   try {
     await sendRawEmail({
       to: supportEmail,
@@ -107,7 +126,6 @@ export async function sendSupportTicket(
     });
   } catch (err) {
     console.error("[sendSupportTicket] email error:", err);
-    // Non-blocking — ticket is still "submitted" from user's perspective
   }
 
   return { success: true, ticketId };

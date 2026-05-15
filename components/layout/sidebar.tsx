@@ -67,6 +67,7 @@ interface SidebarAlertState {
 }
 
 function SidebarAlertBanner({ collapsed }: { collapsed: boolean }) {
+  const t = useTranslations("navigation");
   const [state, setState] = useState<SidebarAlertState>({
     expiryDate: null,
     plan: null,
@@ -132,11 +133,11 @@ function SidebarAlertBanner({ collapsed }: { collapsed: boolean }) {
   // Collapsed: show a single icon badge
   if (collapsed) {
     const title = isApptCritical
-      ? "Limite de RDV atteinte"
+      ? t("quotaApptLimitReached")
       : isApptWarning
         ? `${apptCurrent}/${apptLimit} RDV utilisés`
         : showExpiryAlert
-          ? "Abonnement à renouveler"
+          ? t("subscriptionRenew")
           : "";
     return (
       <Link href="/app/billing" title={title}
@@ -161,10 +162,10 @@ function SidebarAlertBanner({ collapsed }: { collapsed: boolean }) {
           <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
           <div className="min-w-0 flex-1">
             <p className="text-[11px] font-bold leading-tight">
-              {isApptCritical ? "Limite de RDV atteinte" : `${apptCurrent} / ${apptLimit} RDV ce mois`}
+              {isApptCritical ? t("quotaApptLimitReached") : `${apptCurrent} / ${apptLimit} RDV ce mois`}
             </p>
             <p className="text-[10px] opacity-75 mt-0.5 leading-snug">
-              {isApptCritical ? "Passez à un plan supérieur" : "Bientôt à la limite"}
+              {isApptCritical ? t("quotaUpgradePlan") : t("quotaNearLimit")}
             </p>
             {apptLimit && (
               <div className="mt-1.5 h-1 bg-current/20 rounded-full overflow-hidden">
@@ -191,10 +192,10 @@ function SidebarAlertBanner({ collapsed }: { collapsed: boolean }) {
             <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
             <div className="min-w-0">
               <p className="text-[11px] font-bold leading-tight">
-                {isExpired ? "Plan expiré" : `${daysLeft} jour${daysLeft > 1 ? "s" : ""} restant${daysLeft > 1 ? "s" : ""}`}
+                {isExpired ? t("planExpired") : `${daysLeft} jour${daysLeft > 1 ? "s" : ""} restant${daysLeft > 1 ? "s" : ""}`}
               </p>
               <p className="text-[10px] opacity-75 mt-0.5 leading-snug">
-                {isExpired ? "Renouveler pour maintenir l'accès" : "Renouvelez avant expiration"}
+                {isExpired ? t("planRenewNow") : t("planRenewBefore")}
               </p>
             </div>
             <Clock className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 opacity-60" />

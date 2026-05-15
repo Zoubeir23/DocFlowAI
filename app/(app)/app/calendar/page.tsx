@@ -137,13 +137,13 @@ export default function CalendarPage() {
               <Link href="/app/billing"
                 className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-700 dark:text-amber-400 text-xs font-semibold hover:bg-amber-500/20 transition-colors">
                 <Lock className="w-3.5 h-3.5" />
-                Calendrier basique · <span className="underline">Passer au complet</span>
+                <span className="underline">{t('basicCalendarBadge')}</span>
               </Link>
             )}
             {isPaidPlan && (
               <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-600 text-xs font-semibold">
                 <Zap className="w-3.5 h-3.5" />
-                Calendrier complet
+                {t('fullCalendarBadge')}
               </div>
             )}
             {/* Legend */}

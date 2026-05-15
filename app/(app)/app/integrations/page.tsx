@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   listWebhooks, createWebhook, deleteWebhook, toggleWebhook, testWebhook,
@@ -35,8 +35,11 @@ function usePlan() {
       const db = createClient() as any;
       const { data: { user } } = await db.auth.getUser();
       if (!user) return "free";
-      const { data: userData } = await db.from("users").select("clinic_id").eq("id", user.id).single();
-      if (!userData?.clinic_id) return "free";
+      const { data: userData } = await db.from("users").select("clinic_id, role").eq("id", user.id).single();
+      if (!userData) return "free";
+      // Le super admin a accès à toutes les fonctionnalités sans restriction de plan
+      if (userData.role === "super_admin") return "enterprise";
+      if (!userData.clinic_id) return "free";
       const { data: sub } = await db.from("subscriptions").select("plan").eq("clinic_id", userData.clinic_id).single();
       return (sub?.plan as string) ?? "free";
     },
@@ -300,7 +303,7 @@ function verify(secret, payload, signature) {
 
 // ─── API KEYS SECTION ─────────────────────────────────────────────────────────
 
-function ApiKeysSection() {
+function ApiKeysSection({ onKeyGenerated }: { onKeyGenerated?: (rawKey: string) => void }) {
   const queryClient = useQueryClient();
   const [isPending, startTransition] = useTransition();
   const [newKeyName, setNewKeyName] = useState("");
@@ -319,6 +322,7 @@ function ApiKeysSection() {
       const result = await createApiKey(newKeyName);
       if (result.success && result.data) {
         setRevealedKey({ id: result.data.id, key: result.data.rawKey });
+        onKeyGenerated?.(result.data.rawKey);
         setNewKeyName("");
         setShowCreateForm(false);
         invalidate();
@@ -428,7 +432,7 @@ function ApiKeysSection() {
             { method: "POST", path: "/api/v1/appointments", desc: "Créer un rendez-vous" },
             { method: "GET", path: "/api/v1/patients", desc: "Lister les patients" },
           ].map((endpoint) => (
-            <div key={endpoint.path} className="flex items-center gap-2">
+            <div key={`${endpoint.method}-${endpoint.path}`} className="flex items-center gap-2">
               <span className={cn("text-[10px] font-mono font-bold px-1.5 py-0.5 rounded",
                 endpoint.method === "GET" ? "bg-blue-500/10 text-blue-600 border border-blue-500/20" : "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
               )}>
@@ -455,17 +459,28 @@ const MCP_TOOLS = [
   { name: "list_services", desc: "Lister les services actifs" },
 ];
 
-function McpSection() {
+const OS_CONFIG_PATHS = [
+  { os: "macOS", path: "~/Library/Application Support/Claude/claude_desktop_config.json" },
+  { os: "Windows", path: "%APPDATA%\\Claude\\claude_desktop_config.json" },
+  { os: "Linux", path: "~/.config/Claude/claude_desktop_config.json" },
+];
+
+function McpSection({ lastRawKey }: { lastRawKey: string | null }) {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const { data: keys = [] } = useQuery({ queryKey: ["api-keys"], queryFn: listApiKeys });
-  const activeKey = keys.find((k) => k.is_active);
-  const appUrl = typeof window !== "undefined" ? window.location.origin : "https://your-app.vercel.app";
+  const [appUrl, setAppUrl] = useState("https://your-app.vercel.app");
+
+  useEffect(() => {
+    setAppUrl(window.location.origin);
+  }, []);
+
+  const displayKey = lastRawKey ?? "dfk_VOTRE_CLE_API";
+  const isKeyReady = !!lastRawKey;
 
   const mcpConfig = JSON.stringify({
     mcpServers: {
       docflow: {
         url: `${appUrl}/api/mcp`,
-        headers: { "x-api-key": activeKey ? `${activeKey.key_prefix}...` : "dfk_VOTRE_CLE_API" },
+        headers: { "x-api-key": displayKey },
       },
     },
   }, null, 2);
@@ -481,59 +496,122 @@ function McpSection() {
       <div className="card-panel-header">
         <div className="flex items-center gap-2">
           <Bot className="w-4 h-4 text-emerald-600" />
-          <h3 className="font-bold text-foreground">MCP — Intégration Claude</h3>
+          <h3 className="font-bold text-foreground">MCP — Intégration Claude Desktop</h3>
         </div>
         <span className="text-xs font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
-          Nouveau
+          Gratuit
         </span>
       </div>
 
-      <div className="p-5 space-y-5">
+      <div className="p-5 space-y-6">
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Connectez DocFlow à <strong className="text-foreground">Claude Desktop</strong> via le protocole MCP.
+          Connectez DocFlow à <strong className="text-foreground">Claude Desktop</strong> via le protocole MCP (Model Context Protocol).
           Posez des questions en langage naturel : <em>&quot;Quels sont mes rendez-vous de demain ?&quot;</em>,{" "}
           <em>&quot;Crée un rendez-vous pour Mohamed demain à 10h&quot;</em>.
         </p>
 
-        {/* Tools list */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {MCP_TOOLS.map((tool) => (
-            <div key={tool.name} className="flex items-center gap-2 p-2.5 bg-muted/40 rounded-xl border border-border">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
-              <div className="min-w-0">
-                <p className="text-xs font-mono font-semibold text-foreground truncate">{tool.name}</p>
-                <p className="text-[10px] text-muted-foreground">{tool.desc}</p>
+        {/* Outils disponibles */}
+        <div className="space-y-2">
+          <p className="text-xs font-bold text-foreground uppercase tracking-wider">Outils disponibles</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {MCP_TOOLS.map((tool) => (
+              <div key={tool.name} className="flex items-center gap-2 p-2.5 bg-muted/40 rounded-xl border border-border">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xs font-mono font-semibold text-foreground truncate">{tool.name}</p>
+                  <p className="text-[10px] text-muted-foreground">{tool.desc}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
-        {/* Config block */}
+        {/* Étapes */}
+        <div className="space-y-2">
+          <p className="text-xs font-bold text-foreground uppercase tracking-wider">Comment configurer</p>
+          <ol className="space-y-2">
+            {[
+              { label: "Générez une clé API", detail: isKeyReady ? "Clé prête — copiez la config ci-dessous" : "Dans la section \"Clés API\" (plan Enterprise) ou utilisez votre clé existante" },
+              { label: "Ouvrez le fichier de config Claude Desktop", detail: "Claude Desktop → Settings → Developer → Edit Config" },
+              { label: "Collez la config JSON ci-dessous", detail: "Remplacez tout le contenu ou fusionnez avec l'existant" },
+              { label: "Redémarrez Claude Desktop", detail: "L'outil \"docflow\" apparaît dans la barre d'outils de Claude" },
+            ].map((step, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className={cn(
+                  "flex-shrink-0 w-5 h-5 rounded-full font-bold text-[10px] flex items-center justify-center mt-0.5 border",
+                  i === 0 && isKeyReady
+                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600"
+                    : "bg-primary/10 border-primary/20 text-primary"
+                )}>
+                  {i === 0 && isKeyReady ? <Check className="w-3 h-3" /> : i + 1}
+                </span>
+                <div>
+                  <p className="text-xs font-semibold text-foreground">{step.label}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{step.detail}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        {/* Chemins de fichier par OS */}
+        <div className="space-y-2">
+          <p className="text-xs font-bold text-foreground uppercase tracking-wider">Emplacement du fichier de config</p>
+          <div className="space-y-1.5">
+            {OS_CONFIG_PATHS.map(({ os, path }) => (
+              <div key={os} className="flex items-center justify-between gap-3 px-3 py-2 bg-muted/40 rounded-xl border border-border">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold text-muted-foreground w-14">{os}</span>
+                  <code className="text-[10px] font-mono text-foreground">{path}</code>
+                </div>
+                <button onClick={() => copy(path, `path-${os}`)} className="p-1 rounded hover:bg-muted transition-colors flex-shrink-0">
+                  {copiedKey === `path-${os}` ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-muted-foreground" />}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Config JSON */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-bold text-foreground uppercase tracking-wider">
-              Config Claude Desktop <span className="text-muted-foreground font-normal normal-case tracking-normal">(claude_desktop_config.json)</span>
-            </p>
+            <div>
+              <p className="text-xs font-bold text-foreground uppercase tracking-wider">
+                Config à coller <span className="font-normal normal-case tracking-normal text-muted-foreground">(claude_desktop_config.json)</span>
+              </p>
+              {isKeyReady && (
+                <p className="text-[11px] text-emerald-600 font-semibold mt-0.5 flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" /> Clé API incluse — prête à coller
+                </p>
+              )}
+            </div>
             <button
               onClick={() => copy(mcpConfig, "config")}
               className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
             >
               {copiedKey === "config" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-              {copiedKey === "config" ? "Copié !" : "Copier"}
+              {copiedKey === "config" ? "Copié !" : "Copier tout"}
             </button>
           </div>
-          <pre className="bg-[#0f1117] text-[#e2e8f0] text-xs rounded-xl p-4 overflow-x-auto font-mono leading-relaxed border border-border">
+
+          <pre className={cn(
+            "text-xs rounded-xl p-4 overflow-x-auto font-mono leading-relaxed border",
+            isKeyReady
+              ? "bg-[#0f1117] text-[#e2e8f0] border-emerald-500/30"
+              : "bg-[#0f1117] text-[#e2e8f0] border-border"
+          )}>
             {mcpConfig}
           </pre>
-          {!activeKey && (
+
+          {!isKeyReady && (
             <p className="flex items-center gap-1.5 text-xs text-amber-600">
-              <AlertTriangle className="w-3.5 h-3.5" />
-              Générez une clé API ci-dessus, puis remplacez <code className="font-mono">dfk_VOTRE_CLE_API</code>.
+              <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+              Générez une clé API, puis revenez ici — la config se met à jour automatiquement avec votre vraie clé.
             </p>
           )}
         </div>
 
-        {/* Endpoint info */}
+        {/* Endpoint */}
         <div className="flex items-center justify-between p-3 bg-muted/40 rounded-xl border border-border">
           <div>
             <p className="text-xs font-semibold text-foreground">Endpoint MCP</p>
@@ -545,27 +623,6 @@ function McpSection() {
           >
             {copiedKey === "url" ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
-        </div>
-
-        {/* How-to steps */}
-        <div className="space-y-2">
-          <p className="text-xs font-bold text-foreground uppercase tracking-wider">Comment configurer</p>
-          <ol className="space-y-1.5">
-            {[
-              "Générez une clé API dans la section \"Clés API\" ci-dessus",
-              "Ouvrez Claude Desktop → Settings → Developer → Edit Config",
-              "Collez la config JSON en remplaçant la clé API par la vôtre",
-              "Redémarrez Claude Desktop",
-              "Un outil \"DocFlow\" apparaît dans la barre d'outils de Claude",
-            ].map((step, i) => (
-              <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
-                <span className="flex-shrink-0 w-4 h-4 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 font-bold text-[10px] flex items-center justify-center mt-0.5">
-                  {i + 1}
-                </span>
-                {step}
-              </li>
-            ))}
-          </ol>
         </div>
 
         <a
@@ -586,6 +643,7 @@ function McpSection() {
 export default function IntegrationsPage() {
   const { data: plan = "free" } = usePlan();
   const isEnterprise = plan === "enterprise";
+  const [lastRawKey, setLastRawKey] = useState<string | null>(null);
 
   return (
     <div className="page-container max-w-4xl space-y-8">
@@ -688,7 +746,7 @@ export default function IntegrationsPage() {
                 </div>
               </div>
               <div className="p-5">
-                <ApiKeysSection />
+                <ApiKeysSection onKeyGenerated={setLastRawKey} />
               </div>
             </div>
           </div>
@@ -697,7 +755,7 @@ export default function IntegrationsPage() {
       )}
 
       {/* MCP — visible pour tous les plans */}
-      <McpSection />
+      <McpSection lastRawKey={lastRawKey} />
     </div>
   );
 }

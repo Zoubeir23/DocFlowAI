@@ -1,6 +1,8 @@
 "use server";
 
-import nodemailer from "nodemailer";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { createAdminClient } from "@/lib/supabase/server";
+import { sendRawEmail } from "@/lib/email/router";
 
 export interface EnterpriseContactData {
   organizationName: string;
@@ -15,25 +17,13 @@ export interface EnterpriseContactData {
 export async function sendEnterpriseContactRequest(
   data: EnterpriseContactData
 ): Promise<{ success: boolean; error?: string }> {
-  const googleUser = process.env.SMTP_GOOGLE_EMAIL;
-  const googleAppPassword = process.env.GOOGLE_APP_PASSWORD;
-  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminEmail = process.env.ADMIN_EMAIL ?? process.env.SUPPORT_EMAIL;
   if (!adminEmail) {
     console.error("[EnterpriseContact] ADMIN_EMAIL not configured");
     return { success: false, error: "Service de contact non disponible. Écrivez-nous directement." };
   }
 
-  if (!googleUser || !googleAppPassword) {
-    console.error("[EnterpriseContact] SMTP not configured");
-    return { success: false, error: "Service email non disponible. Contactez-nous directement." };
-  }
-
-  const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
-    auth: { user: googleUser, pass: googleAppPassword },
-  });
+  const subject = `[DocFlow Enterprise] ${escapeHtml(data.organizationName)} — ${data.numberOfDoctors} médecins`;
 
   const html = `
     <!DOCTYPE html>
@@ -44,7 +34,6 @@ export async function sendEnterpriseContactRequest(
         <h1 style="color: white; margin: 0; font-size: 22px;">🏥 Nouvelle demande Enterprise</h1>
         <p style="color: rgba(255,255,255,0.85); margin: 8px 0 0; font-size: 14px;">DocFlow AI — Contact commercial</p>
       </div>
-
       <table style="width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb;">
         <tr style="background: #f9fafb;">
           <td style="padding: 12px 16px; font-weight: 600; color: #374151; width: 40%; border-bottom: 1px solid #e5e7eb;">Organisation</td>
@@ -71,7 +60,6 @@ export async function sendEnterpriseContactRequest(
           <td style="padding: 12px 16px; color: #111827; white-space: pre-line;">${escapeHtml(data.message)}</td>
         </tr>
       </table>
-
       <p style="margin-top: 24px; font-size: 12px; color: #9ca3af; text-align: center;">
         Envoyé depuis DocFlow AI — ${new Date().toLocaleDateString("fr-FR", { dateStyle: "long" })}
       </p>
@@ -79,20 +67,39 @@ export async function sendEnterpriseContactRequest(
     </html>
   `;
 
+  // Sauvegarde en DB (non-bloquant)
   try {
-    await transporter.sendMail({
-      from: googleUser,
-      to: adminEmail,
-      replyTo: data.email,
-      subject: `[DocFlow Enterprise] ${escapeHtml(data.organizationName)} — ${data.numberOfDoctors} médecins`,
-      html,
+    const adminDb = (await createAdminClient()) as any;
+    await adminDb.from("admin_messages").insert({
+      type: "enterprise",
+      status: "open",
+      sender_name: data.contactName,
+      sender_email: data.email,
+      subject: `Demande enterprise — ${data.organizationName}`,
+      body: data.message,
+      metadata: {
+        organizationName: data.organizationName,
+        contactRole: data.contactRole,
+        phone: data.phone,
+        numberOfDoctors: data.numberOfDoctors,
+      },
     });
+  } catch (err) {
+    console.error("[EnterpriseContact] db save error:", err);
+  }
 
-    console.log(`[EnterpriseContact] Sent from ${data.email} (${data.organizationName})`);
+  // Envoi email
+  try {
+    await sendRawEmail({
+      to: adminEmail,
+      subject,
+      html,
+      replyTo: data.email,
+    });
     return { success: true };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Erreur inconnue";
-    console.error("[EnterpriseContact] SMTP error:", message);
+    console.error("[EnterpriseContact] email error:", message);
     return { success: false, error: "Impossible d'envoyer le message. Réessayez ou écrivez-nous directement." };
   }
 }

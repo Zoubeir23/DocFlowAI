@@ -118,8 +118,7 @@ export async function createNewClinic(
     return { success: false, error: "Clinique principale introuvable" };
   }
 
-  // Only owners can create new clinics
-  if (userData.role !== "owner") {
+  if (userData.role !== "owner" && userData.role !== "super_admin") {
     return { success: false, error: "Seul le propriétaire peut créer de nouvelles cliniques" };
   }
 

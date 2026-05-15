@@ -222,29 +222,29 @@ export default async function DashboardPage() {
                           ? <AlertTriangle className="w-4 h-4 text-amber-500" />
                           : <Zap className="w-4 h-4 text-primary" />
                       }
-                      <h3 className="font-bold text-foreground">Utilisation du plan</h3>
+                      <h3 className="font-bold text-foreground">{t("planUsage")}</h3>
                     </div>
                     <Link href="/app/billing" className="text-xs font-semibold text-primary hover:underline">
-                      Voir les plans →
+                      {t("viewPlans")}
                     </Link>
                   </div>
                   {isApptCritical && (
                     <div className="mx-4 mb-3 flex items-center gap-2 px-3 py-2 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-xs font-semibold">
                       <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-                      Limite de rendez-vous atteinte — passez à un plan supérieur.
+                      {t("appointmentsLimitReached")}
                     </div>
                   )}
                   {isApptWarning && (
                     <div className="mx-4 mb-3 flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-700 dark:text-amber-400 text-xs font-semibold">
                       <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-                      Vous approchez de la limite de rendez-vous.
+                      {t("appointmentsLimitApproaching")}
                     </div>
                   )}
                   <div className="px-4 pb-4 space-y-4">
                     {/* Appointments bar */}
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-semibold text-muted-foreground">Rendez-vous ce mois</span>
+                        <span className="text-xs font-semibold text-muted-foreground">{t("appointmentsThisMonth")}</span>
                         <span className={`text-xs font-bold ${isApptCritical ? "text-destructive" : isApptWarning ? "text-amber-500" : "text-foreground"}`}>
                           {appt.current}{appt.limit !== null ? ` / ${appt.limit}` : " / ∞"}
                         </span>
@@ -259,7 +259,7 @@ export default async function DashboardPage() {
                     {/* Staff bar */}
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-semibold text-muted-foreground">Comptes utilisateurs</span>
+                        <span className="text-xs font-semibold text-muted-foreground">{t("staffAccounts")}</span>
                         <span className={`text-xs font-bold ${staffPct >= 100 ? "text-destructive" : staffPct >= 80 ? "text-amber-500" : "text-foreground"}`}>
                           {staff.current}{staff.limit !== null ? ` / ${staff.limit}` : " / ∞"}
                         </span>

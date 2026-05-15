@@ -36,7 +36,7 @@ async function getAuthenticatedOwnerClinicId(): Promise<{ clinicId: string; user
     .eq("id", authData.user.id)
     .single();
 
-  if (!userData || userData.role !== "owner") return null;
+  if (!userData || (userData.role !== "owner" && userData.role !== "super_admin")) return null;
 
   return { clinicId: userData.clinic_id, userId: authData.user.id };
 }
@@ -206,7 +206,7 @@ export async function removeTeamMember(
     return { success: false, error: "Membre introuvable" };
   }
 
-  if (member.role === "owner") {
+  if (member.role === "owner" || member.role === "super_admin") {
     return { success: false, error: "Impossible de retirer le propriétaire" };
   }
 

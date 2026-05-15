@@ -2,24 +2,24 @@
 
 import { useState } from "react";
 import { clinicTemplates } from "@/data/clinic-templates";
-import { Check, Globe, Sparkles } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Globe, Sparkles, Palette, Type, Layers } from "lucide-react";
 import { toast } from "sonner";
 import { initializeClinicWebsite } from "@/actions/website";
 
 export function TemplatePicker({ onComplete }: { onComplete: (website: any) => void }) {
-  const [selectedId, setSelectedId] = useState(clinicTemplates[0].id);
   const [isCreating, setIsCreating] = useState(false);
+
+  const template = clinicTemplates[0];
 
   const handleCreate = async () => {
     try {
       setIsCreating(true);
-      const res = await initializeClinicWebsite(selectedId);
+      const res = await initializeClinicWebsite(template.id);
       if (res.success && res.data) {
-        toast.success("Website created successfully!");
+        toast.success("Site web créé avec succès !");
         onComplete(res.data);
       } else {
-        throw new Error(res.error || "Failed to create website");
+        throw new Error(res.error || "Impossible de créer le site");
       }
     } catch (error: any) {
       toast.error(error.message);
@@ -29,77 +29,91 @@ export function TemplatePicker({ onComplete }: { onComplete: (website: any) => v
   };
 
   return (
-    <div className="p-8 max-w-[1200px] mx-auto space-y-8 animate-in fade-in-0 duration-300">
+    <div className="p-8 max-w-[800px] mx-auto space-y-10 animate-in fade-in-0 duration-300">
+
+      {/* Header */}
       <div className="text-center space-y-3">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 text-primary mb-2">
           <Globe className="w-8 h-8" />
         </div>
-        <h1 className="text-3xl font-bold tracking-tight">Choose a Design Template</h1>
-        <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-          Select a template for your clinic's public website. You can customize the colors, text, and images later.
+        <h1 className="text-3xl font-bold tracking-tight">Créer votre site web</h1>
+        <p className="text-muted-foreground max-w-xl mx-auto text-base">
+          Votre site sera créé avec notre design éditorial. Vous pourrez personnaliser les couleurs, textes et images depuis l'éditeur.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {clinicTemplates.map((template) => (
-          <div
-            key={template.id}
-            onClick={() => setSelectedId(template.id)}
-            className={cn(
-              "group relative overflow-hidden rounded-2xl border-2 transition-all duration-200 cursor-pointer bg-background hover:shadow-xl hover:-translate-y-1",
-              selectedId === template.id
-                ? "border-primary shadow-lg ring-4 ring-primary/10"
-                : "border-border hover:border-primary/50"
-            )}
-          >
-            {/* Selected indicator */}
-            {selectedId === template.id && (
-              <div className="absolute top-4 right-4 z-10 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg">
-                <Check className="w-5 h-5" />
-              </div>
-            )}
-            
-            {/* Image container */}
-            <div className="aspect-[4/3] w-full overflow-hidden relative border-b border-border">
-              <img 
-                src={template.thumbnail} 
-                alt={template.name}
-                className={cn(
-                  "w-full h-full object-cover transition-transform duration-500",
-                  selectedId === template.id ? "scale-105" : "group-hover:scale-105"
-                )}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            </div>
-
-            {/* Info */}
-            <div className="p-6">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs font-semibold uppercase tracking-wider text-primary bg-primary/10 px-2 py-1 rounded-md">
-                  {template.category}
-                </span>
-              </div>
-              <h3 className="text-xl font-bold mb-2">{template.name}</h3>
-              <p className="text-sm text-muted-foreground line-clamp-2">
-                {template.description}
-              </p>
+      {/* Template preview card */}
+      <div className="rounded-3xl border-2 border-primary overflow-hidden shadow-xl ring-4 ring-primary/10">
+        {/* Image */}
+        <div className="aspect-[16/7] w-full overflow-hidden relative">
+          <img
+            src={template.thumbnail}
+            alt={template.name}
+            className="w-full h-full object-cover"
+          />
+          {/* Overlay showing the design aesthetic */}
+          <div className="absolute inset-0 flex items-end p-6" style={{ background: "linear-gradient(to top, rgba(26,26,46,0.8), transparent)" }}>
+            <div>
+              <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider mb-2" style={{ backgroundColor: "#FF2D78", color: "#fff" }}>
+                {template.category}
+              </span>
+              <h2 className="text-2xl font-bold text-white">{template.name}</h2>
             </div>
           </div>
-        ))}
+        </div>
+
+        {/* Info */}
+        <div className="p-6 space-y-5 bg-background">
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            {template.description}
+          </p>
+
+          {/* Design features */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              {
+                icon: Palette,
+                title: "Palette ORACARE",
+                desc: "Crème · Rose vif · Teal",
+              },
+              {
+                icon: Type,
+                title: "Typographie éditoriale",
+                desc: "Bebas Neue + Playfair Display",
+              },
+              {
+                icon: Layers,
+                title: "Layout asymétrique",
+                desc: "Cartes flottantes, overlays",
+              },
+            ].map(({ icon: Icon, title, desc }) => (
+              <div key={title} className="flex items-start gap-3 p-3 rounded-xl bg-muted/50">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                  <Icon className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">{title}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <div className="flex justify-center pt-8 border-t border-border mt-8">
+      {/* Create button */}
+      <div className="flex justify-center pt-2">
         <button
           onClick={handleCreate}
           disabled={isCreating}
-          className="inline-flex items-center gap-2 px-8 py-4 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-2 px-10 py-4 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-full transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed text-base"
         >
           {isCreating ? (
             <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
           ) : (
             <Sparkles className="w-5 h-5" />
           )}
-          Create My Website
+          {isCreating ? "Création en cours..." : "Créer mon site web"}
         </button>
       </div>
     </div>

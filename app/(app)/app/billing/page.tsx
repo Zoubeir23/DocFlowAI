@@ -349,9 +349,9 @@ function CryptoPaymentModal({ plan, clinicId, onClose }: CryptoPaymentModalProps
               )}
 
               {step === "error" && error && (
-                <div className="flex items-start gap-2 p-3 bg-destructive/10 rounded-xl border border-destructive/20">
-                  <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-destructive">{error}</p>
+                <div className="flex items-start gap-2 p-3 bg-red-500/10 rounded-xl border border-red-500/30">
+                  <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-red-500">{error}</p>
                 </div>
               )}
 
@@ -419,6 +419,7 @@ function QuotaBar({ current, limit, label, icon: Icon }: {
   label: string;
   icon: React.ElementType;
 }) {
+  const t = useTranslations('billing');
   if (limit === null) {
     return (
       <div className="flex items-center gap-3">
@@ -426,7 +427,7 @@ function QuotaBar({ current, limit, label, icon: Icon }: {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs font-medium text-muted-foreground">{label}</span>
-            <span className="text-xs font-bold text-primary">Illimité</span>
+            <span className="text-xs font-bold text-primary">{t('unlimited')}</span>
           </div>
           <div className="h-1.5 bg-primary/20 rounded-full overflow-hidden">
             <div className="h-full bg-primary rounded-full w-full" />
@@ -446,13 +447,13 @@ function QuotaBar({ current, limit, label, icon: Icon }: {
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-1">
           <span className="text-xs font-medium text-muted-foreground">{label}</span>
-          <span className={`text-xs font-bold ${isCritical ? "text-destructive" : isWarning ? "text-amber-500" : "text-foreground"}`}>
+          <span className={`text-xs font-bold ${isCritical ? "text-red-500" : isWarning ? "text-amber-500" : "text-foreground"}`}>
             {current} / {limit}
           </span>
         </div>
         <div className="h-1.5 bg-muted rounded-full overflow-hidden">
           <div
-            className={`h-full rounded-full transition-all duration-500 ${isCritical ? "bg-destructive" : isWarning ? "bg-amber-500" : "bg-primary"}`}
+            className={`h-full rounded-full transition-all duration-500 ${isCritical ? "bg-red-500" : isWarning ? "bg-amber-500" : "bg-primary"}`}
             style={{ width: `${percentage}%` }}
           />
         </div>
@@ -463,6 +464,7 @@ function QuotaBar({ current, limit, label, icon: Icon }: {
 
 // ── Enterprise Contact Modal ───────────────────────────────────────────────────
 function EnterpriseContactModal({ onClose }: { onClose: () => void }) {
+  const t = useTranslations('billing');
   const [isPendingSubmit, startSubmitTransition] = useTransition();
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -489,7 +491,7 @@ function EnterpriseContactModal({ onClose }: { onClose: () => void }) {
       if (result.success) {
         setSubmitted(true);
       } else {
-        setSubmitError(result.error ?? "Erreur lors de l'envoi.");
+        setSubmitError(result.error ?? t('failedToSave') as string);
       }
     });
   };
@@ -504,8 +506,8 @@ function EnterpriseContactModal({ onClose }: { onClose: () => void }) {
               <Building2 className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h3 className="font-bold text-foreground text-lg">Plan Enterprise</h3>
-              <p className="text-xs text-muted-foreground">Nous vous répondrons sous 24h</p>
+              <h3 className="font-bold text-foreground text-lg">{t('enterprisePlanTitle')}</h3>
+              <p className="text-xs text-muted-foreground">{t('enterpriseResponseTime')}</p>
             </div>
           </div>
           <button
@@ -521,57 +523,57 @@ function EnterpriseContactModal({ onClose }: { onClose: () => void }) {
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
               <CheckCircle className="w-8 h-8 text-primary" />
             </div>
-            <h4 className="text-xl font-bold text-foreground">Message envoyé !</h4>
+            <h4 className="text-xl font-bold text-foreground">{t('messageSent')}</h4>
             <p className="text-muted-foreground text-sm">
-              Notre équipe vous contactera sous 24h à l&apos;adresse <strong>{formData.email}</strong>.
+              {t('teamWillContact')} <strong>{formData.email}</strong>.
             </p>
-            <Button onClick={onClose} className="btn-primary mt-4">Fermer</Button>
+            <Button onClick={onClose} className="btn-primary mt-4">{t('closeBtn')}</Button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-6 space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-sm font-semibold text-foreground">Organisation *</Label>
+                <Label className="text-sm font-semibold text-foreground">{t('enterpriseFormOrganization')}</Label>
                 <Input
                   required
-                  placeholder="Hôpital / Groupe médical"
+                  placeholder={t('enterpriseFormOrgPlaceholder')}
                   value={formData.organizationName}
                   onChange={handleChange("organizationName")}
                   className="rounded-xl border-border"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-semibold text-foreground">Nb. de médecins *</Label>
+                <Label className="text-sm font-semibold text-foreground">{t('enterpriseFormDoctorCount')}</Label>
                 <select
                   required
                   value={formData.numberOfDoctors}
                   onChange={handleChange("numberOfDoctors")}
                   className="w-full h-10 px-3 border border-border rounded-xl bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 >
-                  <option value="">Sélectionnez</option>
-                  <option value="11-25">11 – 25 médecins</option>
-                  <option value="26-50">26 – 50 médecins</option>
-                  <option value="51-100">51 – 100 médecins</option>
-                  <option value="100+">100+ médecins</option>
+                  <option value="">{t('enterpriseFormDoctorCountPlaceholder')}</option>
+                  <option value="11-25">11 – 25</option>
+                  <option value="26-50">26 – 50</option>
+                  <option value="51-100">51 – 100</option>
+                  <option value="100+">100+</option>
                 </select>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-sm font-semibold text-foreground">Votre nom *</Label>
+                <Label className="text-sm font-semibold text-foreground">{t('enterpriseFormYourName')}</Label>
                 <Input
                   required
-                  placeholder="Dr. Nom Prénom"
+                  placeholder={t('enterpriseFormNamePlaceholder')}
                   value={formData.contactName}
                   onChange={handleChange("contactName")}
                   className="rounded-xl border-border"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-semibold text-foreground">Poste / Rôle</Label>
+                <Label className="text-sm font-semibold text-foreground">{t('enterpriseFormRole')}</Label>
                 <Input
-                  placeholder="Directeur médical, DSI..."
+                  placeholder={t('enterpriseFormRolePlaceholder')}
                   value={formData.contactRole}
                   onChange={handleChange("contactRole")}
                   className="rounded-xl border-border"
@@ -581,20 +583,20 @@ function EnterpriseContactModal({ onClose }: { onClose: () => void }) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-sm font-semibold text-foreground">Email professionnel *</Label>
+                <Label className="text-sm font-semibold text-foreground">{t('enterpriseFormProfessionalEmail')}</Label>
                 <Input
                   required
                   type="email"
-                  placeholder="contact@hopital.fr"
+                  placeholder={t('enterpriseFormEmailPlaceholder')}
                   value={formData.email}
                   onChange={handleChange("email")}
                   className="rounded-xl border-border"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-semibold text-foreground">Téléphone</Label>
+                <Label className="text-sm font-semibold text-foreground">{t('enterpriseFormPhone')}</Label>
                 <Input
-                  placeholder="+33 6 00 00 00 00"
+                  placeholder={t('enterpriseFormPhonePlaceholder')}
                   value={formData.phone}
                   onChange={handleChange("phone")}
                   className="rounded-xl border-border"
@@ -603,10 +605,10 @@ function EnterpriseContactModal({ onClose }: { onClose: () => void }) {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-foreground">Votre besoin</Label>
+              <Label className="text-sm font-semibold text-foreground">{t('enterpriseFormNeed')}</Label>
               <Textarea
                 rows={3}
-                placeholder="Décrivez votre contexte, vos besoins spécifiques, intégrations souhaitées..."
+                placeholder={t('enterpriseFormNeedPlaceholder')}
                 value={formData.message}
                 onChange={handleChange("message")}
                 className="rounded-xl border-border resize-none"
@@ -614,7 +616,7 @@ function EnterpriseContactModal({ onClose }: { onClose: () => void }) {
             </div>
 
             {submitError && (
-              <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-sm">
+              <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-500 text-sm">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 {submitError}
               </div>
@@ -622,13 +624,13 @@ function EnterpriseContactModal({ onClose }: { onClose: () => void }) {
 
             <div className="flex gap-3 pt-2">
               <Button type="button" variant="outline" onClick={onClose} className="flex-1 rounded-xl border-border">
-                Annuler
+                {t('enterpriseFormCancel')}
               </Button>
               <Button type="submit" disabled={isPendingSubmit} className="flex-1 btn-primary">
                 {isPendingSubmit ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Envoi...</>
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t('enterpriseFormSending')}</>
                 ) : (
-                  <><Send className="w-4 h-4 mr-2" />Envoyer</>
+                  <><Send className="w-4 h-4 mr-2" />{t('enterpriseFormSend')}</>
                 )}
               </Button>
             </div>
@@ -728,16 +730,16 @@ export default function BillingPage() {
           {!isFree && (isExpired || isExpiringSoon) && (
             <div className={`flex items-center gap-3 px-5 py-3 border-b ${
               isExpired
-                ? "bg-destructive/8 border-destructive/20 text-destructive"
+                ? "bg-red-500/10 border-red-500/30 text-red-500"
                 : "bg-amber-500/8 border-amber-500/20 text-amber-700 dark:text-amber-400"
             }`}>
               <AlertTriangle className="w-4 h-4 flex-shrink-0" />
               <p className="text-sm font-semibold flex-1">
                 {isExpired
-                  ? "Votre abonnement a expiré — l'accès aux fonctionnalités premium est limité."
+                  ? t('subscriptionExpired')
                   : daysLeft === 0
-                    ? "Votre abonnement expire aujourd'hui !"
-                    : `Votre abonnement expire dans ${daysLeft} jour${daysLeft > 1 ? "s" : ""}.`}
+                    ? t('subscriptionExpiresToday')
+                    : t('subscriptionExpiresSoon', { days: daysLeft, plural: daysLeft > 1 ? 's' : '' })}
               </p>
               <span className="text-xs font-medium opacity-70 whitespace-nowrap">
                 {format(expiry, "d MMM yyyy")}
@@ -757,9 +759,9 @@ export default function BillingPage() {
                 <h3 className="font-semibold text-foreground capitalize">Plan {subscription.plan}</h3>
                 <p className="text-sm text-muted-foreground">
                   {isFree
-                    ? "Plan gratuit · Aucun abonnement requis"
+                    ? t('freePlanDesc')
                     : isExpired
-                      ? <span className="text-destructive font-medium">Expiré le {format(expiry, "d MMMM yyyy")}</span>
+                      ? <span className="text-red-500 font-medium">{t('expiredDate', { date: format(expiry, "d MMMM yyyy") })}</span>
                       : <>{t('renewsOn')} {format(expiry, "d MMMM yyyy")} · <span className="capitalize">{subscription.payment_provider === "stripe" ? "Stripe" : "Crypto"}</span></>
                   }
                 </p>
@@ -773,13 +775,13 @@ export default function BillingPage() {
                     ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400"
                     : "bg-primary/8 border-primary/20 text-primary"
                 }`}>
-                  {daysLeft}j restants
+                  {t('daysRemaining', { days: daysLeft })}
                 </span>
               )}
               <span className={`text-xs font-semibold px-3 py-1.5 rounded-lg border capitalize ${
                 isExpired ? "status-cancelled" : subscription.status === "active" ? "status-confirmed" : "status-cancelled"
               }`}>
-                {isExpired ? "expiré" : subscription.status}
+                {isExpired ? t('expired') : subscription.status}
               </span>
             </div>
           </div>
@@ -792,14 +794,14 @@ export default function BillingPage() {
               <div className="border-t border-border">
                 {(apptFull || staffFull) && (
                   <div className="px-5 pt-4">
-                    <div className="flex items-start gap-2.5 p-3 bg-destructive/8 border border-destructive/20 rounded-xl text-destructive">
-                      <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <div className="flex items-start gap-2.5 p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-red-500" />
                       <div>
-                        <p className="text-sm font-bold">Limite atteinte</p>
-                        <p className="text-xs mt-0.5 opacity-80">
-                          {apptFull && "Vous ne pouvez plus accepter de nouveaux rendez-vous ce mois-ci. "}
-                          {staffFull && "Vous ne pouvez pas ajouter de nouveaux membres staff. "}
-                          Passez à un plan supérieur pour continuer.
+                        <p className="text-sm font-bold text-red-500">{t('limitReachedTitle')}</p>
+                        <p className="text-xs mt-0.5 text-red-400">
+                          {apptFull && t('apptLimitReachedDesc')}
+                          {staffFull && t('staffLimitReachedDesc')}
+                          {t('upgradeToContinue')}
                         </p>
                       </div>
                     </div>
@@ -810,23 +812,23 @@ export default function BillingPage() {
                     <div className="flex items-center gap-2.5 p-3 bg-amber-500/8 border border-amber-500/20 rounded-xl text-amber-700 dark:text-amber-400">
                       <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                       <p className="text-xs font-semibold">
-                        Vous approchez de la limite — {quotaUsage.appointments.current} / {quotaUsage.appointments.limit} rendez-vous utilisés.
+                        {t('apptLimitApproachingDesc', { current: quotaUsage.appointments.current, limit: quotaUsage.appointments.limit ?? '∞' })}
                       </p>
                     </div>
                   </div>
                 )}
                 <div className="px-5 py-4 bg-muted/20 space-y-3">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Utilisation ce mois-ci</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('usageThisMonth')}</p>
                   <QuotaBar
                     current={quotaUsage.appointments.current}
                     limit={quotaUsage.appointments.limit}
-                    label="Rendez-vous"
+                    label={t('appointmentsLabel')}
                     icon={Calendar}
                   />
                   <QuotaBar
                     current={quotaUsage.staff.current}
                     limit={quotaUsage.staff.limit}
-                    label="Comptes utilisateurs"
+                    label={t('staffAccountsLabel')}
                     icon={Users}
                   />
                 </div>

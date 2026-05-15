@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import Image from 'next/image'
 import { Building2, Loader2, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useTranslations } from 'next-intl'
 import { onboardingSchema, type OnboardingInput } from '@/lib/validations'
 import { generateSlug } from '@/lib/utils'
 import { createOnboarding } from '@/actions/clinic'
@@ -39,16 +40,17 @@ const TIMEZONES = [
   'Pacific/Auckland',
 ]
 
-const BENEFITS = [
-  '24/7 AI appointment booking — no staff needed',
-  'Auto email confirmations sent to every patient',
-  'Drag-and-drop calendar management',
-  'HIPAA-ready, secure patient records',
-]
-
 export default function OnboardingPage() {
+  const t = useTranslations('onboarding')
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+
+  const BENEFITS = [
+    t('benefit1'),
+    t('benefit2'),
+    t('benefit3'),
+    t('benefit4'),
+  ]
 
   const {
     register,
@@ -73,13 +75,13 @@ export default function OnboardingPage() {
     try {
       const result = await createOnboarding(data)
       if (result.success) {
-        toast.success('Clinic setup complete! Welcome to DocFlow IA.')
+        toast.success(t('setupSuccess'))
         router.push('/app/dashboard')
       } else {
-        toast.error(result.error || 'Failed to set up clinic')
+        toast.error(result.error || t('setupFailed'))
       }
     } catch {
-      toast.error('Something went wrong. Please try again.')
+      toast.error(t('setupError'))
     } finally {
       setLoading(false)
     }
@@ -101,13 +103,12 @@ export default function OnboardingPage() {
         <div className="relative space-y-8">
           <div>
             <h2 className="text-3xl font-medium text-foreground leading-snug">
-              Your clinic,
+              {t('brandHeading')}
               <br />
-              supercharged by AI.
+              {t('brandHeadingHighlight')}
             </h2>
             <p className="text-teal-100/80 mt-3 leading-relaxed text-sm">
-              Set up takes under 2 minutes. Your AI booking assistant will be live and handling
-              appointments immediately after.
+              {t('brandSubtitle')}
             </p>
           </div>
           <div className="space-y-3">
@@ -122,7 +123,7 @@ export default function OnboardingPage() {
           </div>
         </div>
 
-        <p className="relative text-xs text-teal-200/50">© 2025 DocFlow IA · All rights reserved</p>
+        <p className="relative text-xs text-teal-200/50">{t('copyright')}</p>
       </div>
 
       {/* Right form panel */}
@@ -138,20 +139,20 @@ export default function OnboardingPage() {
             <div className="w-16 h-16 gradient-brand rounded-none flex items-center justify-center mx-auto mb-4 shadow-none">
               <Building2 className="w-8 h-8 text-foreground" />
             </div>
-            <h1 className="text-2xl font-medium text-foreground tracking-tight">Set up your clinic</h1>
-            <p className="text-foreground/60 mt-1 text-sm">Just a few details to get you started</p>
+            <h1 className="text-2xl font-medium text-foreground tracking-tight">{t('pageHeading')}</h1>
+            <p className="text-foreground/60 mt-1 text-sm">{t('pageSubheading')}</p>
           </div>
 
           <div className="glass-card rounded-none p-7">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               <div className="space-y-1.5">
                 <Label htmlFor="clinicName" className="text-sm font-medium text-foreground/80">
-                  Clinic / Practice Name
+                  {t('clinicNameLabel')}
                 </Label>
                 <Input
                   id="clinicName"
                   type="text"
-                  placeholder="CityCare Medical Clinic"
+                  placeholder={t('clinicNamePlaceholder')}
                   className="h-10 rounded-none border-foreground/10 bg-foreground/[0.02] focus:bg-background focus:ring-0 focus:border-[#14b8a6] transition-colors"
                   {...register('clinicName')}
                   onChange={handleClinicNameChange}
@@ -163,7 +164,7 @@ export default function OnboardingPage() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="slug" className="text-sm font-medium text-foreground/80">
-                  Booking URL
+                  {t('bookingUrlLabel')}
                 </Label>
                 <div className="flex items-center rounded-none border border-foreground/10 overflow-hidden focus-within:ring-2 focus-within:ring-teal-400 focus-within:border-teal-400 bg-foreground/[0.02] focus-within:bg-background transition-colors">
                   <span className="bg-slate-100/80 border-r border-foreground/10 px-3 py-2 text-sm text-foreground/60 whitespace-nowrap h-10 flex items-center">
@@ -172,19 +173,19 @@ export default function OnboardingPage() {
                   <Input
                     id="slug"
                     className="border-0 rounded-none focus-visible:ring-0 bg-transparent h-10"
-                    placeholder="citycare-clinic"
+                    placeholder={t('bookingUrlSlugPlaceholder')}
                     {...register('slug')}
                   />
                 </div>
                 {errors.slug && <p className="text-xs text-red-500">{errors.slug.message}</p>}
                 <p className="text-xs text-foreground/50">
-                  Lowercase letters, numbers, and hyphens only.
+                  {t('bookingUrlNote')}
                 </p>
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="timezone" className="text-sm font-medium text-foreground/80">
-                  Timezone
+                  {t('timezone')}
                 </Label>
                 <select
                   id="timezone"
@@ -208,13 +209,13 @@ export default function OnboardingPage() {
                 disabled={loading}
               >
                 {loading ? <Loader2 className="mr-2 w-4 h-4 animate-spin" /> : null}
-                {loading ? 'Setting up...' : 'Launch My Clinic'}
+                {loading ? t('submitLoading') : t('submitButton')}
               </Button>
             </form>
           </div>
 
           <p className="text-center text-xs text-foreground/50 mt-5">
-            You can change all these settings later in your dashboard.
+            {t('settingsNote')}
           </p>
         </div>
       </div>

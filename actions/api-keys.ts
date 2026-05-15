@@ -26,7 +26,8 @@ async function getOwnerClinicId(): Promise<{ clinicId: string } | null> {
     .eq("id", user.id)
     .single();
 
-  if (!userData || userData.role !== "owner") return null;
+  if (!userData) return null;
+  if (userData.role !== "owner" && userData.role !== "super_admin") return null;
   return { clinicId: userData.clinic_id };
 }
 
