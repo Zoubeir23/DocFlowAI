@@ -320,15 +320,30 @@ export async function updateClinicPlan(
 
   const db = (await createAdminClient()) as any;
 
+  const now = new Date();
+  const periodStart = now.toISOString();
+  const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
   const { error } = await db
     .from("subscriptions")
-    .update({ plan, status: "active" })
+    .update({
+      plan,
+      status: "active",
+      current_period_start: periodStart,
+      current_period_end: periodEnd,
+    })
     .eq("clinic_id", clinicId);
 
   if (error) {
     const { error: insertError } = await db
       .from("subscriptions")
-      .insert({ clinic_id: clinicId, plan, status: "active" });
+      .insert({
+        clinic_id: clinicId,
+        plan,
+        status: "active",
+        current_period_start: periodStart,
+        current_period_end: periodEnd,
+      });
 
     if (insertError) return { success: false, error: "Erreur lors de la mise à jour du plan" };
   }
