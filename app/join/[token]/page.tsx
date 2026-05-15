@@ -25,12 +25,12 @@ export default function JoinPage() {
 
   const [pageState, setPageState] = useState<PageState>("loading");
   const [invitation, setInvitation] = useState<{
-    email: string;
     role: string;
     clinic_name: string;
     expires_at: string;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [isSigningUp, setIsSigningUp] = useState(false);
@@ -84,7 +84,7 @@ export default function JoinPage() {
     const appUrl = window.location.origin;
 
     const { error: signupError } = await supabase.auth.signUp({
-      email: invitation.email,
+      email: email.trim().toLowerCase(),
       password,
       options: {
         data: { full_name: fullName },
@@ -121,7 +121,7 @@ export default function JoinPage() {
 
     const supabase = createClient();
     const { error: loginError } = await supabase.auth.signInWithPassword({
-      email: invitation.email,
+      email: email.trim().toLowerCase(),
       password,
     });
 
@@ -215,7 +215,7 @@ export default function JoinPage() {
                 <div className="mt-4 p-3 bg-background rounded-xl border border-border">
                   <p className="text-xs text-muted-foreground">Vous êtes invité(e) en tant que</p>
                   <p className="text-sm font-bold text-foreground mt-0.5">
-                    {ROLE_LABELS[invitation.role] ?? invitation.role} · {invitation.email}
+                    {ROLE_LABELS[invitation.role] ?? invitation.role}
                   </p>
                 </div>
               </div>
@@ -239,6 +239,19 @@ export default function JoinPage() {
                   </button>
                 </div>
 
+                {/* Email field shared between signup and login */}
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-semibold">Email</Label>
+                  <Input
+                    type="email"
+                    placeholder="votre@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="rounded-xl"
+                  />
+                </div>
+
                 {isSigningUp ? (
                   <form onSubmit={handleSignup} className="space-y-4">
                     <div className="space-y-1.5">
@@ -248,6 +261,7 @@ export default function JoinPage() {
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         required
+                        maxLength={100}
                         className="rounded-xl"
                       />
                     </div>

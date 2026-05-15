@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ethers } from "ethers";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
@@ -27,7 +27,7 @@ const PLAN_PRICES_USDC: Record<string, number> = {
 interface VerifyRequestBody {
   txHash: string;
   plan: "starter" | "professional" | "enterprise";
-  clinicId: string;
+  // clinicId intentionally omitted — derived from authenticated session server-side
 }
 
 async function getProviderWithFallback(): Promise<ethers.JsonRpcProvider> {
@@ -58,12 +58,29 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Corps de requête invalide" }, { status: 400 });
   }
 
-  // C3 fix: expectedAmountUsdc removed from interface — derived server-side
-  const { txHash, plan, clinicId } = body;
+  const { txHash, plan } = body;
 
-  if (!txHash || !plan || !clinicId) {
+  if (!txHash || !plan) {
     return NextResponse.json({ error: "Paramètres manquants" }, { status: 400 });
   }
+
+  // Derive clinicId from the authenticated session — never trust the client
+  const userClient = await createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userDb = userClient as any;
+  const { data: { user } } = await userDb.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+  }
+  const { data: userData } = await userDb
+    .from("users")
+    .select("clinic_id")
+    .eq("id", user.id)
+    .single();
+  if (!userData?.clinic_id) {
+    return NextResponse.json({ error: "Clinique introuvable" }, { status: 403 });
+  }
+  const clinicId: string = userData.clinic_id;
 
   if (!["starter", "professional", "enterprise"].includes(plan)) {
     return NextResponse.json({ error: "Plan invalide" }, { status: 400 });

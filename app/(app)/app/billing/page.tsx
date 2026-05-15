@@ -224,8 +224,7 @@ function CryptoPaymentModal({ plan, clinicId, onClose }: CryptoPaymentModalProps
         body: JSON.stringify({
           txHash: hash,
           plan: plan.plan,
-          clinicId,
-          expectedAmountUsdc: plan.priceUsdc,
+          // clinicId et expectedAmountUsdc sont dérivés côté serveur
         }),
       });
       const verifyData = await verifyRes.json();
