@@ -18,11 +18,28 @@ import {
 } from "lucide-react";
 
 export const metadata = {
-  title: "DocFlow IA — Logiciel de gestion de clinique avec IA",
+  title: "Gestion Cabinet Médical par IA — Gratuit · DocFlow IA",
   description:
-    "DocFlow IA automatise la prise de rendez-vous médicaux 24h/24 grâce à l'intelligence artificielle. Gestion de cabinet, agenda intelligent et dossiers patients.",
+    "Automatisez la prise de rendez-vous médicaux avec l'IA. Agenda intelligent, dossiers patients, notifications SMS. Plan gratuit — sans carte bancaire. 98% de satisfaction.",
   alternates: {
     canonical: process.env.NEXT_PUBLIC_APP_URL ?? "https://docflow.ia",
+    languages: {
+      fr: process.env.NEXT_PUBLIC_APP_URL ?? "https://docflow.ia",
+      en: process.env.NEXT_PUBLIC_APP_URL ?? "https://docflow.ia",
+    },
+  },
+  openGraph: {
+    title: "Gestion Cabinet Médical par IA — DocFlow IA",
+    description:
+      "Automatisez la prise de rendez-vous médicaux 24h/24 avec l'IA. Plan gratuit, sans carte bancaire.",
+    url: process.env.NEXT_PUBLIC_APP_URL ?? "https://docflow.ia",
+    images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: "DocFlow IA — Logiciel gestion cabinet médical avec IA" }],
+  },
+  twitter: {
+    card: "summary_large_image" as const,
+    title: "Gestion Cabinet Médical par IA — DocFlow IA",
+    description: "Automatisez la prise de rendez-vous médicaux 24h/24 avec l'IA. Plan gratuit.",
+    images: ["/og-image.jpg"],
   },
 };
 
@@ -70,7 +87,7 @@ export default async function HomePage() {
           
           <Link href="/" className="flex items-center group">
             <div className="group-hover:scale-105 transition-transform">
-              <Image src="/logo.png" alt="DocFlow IA" width={140} height={36} className="object-contain dark:brightness-0 dark:invert" />
+              <Image src="/logo.png" alt="DocFlow IA" width={140} height={36} className="object-contain dark:brightness-0 dark:invert" priority />
             </div>
           </Link>
           
@@ -166,7 +183,7 @@ export default async function HomePage() {
             </div>
 
             {/* Right Interactive Mockup */}
-            <div className="flex-1 w-full max-w-lg lg:max-w-none relative fade-in-up" style={{ animationDelay: "0.2s" }}>
+            <div className="flex-1 w-full max-w-lg lg:max-w-none relative fade-in-up" role="img" aria-label="Interface tableau de bord DocFlow IA — agenda médical et prise de rendez-vous automatique" style={{ animationDelay: "0.2s" }}>
               <div className="relative rounded-3xl overflow-hidden border border-border/50 shadow-2xl bg-background/50 backdrop-blur-xl aspect-square lg:aspect-[4/3] flex flex-col">
                 {/* Header */}
                 <div className="h-14 border-b border-border/50 bg-muted/30 flex items-center px-4 justify-between">
@@ -229,19 +246,19 @@ export default async function HomePage() {
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 lg:grid-cols-4 divide-x divide-border">
           <div className="p-8 text-center hover:bg-card/50 transition-colors">
             <div className="text-4xl md:text-5xl font-cormorant font-bold text-primary mb-2">24/7</div>
-            <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t("hero.statAiLabel")}</div>
+            <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t("stats.available")}</div>
           </div>
           <div className="p-8 text-center hover:bg-card/50 transition-colors">
-            <div className="text-4xl md:text-5xl font-cormorant font-bold text-foreground mb-2">98%</div>
-            <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Satisfaction</div>
+            <div className="text-4xl md:text-5xl font-cormorant font-bold text-foreground mb-2">30 min</div>
+            <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t("stats.setup")}</div>
           </div>
           <div className="p-8 text-center hover:bg-card/50 transition-colors">
-            <div className="text-4xl md:text-5xl font-cormorant font-bold text-foreground mb-2">1M+</div>
-            <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t("hero.statApptsLabel")}</div>
+            <div className="text-4xl md:text-5xl font-cormorant font-bold text-foreground mb-2">0€</div>
+            <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t("stats.free")}</div>
           </div>
           <div className="p-8 text-center hover:bg-card/50 transition-colors">
-            <div className="text-4xl md:text-5xl font-cormorant font-bold text-foreground mb-2">-40%</div>
-            <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Absences</div>
+            <div className="text-4xl md:text-5xl font-cormorant font-bold text-foreground mb-2">14j</div>
+            <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t("stats.trial")}</div>
           </div>
         </div>
       </section>
@@ -348,41 +365,49 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── TESTIMONIALS ─────────────────────────────────────────────────── */}
-      <section className="py-32 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { name: t("testimonials.t1.name"), role: t("testimonials.t1.role"), text: t("testimonials.t1.text") },
-              { name: t("testimonials.t2.name"), role: t("testimonials.t2.role"), text: t("testimonials.t2.text") },
-              { name: t("testimonials.t3.name"), role: t("testimonials.t3.role"), text: t("testimonials.t3.text") },
-            ].map((t) => (
-              <div key={t.name} className="flex flex-col justify-between bg-card p-10 rounded-3xl border border-border shadow-sm">
-                <div>
-                  <div className="flex gap-1 mb-8 text-amber-400">
-                    {[...Array(5)].map((_,i) => <span key={i}>★</span>)}
-                  </div>
-                  <p className="text-lg italic text-foreground leading-relaxed mb-10">"{t.text}"</p>
+      {/* ── EARLY ADOPTERS ───────────────────────────────────────────────── */}
+      <section className="py-32 overflow-hidden" aria-labelledby="early-adopters-heading">
+        <div className="max-w-7xl mx-auto px-6 text-center">
+          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-8">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+            {t("earlyAdopters.badge")}
+          </div>
+          <h2 id="early-adopters-heading" className="text-4xl md:text-6xl font-cormorant font-medium text-foreground mb-6 leading-tight">
+            {t("earlyAdopters.title")}
+          </h2>
+          <p className="text-lg text-muted-foreground mb-16 max-w-xl mx-auto leading-relaxed">
+            {t("earlyAdopters.subtitle")}
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16 max-w-4xl mx-auto">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex flex-col items-center gap-4 bg-card border border-dashed border-border rounded-3xl p-10 hover:border-primary/30 transition-colors">
+                <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
+                  <svg className="w-6 h-6 text-muted-foreground/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
-                    {t.name.split(" ").map(n => n[0]).join("").replace("D", "").substring(0, 2)}
-                  </div>
-                  <div>
-                    <div className="font-bold text-foreground">{t.name}</div>
-                    <div className="text-sm text-muted-foreground">{t.role}</div>
-                  </div>
+                <div>
+                  <div className="font-bold text-muted-foreground/60 text-sm uppercase tracking-widest">{t("earlyAdopters.spot")}</div>
+                  <div className="text-xs text-muted-foreground/40 mt-1">{t("earlyAdopters.available")}</div>
                 </div>
               </div>
             ))}
           </div>
+
+          <Link href="/signup">
+            <button className="bg-primary hover:bg-primary/90 text-primary-foreground px-10 py-4 rounded-full text-base font-bold shadow-xl shadow-primary/20 hover:scale-105 transition-all">
+              {t("earlyAdopters.cta")}
+            </button>
+          </Link>
+          <p className="text-sm text-muted-foreground mt-5">{t("earlyAdopters.noCreditCard")}</p>
         </div>
       </section>
 
       {/* ── CTA ──────────────────────────────────────────────────────────── */}
       <section className="py-32 relative overflow-hidden">
         <div className="absolute inset-0 bg-primary dark:bg-primary/20" />
-        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay" />
+        <div className="absolute inset-0 opacity-10 mix-blend-overlay" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }} />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-3xl h-full bg-white/10 dark:bg-primary/20 blur-[100px] rounded-full" />
         
         <div className="relative z-10 max-w-4xl mx-auto px-6 text-center text-white">
@@ -415,13 +440,15 @@ export default async function HomePage() {
           <div className="flex items-center gap-3 opacity-80">
             <Image src="/logo.png" alt="DocFlow IA" width={110} height={30} className="object-contain dark:brightness-0 dark:invert" />
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-8 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-center gap-6 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+            <Link href="/#features" className="hover:text-primary transition-colors">{t("footer.features")}</Link>
+            <Link href="/#how-it-works" className="hover:text-primary transition-colors">{t("footer.howItWorks")}</Link>
             <Link href="/pricing" className="hover:text-primary transition-colors">{t("footer.pricing")}</Link>
             <Link href="/login" className="hover:text-primary transition-colors">{t("footer.login")}</Link>
             <Link href="/signup" className="hover:text-primary transition-colors">{t("footer.signup")}</Link>
           </div>
           <div className="text-sm font-medium text-muted-foreground">
-            © 2026 DocFlow IA. All rights reserved.
+            © 2026 DocFlow IA. {t("footer.rights")}
           </div>
         </div>
       </footer>

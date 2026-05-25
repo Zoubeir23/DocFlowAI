@@ -6,13 +6,53 @@ import { appointmentSchema } from "@/lib/validations";
 import { sendNotification } from "@/lib/notifications";
 import { checkAppointmentQuota } from "@/lib/subscription/quota";
 import { dispatchWebhookEvent } from "@/lib/webhooks";
-import type { ApiResponse, AppointmentWithRelations } from "@/types";
+import type { ApiResponse, AppointmentWithRelations, PaginatedResult } from "@/types";
 import type { z } from "zod";
 
 type AppointmentInput = z.infer<typeof appointmentSchema>;
 
 async function getDB() {
   return (await createClient()) as any;
+}
+
+export async function getAppointments(
+  page = 1,
+  pageSize = 20,
+  status = "all"
+): Promise<PaginatedResult<AppointmentWithRelations>> {
+  const db = await getDB();
+
+  const { data: authData } = await db.auth.getUser();
+  if (!authData.user) return { data: [], total: 0, page, pageSize, totalPages: 0 };
+
+  const { data: userData } = await db
+    .from("users")
+    .select("clinic_id")
+    .eq("id", authData.user.id)
+    .single();
+
+  if (!userData?.clinic_id) return { data: [], total: 0, page, pageSize, totalPages: 0 };
+
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  let query = db
+    .from("appointments")
+    .select("*, patient:patients(*), service:services(*)", { count: "exact" })
+    .eq("clinic_id", userData.clinic_id)
+    .order("start_at", { ascending: false });
+
+  if (status !== "all") query = query.eq("status", status);
+
+  const { data, count } = await query.range(from, to);
+
+  return {
+    data: (data || []) as AppointmentWithRelations[],
+    total: count || 0,
+    page,
+    pageSize,
+    totalPages: Math.ceil((count || 0) / pageSize),
+  };
 }
 
 export async function createAppointment(
@@ -186,6 +226,66 @@ export async function cancelAppointment(appointmentId: string): Promise<ApiRespo
       start_at: apptData.start_at,
     }).catch(() => {});
   }
+
+  return { success: true };
+}
+
+export async function cancelAppointmentByToken(token: string): Promise<ApiResponse> {
+  const { createAdminClient } = await import("@/lib/supabase/server");
+  const db = (await createAdminClient()) as any;
+
+  const { data: appt, error: fetchError } = await db
+    .from("appointments")
+    .select("id, status, start_at, clinic_id, patient:patients(full_name, phone, email), service:services(name), clinic:clinics(name)")
+    .eq("cancel_token", token)
+    .single();
+
+  if (fetchError || !appt) return { success: false, error: "Rendez-vous introuvable." };
+  if (appt.status === "cancelled") return { success: false, error: "Déjà annulé." };
+  if (new Date(appt.start_at) < new Date()) return { success: false, error: "Rendez-vous passé." };
+
+  const { error } = await db
+    .from("appointments")
+    .update({ status: "cancelled" })
+    .eq("cancel_token", token);
+
+  if (error) return { success: false, error: "Erreur lors de l'annulation." };
+
+  dispatchWebhookEvent(appt.clinic_id, "appointment.cancelled", {
+    id: appt.id,
+    status: "cancelled",
+    patient_name: appt.patient?.full_name,
+    service_name: appt.service?.name,
+    start_at: appt.start_at,
+  }).catch(() => {});
+
+  return { success: true };
+}
+
+export async function updateAppointmentMedicalNotes(
+  appointmentId: string,
+  medicalNotes: string
+): Promise<ApiResponse> {
+  const db = await getDB();
+
+  const { data: authData } = await db.auth.getUser();
+  if (!authData.user) return { success: false, error: "Not authenticated" };
+
+  const { data: userData } = await db
+    .from("users")
+    .select("clinic_id")
+    .eq("id", authData.user.id)
+    .single();
+
+  if (!userData) return { success: false, error: "User not found" };
+
+  const { error } = await db
+    .from("appointments")
+    .update({ medical_notes: medicalNotes })
+    .eq("id", appointmentId)
+    .eq("clinic_id", userData.clinic_id);
+
+  if (error) return { success: false, error: "Erreur lors de la mise à jour des notes médicales." };
 
   return { success: true };
 }

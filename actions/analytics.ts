@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   startOfMonth, subMonths, format, eachMonthOfInterval,
   startOfDay, getHours, parseISO,
+  startOfWeek, subWeeks, eachWeekOfInterval,
 } from "date-fns";
 
 export interface MonthlyStats {
@@ -34,11 +35,24 @@ export interface HourStat {
   count: number;
 }
 
+export interface WeeklyFillRate {
+  week: string;
+  rate: number;
+}
+
+export interface WeeklyTrend {
+  week: string;
+  total: number;
+  completed: number;
+}
+
 export interface AnalyticsData {
   monthly: MonthlyStats[];
   topServices: ServiceStat[];
   statusBreakdown: StatusBreakdown[];
   peakHours: HourStat[];
+  weeklyFillRate: WeeklyFillRate[];
+  weekly: WeeklyTrend[];
   totals: {
     allTime: number;
     completionRate: number;
@@ -166,6 +180,98 @@ export async function getAnalyticsData(): Promise<AnalyticsData | null> {
       return { hour: `${h}h`, count: hourMap[h] ?? 0 };
     });
 
+    // ── Weekly trend (last 8 weeks) ─────────────────────────────────────────────
+    const eightWeeksAgo = startOfWeek(subWeeks(now, 7), { weekStartsOn: 1 });
+    const weekStarts = eachWeekOfInterval(
+      { start: eightWeeksAgo, end: now },
+      { weekStartsOn: 1 },
+    );
+
+    // Fetch appointments for weekly calculations
+    const { data: weeklyAppointments } = await db
+      .from("appointments")
+      .select("id, status, start_at")
+      .eq("clinic_id", clinicId)
+      .gte("start_at", eightWeeksAgo.toISOString())
+      .order("start_at");
+
+    const weeklyAppts: any[] = weeklyAppointments ?? [];
+
+    // Fetch availability rules for fill rate calculation
+    const { data: availabilityRules } = await db
+      .from("availability_rules")
+      .select("day_of_week, start_time, end_time")
+      .eq("clinic_id", clinicId);
+
+    const rules: any[] = availabilityRules ?? [];
+
+    // Fetch average service duration for slot size
+    const { data: servicesData } = await db
+      .from("services")
+      .select("duration_minutes")
+      .eq("clinic_id", clinicId);
+
+    const servicesList: any[] = servicesData ?? [];
+    const averageDurationMinutes =
+      servicesList.length > 0
+        ? servicesList.reduce((sum: number, s: any) => sum + (Number(s.duration_minutes) || 30), 0) /
+          servicesList.length
+        : 30;
+
+    // Compute weekly slots capacity from availability_rules
+    // Each rule: day_of_week (0-6), start_time, end_time
+    const weeklySlotCapacity = rules.reduce((totalSlots: number, rule: any) => {
+      const [startHour, startMinute] = (rule.start_time as string).split(":").map(Number);
+      const [endHour, endMinute] = (rule.end_time as string).split(":").map(Number);
+      const durationInMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+      return totalSlots + Math.floor(durationInMinutes / averageDurationMinutes);
+    }, 0);
+
+    // Fallback: 8h/day × 5 days / average duration if no rules
+    const effectiveWeeklyCapacity =
+      weeklySlotCapacity > 0
+        ? weeklySlotCapacity
+        : Math.floor((8 * 60 * 5) / averageDurationMinutes);
+
+    const weekly: WeeklyTrend[] = weekStarts.map((weekStart, index) => {
+      const weekEnd = index < weekStarts.length - 1
+        ? weekStarts[index + 1]
+        : new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      const weekAppts = weeklyAppts.filter((a) => {
+        const date = parseISO(a.start_at);
+        return date >= weekStart && date < weekEnd;
+      });
+
+      return {
+        week: `Sem ${index + 1}`,
+        total: weekAppts.length,
+        completed: weekAppts.filter((a) => a.status === "completed").length,
+      };
+    });
+
+    const weeklyFillRate: WeeklyFillRate[] = weekStarts.map((weekStart, index) => {
+      const weekEnd = index < weekStarts.length - 1
+        ? weekStarts[index + 1]
+        : new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      const bookedCount = weeklyAppts.filter((a) => {
+        const date = parseISO(a.start_at);
+        return (
+          date >= weekStart &&
+          date < weekEnd &&
+          ["booked", "confirmed", "completed"].includes(a.status)
+        );
+      }).length;
+
+      const rate =
+        effectiveWeeklyCapacity > 0
+          ? Math.min(100, Math.round((bookedCount / effectiveWeeklyCapacity) * 100))
+          : 0;
+
+      return { week: `Sem ${index + 1}`, rate };
+    });
+
     // ── All-time totals ─────────────────────────────────────────────────────────
     const totalAllTime = allApptsList.length;
     const completedCount = allApptsList.filter((a) => a.status === "completed").length;
@@ -180,6 +286,8 @@ export async function getAnalyticsData(): Promise<AnalyticsData | null> {
       topServices,
       statusBreakdown,
       peakHours,
+      weeklyFillRate,
+      weekly,
       totals: {
         allTime: totalAllTime,
         completionRate: finishedCount > 0 ? Math.round((completedCount / finishedCount) * 100) : 0,

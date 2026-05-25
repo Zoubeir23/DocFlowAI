@@ -2,35 +2,15 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarCheck2, Filter, RefreshCw } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { CalendarCheck2, Filter, RefreshCw, Download } from "lucide-react";
 import { AppointmentTable } from "@/components/appointments/appointment-table";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { AppointmentWithRelations } from "@/types";
+import { PaginationBar } from "@/components/ui/pagination-bar";
+import { getAppointments } from "@/actions/appointments";
 import { useTranslations } from "next-intl";
 
-async function fetchClinicId(): Promise<string | null> {
-  const supabase = createClient() as any;
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data } = await supabase.from("users").select("clinic_id").eq("id", user.id).single();
-  return (data as { clinic_id: string } | null)?.clinic_id || null;
-}
-
-async function fetchAppointments(clinicId: string, status: string) {
-  const supabase = createClient() as any;
-  let query = supabase
-    .from("appointments")
-    .select("*, patient:patients(*), service:services(*)")
-    .eq("clinic_id", clinicId)
-    .order("start_at", { ascending: false });
-
-  if (status !== "all") query = query.eq("status", status);
-
-  const { data } = await query.limit(100);
-  return (data || []) as unknown as AppointmentWithRelations[];
-}
+const PAGE_SIZE = 20;
 
 /* Dark-mode safe filter tab classes */
 const STATUS_FILTER_ACTIVE: Record<string, string> = {
@@ -44,6 +24,7 @@ const STATUS_FILTER_ACTIVE: Record<string, string> = {
 
 export default function AppointmentsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useState(1);
   const t = useTranslations("appointments");
 
   const statusOptions = [
@@ -55,21 +36,26 @@ export default function AppointmentsPage() {
     { value: "no_show", label: t("statusNoShow") },
   ];
 
-  const { data: clinicId } = useQuery({ queryKey: ["clinicId"], queryFn: fetchClinicId });
+  function handleStatusChange(value: string) {
+    setStatusFilter(value);
+    setPage(1);
+  }
 
-  const { data: appointments = [], isLoading, refetch, isFetching } = useQuery({
-    queryKey: ["appointments", clinicId, statusFilter],
-    queryFn: () => fetchAppointments(clinicId!, statusFilter),
-    enabled: !!clinicId,
+  const { data: result, isLoading, refetch, isFetching } = useQuery({
+    queryKey: ["appointments", statusFilter, page],
+    queryFn: () => getAppointments(page, PAGE_SIZE, statusFilter),
   });
+
+  const appointments = result?.data ?? [];
+  const total = result?.total ?? 0;
+  const totalPages = result?.totalPages ?? 1;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* ── BOLD HERO HEADER ─────────────────────────────────────────────────── */}
       <div className="relative overflow-hidden bg-card border-b border-border px-4 py-8 md:px-6 md:py-12 lg:px-10 lg:py-16 fade-in-up flex-shrink-0">
-        {/* Subtle background decoration */}
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-        
+
         <div className="relative max-w-7xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <div className="inline-flex items-center gap-2 mb-2 md:mb-4">
@@ -80,21 +66,31 @@ export default function AppointmentsPage() {
               {t("manageTrack")}
             </h1>
           </div>
-          
-          <Button
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="btn-secondary flex items-center gap-2 flex-shrink-0 w-full md:w-auto justify-center"
-          >
-            <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
-            {t("refresh")}
-          </Button>
+
+          <div className="flex gap-2 w-full md:w-auto">
+            <Button
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="btn-secondary flex items-center gap-2 flex-1 md:flex-none justify-center"
+            >
+              <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
+              {t("refresh")}
+            </Button>
+            <a
+              href="/api/export/appointments"
+              download
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-card text-sm font-semibold text-foreground hover:bg-accent transition-colors flex-1 md:flex-none justify-center"
+            >
+              <Download className="w-4 h-4" />
+              CSV
+            </a>
+          </div>
         </div>
       </div>
 
       {/* ── CONTENT BODY ──────────────────────────────────────────────────────── */}
       <div className="p-4 md:p-6 lg:p-10 max-w-7xl mx-auto space-y-6 md:space-y-8 fade-in-up flex-1 w-full" style={{ animationDelay: "0.1s" }}>
-        
+
         {/* Mobile Swipe Hint */}
         <div className="md:hidden flex items-center justify-center gap-2 text-[11px] font-bold text-muted-foreground bg-muted/30 py-1.5 rounded-xl border border-border">
           <svg className="w-3.5 h-3.5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
@@ -107,7 +103,7 @@ export default function AppointmentsPage() {
             {statusOptions.map((opt) => (
               <button
                 key={opt.value}
-                onClick={() => setStatusFilter(opt.value)}
+                onClick={() => handleStatusChange(opt.value)}
                 className={`px-4 py-2 md:px-5 md:py-2.5 rounded-full text-xs md:text-sm font-bold uppercase tracking-wider transition-all duration-200 border shadow-sm whitespace-nowrap ${
                   statusFilter === opt.value
                     ? STATUS_FILTER_ACTIVE[opt.value] || "bg-primary text-primary-foreground border-transparent"
@@ -129,11 +125,11 @@ export default function AppointmentsPage() {
                 {statusOptions.find(o => o.value === statusFilter)?.label}
               </span>
               <span className="text-xs font-bold px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
-                {appointments.length}
+                {total}
               </span>
             </div>
             <div className="hidden md:block">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select value={statusFilter} onValueChange={handleStatusChange}>
                 <SelectTrigger className="w-48 h-10 rounded-xl text-sm font-bold border-border bg-card shadow-sm">
                   <SelectValue />
                 </SelectTrigger>
@@ -152,6 +148,15 @@ export default function AppointmentsPage() {
               appointments={appointments}
               loading={isLoading}
               onRefresh={refetch}
+            />
+          </div>
+          <div className="px-4">
+            <PaginationBar
+              page={page}
+              totalPages={totalPages}
+              total={total}
+              pageSize={PAGE_SIZE}
+              onPageChange={setPage}
             />
           </div>
         </div>

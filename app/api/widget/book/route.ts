@@ -89,16 +89,15 @@ export async function POST(req: NextRequest) {
 
   const resultData = result as { appointment_id: string; patient_id: string };
 
-  // Fetch the clinic owner's email dynamically
-  const { data: ownerUser } = await db
-    .from("users")
-    .select("email")
-    .eq("id", clinic.owner_id)
-    .single() as { data: { email: string } | null };
+  const [{ data: ownerUser }, { data: appointmentData }] = await Promise.all([
+    db.from("users").select("email").eq("id", clinic.owner_id).single() as Promise<{ data: { email: string } | null }>,
+    db.from("appointments").select("cancel_token").eq("id", resultData.appointment_id).single() as Promise<{ data: { cancel_token: string } | null }>,
+  ]);
 
   await sendNotification({
     type: "appointment_confirmation",
     appointmentId: resultData.appointment_id,
+    cancelToken: appointmentData?.cancel_token,
     patientName,
     patientPhone,
     patientEmail: patientEmail || undefined,

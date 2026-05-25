@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { Globe, Layout, Palette, Settings, Type, User, Share, Link2, MapPin, Phone, Clock, Shield, ExternalLink } from "lucide-react";
+import { Globe, Layout, Palette, Settings, Type, User, Share, Link2, MapPin, Phone, Clock, Shield, ExternalLink, Plus, Trash2, Quote } from "lucide-react";
 import { ImageInputField } from "./image-input-field";
 import { cn } from "@/lib/utils";
 
@@ -263,6 +263,92 @@ export function WebsiteEditor({
                 </a>
               </div>
             </div>
+
+            {/* Testimonials Section */}
+            <div className="card-panel">
+              <div className="card-panel-header px-4 py-3 bg-muted/30">
+                <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
+                  <Quote className="w-4 h-4 text-primary" /> Avis patients
+                </h3>
+              </div>
+              <div className="p-4 space-y-4">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Ajoutez les témoignages de vos patients. Ils s'affichent sur votre site public si le module est activé dans Settings.
+                </p>
+
+                {(website.testimonials ?? []).map((testimonial: { text: string; name: string; context: string }, index: number) => (
+                  <div key={index} className="rounded-xl border border-border bg-muted/30 p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Avis #{index + 1}</span>
+                      <button
+                        onClick={() => {
+                          const updated = [...(website.testimonials ?? [])];
+                          updated.splice(index, 1);
+                          onChange({ testimonials: updated });
+                        }}
+                        className="p-1.5 rounded-lg hover:bg-destructive/10 hover:text-destructive transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Témoignage</Label>
+                      <Textarea
+                        value={testimonial.text}
+                        onChange={(e) => {
+                          const updated = [...(website.testimonials ?? [])];
+                          updated[index] = { ...updated[index], text: e.target.value };
+                          onChange({ testimonials: updated });
+                        }}
+                        className="resize-none bg-muted/50 border-border focus:ring-primary focus:border-primary font-medium p-3 text-sm"
+                        rows={3}
+                        placeholder="Ce que le patient a dit..."
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Prénom & Nom</Label>
+                        <Input
+                          value={testimonial.name}
+                          onChange={(e) => {
+                            const updated = [...(website.testimonials ?? [])];
+                            updated[index] = { ...updated[index], name: e.target.value };
+                            onChange({ testimonials: updated });
+                          }}
+                          className="h-9 bg-muted/50 border-border focus:ring-primary focus:border-primary font-medium text-sm"
+                          placeholder="Marie L."
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Contexte</Label>
+                        <Input
+                          value={testimonial.context}
+                          onChange={(e) => {
+                            const updated = [...(website.testimonials ?? [])];
+                            updated[index] = { ...updated[index], context: e.target.value };
+                            onChange({ testimonials: updated });
+                          }}
+                          className="h-9 bg-muted/50 border-border focus:ring-primary focus:border-primary font-medium text-sm"
+                          placeholder="Patient régulier"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <button
+                  onClick={() => {
+                    const updated = [...(website.testimonials ?? []), { text: "", name: "", context: "" }];
+                    onChange({ testimonials: updated });
+                  }}
+                  className="flex items-center justify-center gap-2 w-full h-10 rounded-xl border border-dashed border-border hover:border-primary/50 hover:bg-primary/5 text-sm font-semibold text-muted-foreground hover:text-primary transition-all"
+                >
+                  <Plus className="w-4 h-4" /> Ajouter un avis
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -365,15 +451,29 @@ export function WebsiteEditor({
                 </div>
                 
                 <div className="h-px bg-border w-full" />
-                
+
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-1">
                     <Label className="text-sm font-bold text-foreground">Services Catalog</Label>
                     <p className="text-xs text-muted-foreground font-medium">Display your active services and prices in a beautiful grid layout.</p>
                   </div>
-                  <Switch 
-                    checked={website.show_services} 
+                  <Switch
+                    checked={website.show_services}
                     onCheckedChange={(checked) => onChange({ show_services: checked })}
+                    className="data-[state=checked]:bg-primary"
+                  />
+                </div>
+
+                <div className="h-px bg-border w-full" />
+
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1">
+                    <Label className="text-sm font-bold text-foreground">Avis patients</Label>
+                    <p className="text-xs text-muted-foreground font-medium">Affiche la section témoignages sur votre site public (visible seulement si vous avez ajouté des avis).</p>
+                  </div>
+                  <Switch
+                    checked={website.show_testimonials ?? true}
+                    onCheckedChange={(checked) => onChange({ show_testimonials: checked })}
                     className="data-[state=checked]:bg-primary"
                   />
                 </div>

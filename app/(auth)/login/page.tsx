@@ -159,7 +159,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-8 pt-8 border-t border-foreground/15 text-center">
+          <div className="mt-8 pt-8 border-t border-foreground/15 text-center space-y-3">
             <p className="font-sans font-normal text-foreground/70 text-[15px]">
               {t('dontHaveAccount')}{' '}
               <Link
@@ -167,6 +167,15 @@ export default function LoginPage() {
                 className="text-[#14b8a6] hover:text-foreground transition-colors ml-1"
               >
                 {t('startFreeTrial')}
+              </Link>
+            </p>
+            <p className="font-sans text-[13px] text-foreground/40">
+              Vous êtes patient ?{' '}
+              <Link
+                href="/portail/login"
+                className="text-foreground/60 hover:text-[#14b8a6] transition-colors underline underline-offset-2"
+              >
+                Accéder à votre espace patient
               </Link>
             </p>
           </div>

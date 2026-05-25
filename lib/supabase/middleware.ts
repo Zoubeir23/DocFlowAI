@@ -37,6 +37,31 @@ export async function updateSession(request: NextRequest) {
   const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
   const isAuthPath = authPaths.some((p) => pathname.startsWith(p));
   const isAdminPath = pathname.startsWith("/admin");
+  const isPortailPublic = pathname === "/portail/login" || pathname.startsWith("/portail/callback");
+  const isPortailProtected = pathname.startsWith("/portail") && !isPortailPublic;
+
+  // Portail patient non authentifié → login portail
+  if (!user && isPortailProtected) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/portail/login";
+    return NextResponse.redirect(url);
+  }
+
+  // Staff clinique ne peut pas accéder au portail patient
+  if (user && isPortailProtected) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: staffRecord } = await (supabase as any)
+      .from("users")
+      .select("id")
+      .eq("id", user.id)
+      .single();
+
+    if (staffRecord) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/app/dashboard";
+      return NextResponse.redirect(url);
+    }
+  }
 
   // Unauthenticated — redirect to login
   if (!user && (isProtected || isAdminPath)) {
@@ -86,6 +111,13 @@ export async function updateSession(request: NextRequest) {
   if (user && isAuthPath) {
     const url = request.nextUrl.clone();
     url.pathname = "/app/dashboard";
+    return NextResponse.redirect(url);
+  }
+
+  // Patient authentifié sur /portail/login → dashboard portail
+  if (user && isPortailPublic && pathname === "/portail/login") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/portail/dashboard";
     return NextResponse.redirect(url);
   }
 

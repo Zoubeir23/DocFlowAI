@@ -292,28 +292,29 @@ export function WebsitePreview({ website }: { website: any }) {
         )}
 
         {/* TESTIMONIALS */}
-        <section className="px-4 py-6" style={{ backgroundColor: cream }}>
-          <div className="mb-4 text-center">
-            <div className="prev-bbn leading-none" style={{ fontSize: "clamp(14px, 2.5vw, 20px)", color: dark }}>
-              CE QUE DISENT <span className="prev-pfd" style={{ color: primary }}>nos patients</span>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { text: "Médecin très à l'écoute, suivi personnalisé excellent.", name: "Marie L.", bg: dark },
-              { text: "Prise de RDV en ligne rapide. Cabinet moderne.", name: "Thomas B.", bg: primary },
-              { text: "Suivi sérieux et professionnel, je recommande vivement.", name: "Fatou D.", bg: teal },
-            ].map((t, i) => (
-              <div key={i} className="rounded-xl p-3 flex flex-col" style={{ backgroundColor: t.bg }}>
-                <div className="flex gap-0.5 mb-1.5">
-                  {[1,2,3,4,5].map((s) => <Star key={s} className="w-2 h-2 fill-white text-white opacity-90" />)}
-                </div>
-                <p className="text-[7.5px] leading-relaxed flex-1 text-white opacity-75">{t.text}</p>
-                <p className="text-[7px] font-bold text-white mt-1.5">{t.name}</p>
+        {website.show_testimonials !== false && Array.isArray(website.testimonials) && website.testimonials.length > 0 && (
+          <section className="px-4 py-6" style={{ backgroundColor: cream }}>
+            <div className="mb-4 text-center">
+              <div className="prev-bbn leading-none" style={{ fontSize: "clamp(14px, 2.5vw, 20px)", color: dark }}>
+                CE QUE DISENT <span className="prev-pfd" style={{ color: primary }}>nos patients</span>
               </div>
-            ))}
-          </div>
-        </section>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {website.testimonials.slice(0, 3).map((t: { text: string; name: string; context: string }, i: number) => {
+                const bgColors = [dark, primary, teal];
+                return (
+                  <div key={i} className="rounded-xl p-3 flex flex-col" style={{ backgroundColor: bgColors[i % 3] }}>
+                    <div className="flex gap-0.5 mb-1.5">
+                      {[1,2,3,4,5].map((s) => <Star key={s} className="w-2 h-2 fill-white text-white opacity-90" />)}
+                    </div>
+                    <p className="text-[7.5px] leading-relaxed flex-1 text-white opacity-75">{t.text}</p>
+                    <p className="text-[7px] font-bold text-white mt-1.5">{t.name}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* CTA */}
         <section className="px-4 py-7 relative overflow-hidden" style={{ backgroundColor: primary }}>

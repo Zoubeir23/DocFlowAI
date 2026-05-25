@@ -1,8 +1,9 @@
 export type EmailLocale = "fr" | "en";
 
 export interface EmailPayload {
-  type: "appointment_confirmation";
+  type: "appointment_confirmation" | "appointment_reminder";
   appointmentId: string;
+  cancelToken?: string;
   patientName: string;
   patientPhone: string;
   patientEmail?: string;
