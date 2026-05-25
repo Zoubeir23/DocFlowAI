@@ -8,6 +8,7 @@ import { CalendarDays, Clock, User, HeartPulse, Lock, Zap, Users } from 'lucide-
 import { createClient } from '@/lib/supabase/client'
 import { updateAppointmentTime, updateAppointmentStatus } from '@/actions/appointments'
 import { Button } from '@/components/ui/button'
+import { AppointmentCreateModal } from '@/components/appointments/appointment-create-modal'
 import {
   Select,
   SelectContent,
@@ -66,7 +67,7 @@ async function fetchCalendarAppointments(clinicId: string) {
   const supabase = createClient() as any
   const { data } = await supabase
     .from('appointments')
-    .select('*, patient:patients(*), service:services(*)')
+    .select('*, patient:patients(*), service:services(*), practitioner:users(id,full_name,email)')
     .eq('clinic_id', clinicId)
     .neq('status', 'cancelled')
 
@@ -123,6 +124,10 @@ export default function CalendarPage() {
     ])
   )
 
+  const visibleAppointments = selectedPractitionerId
+    ? appointments.filter((a) => a.practitioner?.id === selectedPractitionerId)
+    : appointments
+
   const updateTimeMutation = useMutation({
     mutationFn: ({ id, startAt, endAt }: { id: string; startAt: string; endAt: string }) =>
       updateAppointmentTime(id, startAt, endAt),
@@ -143,12 +148,11 @@ export default function CalendarPage() {
     },
   })
 
-  const selectedPractitionerColor = selectedPractitionerId
-    ? practitionerColorMap[selectedPractitionerId]
-    : null
-
-  const events = appointments.map((appt) => {
-    const eventColor = selectedPractitionerColor ?? STATUS_COLORS[appt.status] ?? STATUS_COLORS.booked
+  const events = visibleAppointments.map((appt) => {
+    const practitionerColor = appt.practitioner?.id
+      ? practitionerColorMap[appt.practitioner.id]
+      : null
+    const eventColor = practitionerColor ?? STATUS_COLORS[appt.status] ?? STATUS_COLORS.booked
     return {
       id: appt.id,
       title: `${appt.patient?.full_name} — ${appt.service?.name}`,
@@ -182,6 +186,7 @@ export default function CalendarPage() {
           </div>
           
           <div className="flex flex-col items-end gap-3">
+            <AppointmentCreateModal onCreated={() => queryClient.invalidateQueries({ queryKey: ['calendar-appointments'] })} />
             {/* Plan badge */}
             {!isPaidPlan && clinicInfo && (
               <Link href="/app/billing"

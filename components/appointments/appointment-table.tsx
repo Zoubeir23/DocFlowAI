@@ -96,6 +96,7 @@ export function AppointmentTable({ appointments, loading, onRefresh }: Appointme
             <th className="text-left text-xs font-bold text-muted-foreground uppercase tracking-widest pb-4 px-4">{t('columns.patient')}</th>
             <th className="text-left text-xs font-bold text-muted-foreground uppercase tracking-widest pb-4 px-4">{t('columns.service')}</th>
             <th className="text-left text-xs font-bold text-muted-foreground uppercase tracking-widest pb-4 px-4">{t('columns.date')}</th>
+            <th className="text-left text-xs font-bold text-muted-foreground uppercase tracking-widest pb-4 px-4 hidden md:table-cell">{t('columns.practitioner')}</th>
             <th className="text-left text-xs font-bold text-muted-foreground uppercase tracking-widest pb-4 px-4">{t('columns.source')}</th>
             <th className="text-left text-xs font-bold text-muted-foreground uppercase tracking-widest pb-4 px-4">{t('columns.status')}</th>
             <th className="pb-4 w-12" />
@@ -138,6 +139,22 @@ export function AppointmentTable({ appointments, loading, onRefresh }: Appointme
                   {format(parseISO(appointment.start_at), "h:mm a")} –{" "}
                   {format(parseISO(appointment.end_at), "h:mm a")}
                 </p>
+              </td>
+
+              {/* Praticien */}
+              <td className="py-4 px-4 hidden md:table-cell">
+                {appointment.practitioner ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold flex-shrink-0">
+                      {appointment.practitioner.full_name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-sm font-medium text-foreground truncate max-w-[120px]">
+                      {appointment.practitioner.full_name}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-xs text-muted-foreground">—</span>
+                )}
               </td>
 
               {/* Source */}

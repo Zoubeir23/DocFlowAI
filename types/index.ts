@@ -15,9 +15,16 @@ export type AppointmentStatus = Appointment["status"];
 export type UserRole = User["role"];
 export type SubscriptionPlan = Subscription["plan"];
 
+export interface PractitionerSummary {
+  id: string;
+  full_name: string;
+  email: string;
+}
+
 export interface AppointmentWithRelations extends Appointment {
   patient: Patient;
   service: Service;
+  practitioner?: PractitionerSummary | null;
 }
 
 export interface DashboardStats {

@@ -209,6 +209,8 @@ export interface PortalAppointment {
   status: string;
   notes: string | null;
   cancel_token: string | null;
+  payment_status: string;
+  preconsultation_submitted_at: string | null;
   services: { name: string; duration_minutes: number; price: number | null } | null;
   teleconsultation_room_id: string | null;
   teleconsultation_status: "pending" | "active" | "ended" | null;
@@ -229,7 +231,7 @@ export async function getPatientPortalData(): Promise<{ patient: PortalPatient; 
 
   const { data: appointments } = await (supabase as any)
     .from("appointments")
-    .select("id, start_at, end_at, status, notes, cancel_token, teleconsultation_room_id, teleconsultation_status, services(name, duration_minutes, price)")
+    .select("id, start_at, end_at, status, notes, cancel_token, payment_status, preconsultation_submitted_at, teleconsultation_room_id, teleconsultation_status, services(name, duration_minutes, price)")
     .eq("patient_id", patient.id)
     .order("start_at", { ascending: false }) as { data: PortalAppointment[] | null };
 

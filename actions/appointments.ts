@@ -38,7 +38,7 @@ export async function getAppointments(
 
   let query = db
     .from("appointments")
-    .select("*, patient:patients(*), service:services(*)", { count: "exact" })
+    .select("*, patient:patients(*), service:services(*), practitioner:users(id,full_name,email)", { count: "exact" })
     .eq("clinic_id", userData.clinic_id)
     .order("start_at", { ascending: false });
 
@@ -79,6 +79,18 @@ export async function createAppointment(
   const validated = appointmentSchema.safeParse(data);
   if (!validated.success) {
     return { success: false, error: validated.error.errors[0].message };
+  }
+
+  if (validated.data.practitioner_id) {
+    const { data: practitionerCheck } = await db
+      .from("users")
+      .select("id")
+      .eq("id", validated.data.practitioner_id)
+      .eq("clinic_id", userData.clinic_id)
+      .single();
+    if (!practitionerCheck) {
+      return { success: false, error: "Praticien invalide ou n'appartient pas à cette clinique." };
+    }
   }
 
   const { data: appt, error } = await db

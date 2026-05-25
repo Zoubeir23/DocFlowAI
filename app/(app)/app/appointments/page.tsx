@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PaginationBar } from "@/components/ui/pagination-bar";
 import { getAppointments } from "@/actions/appointments";
 import { useTranslations } from "next-intl";
+import { AppointmentCreateModal } from "@/components/appointments/appointment-create-modal";
 
 const PAGE_SIZE = 20;
 
@@ -68,6 +69,7 @@ export default function AppointmentsPage() {
           </div>
 
           <div className="flex gap-2 w-full md:w-auto">
+            <AppointmentCreateModal onCreated={() => refetch()} />
             <Button
               onClick={() => refetch()}
               disabled={isFetching}

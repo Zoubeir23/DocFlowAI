@@ -28,6 +28,7 @@ import { getPatient, getPatientAppointments, updatePatient } from "@/actions/pat
 import { updateAppointmentMedicalNotes } from "@/actions/appointments";
 import { InvitePatientButton } from "@/components/portail/invite-patient-button";
 import { StartTeleconsultationButton } from "@/components/teleconsultation/start-teleconsultation-button";
+import { PreconsultationCard, type PreconsultationData } from "@/components/appointments/preconsultation-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,6 +49,8 @@ interface AppointmentWithService {
   medical_notes: string | null;
   teleconsultation_room_id: string | null;
   teleconsultation_status: "pending" | "active" | "ended" | null;
+  preconsultation_form: Record<string, unknown> | null;
+  preconsultation_submitted_at: string | null;
   service: {
     id: string;
     name: string;
@@ -212,6 +215,11 @@ function AppointmentRow({ appointment, patientName, onSaveMedicalNotes, isSaving
               />
             </div>
           )}
+          {/* Formulaire pré-consultation */}
+          <PreconsultationCard
+            formData={appointment.preconsultation_form as PreconsultationData | null}
+            submittedAt={appointment.preconsultation_submitted_at}
+          />
 
           {/* Booking notes */}
           {appointment.notes && (
