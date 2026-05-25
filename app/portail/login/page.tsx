@@ -96,9 +96,9 @@ export default function PortailLoginPage() {
         </form>
 
         <p className="text-center text-xs text-muted-foreground">
-          Votre email doit être enregistré dans votre dossier patient.
-          <br />
-          Contactez votre médecin si vous n'avez pas accès.
+          Un nouveau lien vous sera envoyé à chaque connexion — aucun mot de passe à retenir.
+          <br className="mb-1" />
+          Votre email doit correspondre à celui de votre dossier patient.
         </p>
       </div>
     </div>

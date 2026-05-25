@@ -3,6 +3,52 @@
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
+function buildPortalInvitationEmail({
+  patientName,
+  clinicName,
+  magicLink,
+  loginUrl,
+}: {
+  patientName: string;
+  clinicName: string;
+  magicLink: string;
+  loginUrl: string;
+}): string {
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f8fafc;font-family:sans-serif;">
+  <div style="max-width:520px;margin:40px auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+    <div style="background:#0d9488;padding:32px 40px;">
+      <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:600;">Votre espace patient</h1>
+      <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:14px;">${clinicName}</p>
+    </div>
+    <div style="padding:32px 40px;">
+      <p style="margin:0 0 16px;color:#334155;font-size:15px;">Bonjour <strong>${patientName}</strong>,</p>
+      <p style="margin:0 0 24px;color:#64748b;font-size:14px;line-height:1.6;">
+        Votre médecin vous a ouvert un accès à votre espace patient. Vous pouvez y consulter
+        vos rendez-vous, votre historique de consultations et vos documents médicaux.
+      </p>
+      <a href="${magicLink}" style="display:inline-block;background:#0d9488;color:#ffffff;padding:14px 28px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">
+        Accéder à mon espace →
+      </a>
+      <p style="margin:24px 0 8px;color:#94a3b8;font-size:12px;">Ce lien est valable 1 heure.</p>
+      <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;">
+      <p style="margin:0 0 8px;color:#334155;font-size:13px;font-weight:600;">Pour vous reconnecter à l'avenir :</p>
+      <p style="margin:0 0 12px;color:#64748b;font-size:13px;line-height:1.6;">
+        Rendez-vous sur votre page de connexion patient et entrez votre email.<br>
+        Un nouveau lien vous sera envoyé instantanément — aucun mot de passe à retenir.
+      </p>
+      <a href="${loginUrl}" style="color:#0d9488;font-size:13px;word-break:break-all;">${loginUrl}</a>
+    </div>
+    <div style="padding:20px 40px;background:#f8fafc;border-top:1px solid #e2e8f0;">
+      <p style="margin:0;color:#94a3b8;font-size:12px;">DocFlow IA · Système de gestion médicale</p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
 export async function invitePatientToPortal(patientId: string): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -17,17 +63,49 @@ export async function invitePatientToPortal(patientId: string): Promise<{ succes
   if (!patient) return { success: false, error: "Patient introuvable" };
   if (!patient.email) return { success: false, error: "Ce patient n'a pas d'email enregistré" };
 
+  const { data: clinic } = await supabase
+    .from("clinics")
+    .select("name")
+    .eq("id", patient.clinic_id)
+    .single() as { data: { name: string } | null };
+
   const adminSupabase = await createAdminClient();
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
+  const redirectTo = `${appUrl}/portail/callback`;
 
-  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/portail/callback`;
-
-  const { error } = await (adminSupabase.auth.admin as any).generateLink({
+  const { data: linkData, error } = await (adminSupabase.auth.admin as any).generateLink({
     type: "magiclink",
     email: patient.email,
     options: { redirectTo },
-  });
+  }) as { data: { properties?: { action_link?: string } } | null; error: { message: string } | null };
 
   if (error) return { success: false, error: error.message };
+
+  const magicLink = linkData?.properties?.action_link ?? redirectTo;
+  const clinicName = clinic?.name ?? "votre médecin";
+  const loginUrl = `${appUrl}/portail/login`;
+
+  // Envoi de l'email d'invitation personnalisé
+  try {
+    const { Resend } = await import("resend");
+    const apiKey = process.env.RESEND_API_KEY;
+    if (apiKey) {
+      const resend = new Resend(apiKey);
+      await resend.emails.send({
+        from: process.env.RESEND_FROM_ADDRESS ?? "noreply@docflow.ai",
+        to: patient.email,
+        subject: `Votre espace patient — ${clinicName}`,
+        html: buildPortalInvitationEmail({
+          patientName: patient.full_name,
+          clinicName,
+          magicLink,
+          loginUrl,
+        }),
+      });
+    }
+  } catch {
+    // Non bloquant — le lien est quand même généré
+  }
 
   await (supabase as any)
     .from("patients")
