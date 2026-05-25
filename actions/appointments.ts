@@ -81,6 +81,18 @@ export async function createAppointment(
     return { success: false, error: validated.error.errors[0].message };
   }
 
+  if (validated.data.practitioner_id) {
+    const { data: practitionerCheck } = await db
+      .from("users")
+      .select("id")
+      .eq("id", validated.data.practitioner_id)
+      .eq("clinic_id", userData.clinic_id)
+      .single();
+    if (!practitionerCheck) {
+      return { success: false, error: "Praticien invalide ou n'appartient pas à cette clinique." };
+    }
+  }
+
   const { data: appt, error } = await db
     .from("appointments")
     .insert({ ...validated.data, clinic_id: userData.clinic_id })

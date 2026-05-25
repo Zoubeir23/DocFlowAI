@@ -125,7 +125,7 @@ export default function CalendarPage() {
   )
 
   const visibleAppointments = selectedPractitionerId
-    ? appointments.filter((a) => (a as any).practitioner_id === selectedPractitionerId)
+    ? appointments.filter((a) => a.practitioner?.id === selectedPractitionerId)
     : appointments
 
   const updateTimeMutation = useMutation({
@@ -149,8 +149,9 @@ export default function CalendarPage() {
   })
 
   const events = visibleAppointments.map((appt) => {
-    const practitionerId = (appt as any).practitioner_id
-    const practitionerColor = practitionerId ? practitionerColorMap[practitionerId] : null
+    const practitionerColor = appt.practitioner?.id
+      ? practitionerColorMap[appt.practitioner.id]
+      : null
     const eventColor = practitionerColor ?? STATUS_COLORS[appt.status] ?? STATUS_COLORS.booked
     return {
       id: appt.id,
