@@ -3,7 +3,7 @@ import { getPatientPortalData } from "@/actions/patient-portal";
 import { createClient } from "@/lib/supabase/server";
 import { format, isPast, isFuture } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Calendar, Clock, CheckCircle2, XCircle, AlertTriangle, FileText, LogOut } from "lucide-react";
+import { Calendar, Clock, CheckCircle2, XCircle, AlertTriangle, FileText, LogOut, CalendarPlus } from "lucide-react";
 import { CancelAppointmentButton } from "@/components/portail/cancel-appointment-button";
 import { JoinTeleconsultationButton } from "@/components/teleconsultation/join-teleconsultation-button";
 import { PayAppointmentButton } from "@/components/portail/pay-appointment-button";
@@ -132,6 +132,14 @@ export default async function PortailDashboardPage({
                       {canCancel && (
                         <CancelAppointmentButton appointmentId={appointment.id} />
                       )}
+                      <a
+                        href={`/api/calendar/appointment/${appointment.id}`}
+                        download
+                        className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                      >
+                        <CalendarPlus className="w-3 h-3" />
+                        Ajouter au calendrier
+                      </a>
                       {appointment.teleconsultation_room_id && appointment.teleconsultation_status !== "ended" && (
                         <JoinTeleconsultationButton
                           session={{
