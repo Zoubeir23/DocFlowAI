@@ -81,7 +81,7 @@ export function AppointmentCreateModal({ onCreated }: AppointmentCreateModalProp
           .from("services")
           .select("id, name, duration_minutes, price")
           .eq("clinic_id", userData.clinic_id)
-          .eq("active", true)
+          .eq("is_active", true)
           .order("name"),
         supabase
           .from("users")
