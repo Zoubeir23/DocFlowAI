@@ -38,7 +38,7 @@ export async function getAppointments(
 
   let query = db
     .from("appointments")
-    .select("*, patient:patients(*), service:services(*)", { count: "exact" })
+    .select("*, patient:patients(*), service:services(*), practitioner:users(id,full_name,email)", { count: "exact" })
     .eq("clinic_id", userData.clinic_id)
     .order("start_at", { ascending: false });
 
