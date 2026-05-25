@@ -28,6 +28,8 @@ import { getPatient, getPatientAppointments, updatePatient } from "@/actions/pat
 import { updateAppointmentMedicalNotes } from "@/actions/appointments";
 import { InvitePatientButton } from "@/components/portail/invite-patient-button";
 import { PreconsultationCard, type PreconsultationData } from "@/components/appointments/preconsultation-card";
+import { DoctorChatPanel } from "@/components/chat/doctor-chat-panel";
+import { getPatientMessages } from "@/actions/patient-chat";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -258,6 +260,12 @@ export default function PatientDetailPage() {
   const { data: appointments, isLoading: isLoadingAppointments } = useQuery({
     queryKey: ["patient-appointments", patientId],
     queryFn: () => getPatientAppointments(patientId),
+    enabled: !!patientId,
+  });
+
+  const { data: chatMessages } = useQuery({
+    queryKey: ["patient-messages", patientId],
+    queryFn: () => getPatientMessages(patientId),
     enabled: !!patientId,
   });
 
@@ -493,6 +501,15 @@ export default function PatientDetailPage() {
       </div>
 
       {/* ─ Consultation history ─ */}
+      {/* ─ Chat ─ */}
+      <div className="glass-card p-6">
+        <DoctorChatPanel
+          patientId={patientId}
+          patientName={patient.full_name}
+          initialMessages={chatMessages ?? []}
+        />
+      </div>
+
       <div className="glass-card p-6">
         <div className="section-header mb-5">
           <div className="icon-container">

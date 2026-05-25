@@ -8,6 +8,8 @@ import { CancelAppointmentButton } from "@/components/portail/cancel-appointment
 import { PayAppointmentButton } from "@/components/portail/pay-appointment-button";
 import { PaymentStatusBanner } from "@/components/portail/payment-status-banner";
 import { PreconsultationForm } from "@/components/portail/preconsultation-form";
+import { PatientChatPanel } from "@/components/chat/patient-chat-panel";
+import { getPatientMessages } from "@/actions/patient-chat";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   booked:     { label: "Confirmé",  color: "text-blue-600 bg-blue-50 border-blue-200",    icon: Calendar },
@@ -35,6 +37,7 @@ export default async function PortailDashboardPage({
   const past = appointments.filter((a) => a.status === "completed" || a.status === "no_show" || (a.status === "cancelled") || isPast(new Date(a.start_at)));
 
   const clinicName = (patient.clinics as any)?.name ?? "Votre clinique";
+  const messages = await getPatientMessages(patient.id);
 
   return (
     <div className="space-y-8">
@@ -145,6 +148,13 @@ export default async function PortailDashboardPage({
       </section>
 
       {/* Historique */}
+      {/* Chat */}
+      <PatientChatPanel
+        patientId={patient.id}
+        clinicName={clinicName}
+        initialMessages={messages}
+      />
+
       {past.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
