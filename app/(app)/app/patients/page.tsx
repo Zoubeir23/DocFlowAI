@@ -111,7 +111,7 @@ export default function PatientsPage() {
             className="rounded-xl font-medium"
           >
             <Upload className="w-4 h-4 mr-2" />
-            Importer CSV
+            {t("importCsv")}
           </Button>
           <Button
             onClick={() => setShowAddModal(true)}

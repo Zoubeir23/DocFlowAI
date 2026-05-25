@@ -188,7 +188,8 @@
     "addButton": "Add Patient",
     "cancelButton": "Cancel",
     "sinceLabel": "Since",
-    "viewRecord": "View record"
+    "viewRecord": "View record",
+    "importCsv": "Import CSV"
   },
   "services": {
     "title": "Services",

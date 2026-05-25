@@ -101,6 +101,8 @@ describe("parsePatientsCSV — erreurs", () => {
     const { rows, errors } = parsePatientsCSV(csv);
     expect(rows).toHaveLength(0);
     expect(errors).toHaveLength(1);
+    // message sans préfixe "Ligne X —"
+    expect(errors[0].message).not.toMatch(/^Ligne \d/);
   });
 
   it("ignore ligne avec email invalide", () => {
@@ -108,6 +110,7 @@ describe("parsePatientsCSV — erreurs", () => {
     const { rows, errors } = parsePatientsCSV(csv);
     expect(rows).toHaveLength(0);
     expect(errors).toHaveLength(1);
+    expect(errors[0].message).not.toMatch(/^Ligne \d/);
   });
 
   it("signale doublon de téléphone dans le fichier", () => {
@@ -115,6 +118,34 @@ describe("parsePatientsCSV — erreurs", () => {
     const { rows, errors } = parsePatientsCSV(csv);
     expect(rows).toHaveLength(1);
     expect(errors.some((e) => e.message.includes("doublon"))).toBe(true);
+    expect(errors[0].message).not.toMatch(/^Ligne \d/);
+  });
+
+  it("les messages d'erreur ne contiennent pas de préfixe 'Ligne X —'", () => {
+    const csv = "nom_complet,telephone\n,0612345678\nAlice,\nBob,123";
+    const { errors } = parsePatientsCSV(csv);
+    for (const err of errors) {
+      expect(err.message).not.toMatch(/^Ligne \d/);
+    }
+  });
+});
+
+describe("parsePatientsCSV — RFC 4180 multi-ligne", () => {
+  it("parse un champ avec saut de ligne à l'intérieur des guillemets", () => {
+    const csv = `nom_complet,telephone,notes\n"Dupont\nMarie",0612345678,"Note\nligne 2"`;
+    const { rows, errors } = parsePatientsCSV(csv);
+    expect(errors).toHaveLength(0);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].full_name).toBe("Dupont\nMarie");
+    expect(rows[0].notes).toBe("Note\nligne 2");
+  });
+
+  it("limite l'import à MAX_ROWS lignes", () => {
+    const header = "nom_complet,telephone\n";
+    const lines = Array.from({ length: 1005 }, (_, i) => `Patient${i},06${String(i).padStart(8, "0")}`).join("\n");
+    const { rows, errors } = parsePatientsCSV(header + lines);
+    expect(rows).toHaveLength(1000);
+    expect(errors.some((e) => e.message.includes("Limite"))).toBe(true);
   });
 });
 

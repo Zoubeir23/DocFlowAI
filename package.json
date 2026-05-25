@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "vitest",
+    "test:run": "vitest run",
     "db:generate": "supabase gen types typescript --local > types/supabase.ts",
     "db:migrate": "supabase db push",
     "seed": "tsx scripts/seed.ts",

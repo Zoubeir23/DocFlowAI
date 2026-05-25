@@ -4,10 +4,44 @@ import { parsePatientsCSV } from "@/lib/csv/parse-patients-csv";
 
 export const dynamic = "force-dynamic";
 
+const BATCH_SIZE = 200;
+
 export interface ImportPatientsResult {
   inserted: number;
   updated: number;
   errors: { line: number; message: string }[];
+}
+
+async function fetchExistingPhonesBatched(
+  db: any,
+  clinicId: string,
+  phones: string[]
+): Promise<Set<string>> {
+  const existing = new Set<string>();
+  for (let i = 0; i < phones.length; i += BATCH_SIZE) {
+    const batch = phones.slice(i, i + BATCH_SIZE);
+    const { data } = await db
+      .from("patients")
+      .select("phone")
+      .eq("clinic_id", clinicId)
+      .in("phone", batch) as { data: { phone: string }[] | null };
+    for (const row of data ?? []) existing.add(row.phone);
+  }
+  return existing;
+}
+
+async function upsertPatientsBatched(
+  db: any,
+  records: { clinic_id: string; full_name: string; phone: string; email?: string; notes?: string }[]
+): Promise<string | null> {
+  for (let i = 0; i < records.length; i += BATCH_SIZE) {
+    const batch = records.slice(i, i + BATCH_SIZE);
+    const { error } = await db
+      .from("patients")
+      .upsert(batch, { onConflict: "clinic_id,phone", ignoreDuplicates: false });
+    if (error) return error.message;
+  }
+  return null;
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -24,7 +58,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     .single() as { data: { clinic_id: string } | null };
 
   if (!userData?.clinic_id) {
-    return NextResponse.json({ error: "Clinique introuvable" }, { status: 404 });
+    return NextResponse.json({ error: "Accès refusé — aucune clinique associée" }, { status: 403 });
   }
 
   const formData = await request.formData();
@@ -38,48 +72,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const { rows, errors: parseErrors } = parsePatientsCSV(csvText);
 
   if (rows.length === 0) {
-    return NextResponse.json<ImportPatientsResult>({
-      inserted: 0,
-      updated: 0,
-      errors: parseErrors,
-    });
+    return NextResponse.json<ImportPatientsResult>({ inserted: 0, updated: 0, errors: parseErrors });
   }
 
-  // Fetch existing phones to distinguish inserts from updates
   const phones = rows.map((r) => r.phone);
-  const { data: existing } = await db
-    .from("patients")
-    .select("phone")
-    .eq("clinic_id", userData.clinic_id)
-    .in("phone", phones) as { data: { phone: string }[] | null };
-
-  const existingPhones = new Set((existing ?? []).map((p) => p.phone));
+  const existingPhones = await fetchExistingPhonesBatched(db, userData.clinic_id, phones);
 
   const toUpsert = rows.map((row) => ({
     clinic_id: userData.clinic_id,
     full_name: row.full_name,
     phone: row.phone,
-    email: row.email ?? undefined,
-    notes: row.notes ?? undefined,
+    ...(row.email ? { email: row.email } : {}),
+    ...(row.notes ? { notes: row.notes } : {}),
   }));
 
-  const { error: upsertError } = await db
-    .from("patients")
-    .upsert(toUpsert, {
-      onConflict: "clinic_id,phone",
-      ignoreDuplicates: false,
-    });
-
+  const upsertError = await upsertPatientsBatched(db, toUpsert);
   if (upsertError) {
-    return NextResponse.json({ error: upsertError.message }, { status: 500 });
+    return NextResponse.json({ error: upsertError }, { status: 500 });
   }
 
   const inserted = rows.filter((r) => !existingPhones.has(r.phone)).length;
   const updated = rows.filter((r) => existingPhones.has(r.phone)).length;
 
-  return NextResponse.json<ImportPatientsResult>({
-    inserted,
-    updated,
-    errors: parseErrors,
-  });
+  return NextResponse.json<ImportPatientsResult>({ inserted, updated, errors: parseErrors });
 }

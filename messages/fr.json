@@ -188,7 +188,8 @@
     "addButton": "Ajouter le patient",
     "cancelButton": "Annuler",
     "sinceLabel": "Depuis",
-    "viewRecord": "Voir le dossier"
+    "viewRecord": "Voir le dossier",
+    "importCsv": "Importer CSV"
   },
   "services": {
     "title": "Services",

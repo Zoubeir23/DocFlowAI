@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { Upload, Download, CheckCircle2, AlertTriangle, X, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { parsePatientsCSV, generatePatientsCsvTemplate, type PatientCsvRow } from "@/lib/csv/parse-patients-csv";
@@ -18,6 +19,7 @@ type ImportStep = "select" | "preview" | "result";
 
 export function CsvImportDialog({ open, onOpenChange, onImportComplete }: CsvImportDialogProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const t = useTranslations("patients");
   const [step, setStep] = useState<ImportStep>("select");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewRows, setPreviewRows] = useState<PatientCsvRow[]>([]);
@@ -46,6 +48,7 @@ export function CsvImportDialog({ open, onOpenChange, onImportComplete }: CsvImp
 
     if (!file.name.endsWith(".csv") && file.type !== "text/csv") {
       toast.error("Format invalide — seuls les fichiers .csv sont acceptés");
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
 
@@ -107,7 +110,7 @@ export function CsvImportDialog({ open, onOpenChange, onImportComplete }: CsvImp
       <DialogContent className="max-w-2xl rounded-2xl">
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold">
-            Importer des patients via CSV
+            {t("importCsv")}
           </DialogTitle>
         </DialogHeader>
 
