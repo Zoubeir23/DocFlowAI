@@ -96,7 +96,7 @@ export function AppointmentTable({ appointments, loading, onRefresh }: Appointme
             <th className="text-left text-xs font-bold text-muted-foreground uppercase tracking-widest pb-4 px-4">{t('columns.patient')}</th>
             <th className="text-left text-xs font-bold text-muted-foreground uppercase tracking-widest pb-4 px-4">{t('columns.service')}</th>
             <th className="text-left text-xs font-bold text-muted-foreground uppercase tracking-widest pb-4 px-4">{t('columns.date')}</th>
-            <th className="text-left text-xs font-bold text-muted-foreground uppercase tracking-widest pb-4 px-4 hidden md:table-cell">Praticien</th>
+            <th className="text-left text-xs font-bold text-muted-foreground uppercase tracking-widest pb-4 px-4 hidden md:table-cell">{t('columns.practitioner')}</th>
             <th className="text-left text-xs font-bold text-muted-foreground uppercase tracking-widest pb-4 px-4">{t('columns.source')}</th>
             <th className="text-left text-xs font-bold text-muted-foreground uppercase tracking-widest pb-4 px-4">{t('columns.status')}</th>
             <th className="pb-4 w-12" />
