@@ -3,7 +3,7 @@ import { getPatientPortalData } from "@/actions/patient-portal";
 import { createClient } from "@/lib/supabase/server";
 import { format, isPast, isFuture } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Calendar, Clock, CheckCircle2, XCircle, AlertTriangle, FileText, LogOut, CalendarPlus } from "lucide-react";
+import { Calendar, Clock, CheckCircle2, XCircle, AlertTriangle, FileText, LogOut, CalendarPlus, Download } from "lucide-react";
 import { CancelAppointmentButton } from "@/components/portail/cancel-appointment-button";
 import { JoinTeleconsultationButton } from "@/components/teleconsultation/join-teleconsultation-button";
 import { PayAppointmentButton } from "@/components/portail/pay-appointment-button";
@@ -184,10 +184,23 @@ export default async function PortailDashboardPage({
                       {format(new Date(appointment.start_at), "d MMM yyyy", { locale: fr })}
                     </p>
                   </div>
-                  <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full border flex-shrink-0 ${config.color}`}>
-                    <StatusIcon className="w-3 h-3" />
-                    {config.label}
-                  </span>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full border ${config.color}`}>
+                      <StatusIcon className="w-3 h-3" />
+                      {config.label}
+                    </span>
+                    {appointment.status === "completed" && (
+                      <a
+                        href={`/api/receipts/${appointment.id}/pdf`}
+                        download
+                        className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                        title="Télécharger le reçu PDF"
+                      >
+                        <Download className="w-3 h-3" />
+                        Reçu
+                      </a>
+                    )}
+                  </div>
                 </div>
               );
             })}
