@@ -40,6 +40,7 @@ export async function GET(
   }
 
   // Autorisé : staff de la clinique OU patient propriétaire du RDV
+  // Retourne 404 dans les deux cas d'échec pour éviter l'énumération d'IDs (IDOR)
   const { data: staffCheck } = await db
     .from("users")
     .select("id")
@@ -56,7 +57,7 @@ export async function GET(
       .single() as { data: { id: string } | null };
 
     if (!patientCheck) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+      return NextResponse.json({ error: "Rendez-vous introuvable" }, { status: 404 });
     }
   }
 

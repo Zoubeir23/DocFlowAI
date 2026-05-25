@@ -39,6 +39,7 @@ export async function GET() {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const clinicName = appointments?.[0]?.clinics?.name ?? "DocFlow";
+  const safeClinicSlug = clinicName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
   const events = (appointments ?? []).map((appt) => ({
     uid: `appt-${appt.id}@docflow.ai`,
@@ -58,7 +59,7 @@ export async function GET() {
     status: 200,
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
-      "Content-Disposition": `attachment; filename="agenda-${clinicName.toLowerCase().replace(/\s+/g, "-")}.ics"`,
+      "Content-Disposition": `attachment; filename="agenda-${safeClinicSlug}.ics"`,
       "Cache-Control": "no-store",
     },
   });

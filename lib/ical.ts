@@ -16,24 +16,52 @@ function formatICalDate(date: Date): string {
   return date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
 }
 
+function normalizeLineEndings(text: string): string {
+  return text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+}
+
 function escapeICalText(text: string): string {
-  return text
+  return normalizeLineEndings(text)
     .replace(/\\/g, "\\\\")
     .replace(/;/g, "\\;")
     .replace(/,/g, "\\,")
     .replace(/\n/g, "\\n");
 }
 
+function escapeICalParamValue(value: string): string {
+  // RFC 5545 §3.2 — CN is a quoted-string: escape \ and " only
+  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
 function foldLine(line: string): string {
-  // iCal spec: lines > 75 chars must be folded (CRLF + space)
+  // RFC 5545 §3.1 — fold at 75 octets (not chars), don't break multi-byte sequences
+  const encoder = new TextEncoder();
+  const bytes = encoder.encode(line);
+
+  if (bytes.length <= 75) return line;
+
   const chunks: string[] = [];
-  let remaining = line;
-  while (remaining.length > 75) {
-    chunks.push(remaining.slice(0, 75));
-    remaining = " " + remaining.slice(75);
+  let offset = 0;
+
+  while (offset < bytes.length) {
+    const limit = offset === 0 ? 75 : 74; // continuation lines have leading space (1 byte)
+    let end = offset + limit;
+
+    if (end >= bytes.length) {
+      chunks.push(new TextDecoder().decode(bytes.slice(offset)));
+      break;
+    }
+
+    // Walk back to avoid splitting a multi-byte UTF-8 sequence (continuation bytes are 0x80–0xBF)
+    while (end > offset && (bytes[end]! & 0xc0) === 0x80) {
+      end--;
+    }
+
+    chunks.push(new TextDecoder().decode(bytes.slice(offset, end)));
+    offset = end;
   }
-  chunks.push(remaining);
-  return chunks.join("\r\n");
+
+  return chunks.join("\r\n ");
 }
 
 export function buildICalEvent(event: ICalEvent): string {
@@ -53,11 +81,11 @@ export function buildICalEvent(event: ICalEvent): string {
     lines.push(`LOCATION:${escapeICalText(event.location)}`);
   }
   if (event.organizerEmail) {
-    const cn = event.organizerName ? `;CN=${escapeICalText(event.organizerName)}` : "";
+    const cn = event.organizerName ? `;CN=${escapeICalParamValue(event.organizerName)}` : "";
     lines.push(`ORGANIZER${cn}:mailto:${event.organizerEmail}`);
   }
   if (event.attendeeEmail) {
-    const cn = event.attendeeName ? `;CN=${escapeICalText(event.attendeeName)}` : "";
+    const cn = event.attendeeName ? `;CN=${escapeICalParamValue(event.attendeeName)}` : "";
     lines.push(`ATTENDEE${cn};RSVP=FALSE:mailto:${event.attendeeEmail}`);
   }
 
@@ -67,7 +95,7 @@ export function buildICalEvent(event: ICalEvent): string {
 }
 
 export function buildICalCalendar(calName: string, events: ICalEvent[]): string {
-  const header = [
+  const headerLines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
     "PRODID:-//DocFlow IA//DocFlow Calendar//FR",
@@ -75,9 +103,9 @@ export function buildICalCalendar(calName: string, events: ICalEvent[]): string 
     "METHOD:PUBLISH",
     `X-WR-CALNAME:${escapeICalText(calName)}`,
     "X-WR-TIMEZONE:Europe/Paris",
-  ].join("\r\n");
+  ].map(foldLine).join("\r\n");
 
   const body = events.map(buildICalEvent).join("\r\n");
 
-  return `${header}\r\n${body}\r\nEND:VCALENDAR`;
+  return `${headerLines}\r\n${body}\r\nEND:VCALENDAR`;
 }
