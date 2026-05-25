@@ -5,6 +5,7 @@ import { format, isPast, isFuture } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Calendar, Clock, CheckCircle2, XCircle, AlertTriangle, FileText, LogOut } from "lucide-react";
 import { CancelAppointmentButton } from "@/components/portail/cancel-appointment-button";
+import { JoinTeleconsultationButton } from "@/components/teleconsultation/join-teleconsultation-button";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   booked:     { label: "Confirmé",  color: "text-blue-600 bg-blue-50 border-blue-200",    icon: Calendar },
@@ -112,6 +113,16 @@ export default async function PortailDashboardPage() {
                     </span>
                     {canCancel && (
                       <CancelAppointmentButton appointmentId={appointment.id} />
+                    )}
+                    {appointment.teleconsultation_room_id && appointment.teleconsultation_status !== "ended" && (
+                      <JoinTeleconsultationButton
+                        session={{
+                          room_id: appointment.teleconsultation_room_id,
+                          room_url: `https://meet.jit.si/docflowai-${appointment.teleconsultation_room_id}`,
+                          status: appointment.teleconsultation_status ?? "pending",
+                        }}
+                        patientName={patient.full_name}
+                      />
                     )}
                   </div>
                 </div>

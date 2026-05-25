@@ -27,6 +27,7 @@ import { z } from "zod";
 import { getPatient, getPatientAppointments, updatePatient } from "@/actions/patients";
 import { updateAppointmentMedicalNotes } from "@/actions/appointments";
 import { InvitePatientButton } from "@/components/portail/invite-patient-button";
+import { StartTeleconsultationButton } from "@/components/teleconsultation/start-teleconsultation-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,6 +46,8 @@ interface AppointmentWithService {
   status: string;
   notes: string | null;
   medical_notes: string | null;
+  teleconsultation_room_id: string | null;
+  teleconsultation_status: "pending" | "active" | "ended" | null;
   service: {
     id: string;
     name: string;
@@ -144,11 +147,12 @@ function StatCard({ label, value, icon }: StatCardProps) {
 
 interface AppointmentRowProps {
   appointment: AppointmentWithService;
+  patientName: string;
   onSaveMedicalNotes: (appointmentId: string, notes: string) => Promise<void>;
   isSavingNotes: boolean;
 }
 
-function AppointmentRow({ appointment, onSaveMedicalNotes, isSavingNotes }: AppointmentRowProps) {
+function AppointmentRow({ appointment, patientName, onSaveMedicalNotes, isSavingNotes }: AppointmentRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [medicalNotesValue, setMedicalNotesValue] = useState(appointment.medical_notes ?? "");
   const durationMinutes = calculateDurationMinutes(appointment.start_at, appointment.end_at);
@@ -186,6 +190,29 @@ function AppointmentRow({ appointment, onSaveMedicalNotes, isSavingNotes }: Appo
       {/* Expandable detail panel */}
       {isExpanded && (
         <div className="p-4 bg-muted/20 border-t border-border space-y-4">
+          {/* Téléconsultation */}
+          {["booked", "confirmed"].includes(appointment.status) && (
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                Téléconsultation
+              </p>
+              <StartTeleconsultationButton
+                appointmentId={appointment.id}
+                patientName={patientName}
+                doctorName="Médecin"
+                existingSession={
+                  appointment.teleconsultation_room_id && appointment.teleconsultation_status
+                    ? {
+                        room_id: appointment.teleconsultation_room_id,
+                        room_url: `https://meet.jit.si/docflowai-${appointment.teleconsultation_room_id}`,
+                        status: appointment.teleconsultation_status,
+                      }
+                    : null
+                }
+              />
+            </div>
+          )}
+
           {/* Booking notes */}
           {appointment.notes && (
             <div>
@@ -509,6 +536,7 @@ export default function PatientDetailPage() {
               <AppointmentRow
                 key={appointment.id}
                 appointment={appointment}
+                patientName={patient?.full_name ?? "Patient"}
                 onSaveMedicalNotes={handleSaveMedicalNotes}
                 isSavingNotes={savingNotesForAppointmentId === appointment.id}
               />
