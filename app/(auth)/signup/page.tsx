@@ -17,6 +17,7 @@ export default function SignupPage() {
   const supabase = createClient();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   const t = useTranslations("auth.signup");
 
   const { register, handleSubmit, formState: { errors } } = useForm<SignupInput>({
@@ -26,13 +27,21 @@ export default function SignupPage() {
   const onSubmit = async (data: SignupInput) => {
     setLoading(true);
     try {
+      const redirectTo = `${window.location.origin}/auth/callback?next=/onboarding`;
       const { data: authData, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
-        options: { data: { full_name: data.fullName } },
+        options: {
+          data: { full_name: data.fullName },
+          emailRedirectTo: redirectTo,
+        },
       });
       if (error) { toast.error(error.message); return; }
-      if (authData.user) {
+      if (authData.user && !authData.session) {
+        // Email confirmation required — session is null until user clicks the link
+        setEmailSent(true);
+      } else if (authData.session) {
+        // Email confirmation disabled in Supabase — session created immediately
         toast.success("Account created! Let's set up your clinic.");
         router.push("/onboarding");
       }
@@ -42,6 +51,31 @@ export default function SignupPage() {
       setLoading(false);
     }
   };
+
+  if (emailSent) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="w-full max-w-sm text-center space-y-6">
+          <div className="w-16 h-16 rounded-full bg-teal-500/10 flex items-center justify-center mx-auto">
+            <CheckCircle className="w-8 h-8 text-teal-500" strokeWidth={1.5} />
+          </div>
+          <div>
+            <h1 className="font-cormorant text-3xl text-foreground mb-2">Vérifiez votre email</h1>
+            <p className="text-foreground/60 text-sm leading-relaxed">
+              Un lien de confirmation a été envoyé à votre adresse email.<br />
+              Cliquez sur le lien pour activer votre compte et accéder à votre espace.
+            </p>
+          </div>
+          <p className="text-xs text-foreground/40">
+            Vous ne trouvez pas l&apos;email ? Vérifiez vos spams.
+          </p>
+          <Link href="/login" className="block text-sm text-teal-500 hover:text-foreground transition-colors">
+            Retour à la connexion
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex font-sans text-foreground selection:bg-teal-500/30 selection:text-teal-100">
@@ -113,7 +147,7 @@ export default function SignupPage() {
                 type="text"
                 placeholder={t("fullNamePlaceholder")}
                 autoComplete="name"
-                className="w-full h-12 bg-foreground/[0.05] border border-foreground/20 rounded-none px-4 font-sans text-[14px] text-foreground placeholder:text-foreground/60 focus:outline-none focus:border-[#14b8a6] focus:bg-[#14b8a6]/5 transition-colors"
+                className="w-full h-12 bg-foreground/[0.05] border border-foreground/20 rounded-none px-4 font-sans text-[14px] text-foreground placeholder:text-foreground/60 caret-teal-500 focus:outline-none focus:border-[#14b8a6] focus:bg-[#14b8a6]/5 transition-colors"
                 {...register("fullName")}
               />
               {errors.fullName && <p className="text-[15px] font-sans text-red-400 mt-1">{errors.fullName.message}</p>}
@@ -126,7 +160,7 @@ export default function SignupPage() {
                 type="email"
                 placeholder={t("emailPlaceholder")}
                 autoComplete="email"
-                className="w-full h-12 bg-foreground/[0.05] border border-foreground/20 rounded-none px-4 font-sans text-[14px] text-foreground placeholder:text-foreground/60 focus:outline-none focus:border-[#14b8a6] focus:bg-[#14b8a6]/5 transition-colors"
+                className="w-full h-12 bg-foreground/[0.05] border border-foreground/20 rounded-none px-4 font-sans text-[14px] text-foreground placeholder:text-foreground/60 caret-teal-500 focus:outline-none focus:border-[#14b8a6] focus:bg-[#14b8a6]/5 transition-colors"
                 {...register("email")}
               />
               {errors.email && <p className="text-[15px] font-sans text-red-400 mt-1">{errors.email.message}</p>}
@@ -140,7 +174,7 @@ export default function SignupPage() {
                   type={showPassword ? "text" : "password"}
                   placeholder={t("passwordPlaceholder")}
                   autoComplete="new-password"
-                  className="w-full h-12 bg-foreground/[0.05] border border-foreground/20 rounded-none px-4 font-sans text-[14px] text-foreground placeholder:text-foreground/60 focus:outline-none focus:border-[#14b8a6] focus:bg-[#14b8a6]/5 transition-colors"
+                  className="w-full h-12 bg-foreground/[0.05] border border-foreground/20 rounded-none px-4 font-sans text-[14px] text-foreground placeholder:text-foreground/60 caret-teal-500 focus:outline-none focus:border-[#14b8a6] focus:bg-[#14b8a6]/5 transition-colors"
                   {...register("password")}
                 />
                 <button
@@ -161,7 +195,7 @@ export default function SignupPage() {
                 type="password"
                 placeholder={t("confirmPasswordPlaceholder")}
                 autoComplete="new-password"
-                className="w-full h-12 bg-foreground/[0.05] border border-foreground/20 rounded-none px-4 font-sans text-[14px] text-foreground placeholder:text-foreground/60 focus:outline-none focus:border-[#14b8a6] focus:bg-[#14b8a6]/5 transition-colors"
+                className="w-full h-12 bg-foreground/[0.05] border border-foreground/20 rounded-none px-4 font-sans text-[14px] text-foreground placeholder:text-foreground/60 caret-teal-500 focus:outline-none focus:border-[#14b8a6] focus:bg-[#14b8a6]/5 transition-colors"
                 {...register("confirmPassword")}
               />
               {errors.confirmPassword && <p className="text-[15px] font-sans text-red-400 mt-1">{errors.confirmPassword.message}</p>}

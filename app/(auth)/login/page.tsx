@@ -117,7 +117,7 @@ export default function LoginPage() {
                 type="email"
                 placeholder={t('emailPlaceholder')}
                 autoComplete="email"
-                className="w-full h-12 bg-foreground/[0.05] border border-foreground/20 rounded-none px-4 font-sans text-[14px] text-foreground placeholder:text-foreground/60 focus:outline-none focus:border-[#14b8a6] focus:bg-[#14b8a6]/5 transition-colors"
+                className="w-full h-12 bg-foreground/[0.05] border border-foreground/20 rounded-none px-4 font-sans text-[14px] text-foreground placeholder:text-foreground/60 caret-teal-500 focus:outline-none focus:border-[#14b8a6] focus:bg-[#14b8a6]/5 transition-colors"
                 {...register('email')}
               />
               {errors.email && <p className="text-[15px] font-sans text-red-400 mt-1">{errors.email.message}</p>}
@@ -133,7 +133,7 @@ export default function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   placeholder={t('passwordPlaceholder')}
                   autoComplete="current-password"
-                  className="w-full h-12 bg-foreground/[0.05] border border-foreground/20 rounded-none px-4 font-sans text-[14px] text-foreground placeholder:text-foreground/60 focus:outline-none focus:border-[#14b8a6] focus:bg-[#14b8a6]/5 transition-colors"
+                  className="w-full h-12 bg-foreground/[0.05] border border-foreground/20 rounded-none px-4 font-sans text-[14px] text-foreground placeholder:text-foreground/60 caret-teal-500 focus:outline-none focus:border-[#14b8a6] focus:bg-[#14b8a6]/5 transition-colors"
                   {...register('password')}
                 />
                 <button
