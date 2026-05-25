@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useTranslations } from 'next-intl'
+import { SignatureSettingsPanel } from '@/components/signature/signature-settings-panel'
 
 async function fetchClinicId() {
   const supabase = createClient() as any
@@ -352,6 +353,11 @@ export default function SettingsPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Signature électronique */}
+      <div className="mt-8">
+        <SignatureSettingsPanel />
+      </div>
     </div>
   )
 }

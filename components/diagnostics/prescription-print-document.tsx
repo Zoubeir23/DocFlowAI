@@ -35,12 +35,14 @@ interface PrescriptionPrintDocumentProps {
   diagnostic: DiagnosticRecord;
   clinicName?: string;
   clinicAddress?: string;
+  signatureDataUrl?: string;
 }
 
 export function PrescriptionPrintDocument({
   diagnostic,
   clinicName = "Cabinet médical",
   clinicAddress,
+  signatureDataUrl,
 }: PrescriptionPrintDocumentProps) {
   const documentTitle = DOCUMENT_TYPE_LABELS[diagnostic.document_type] ?? "Document médical";
   const formattedDate = format(parseISO(diagnostic.created_at), "d MMMM yyyy", { locale: fr });
@@ -265,9 +267,20 @@ export function PrescriptionPrintDocument({
               <p>Document généré le {formattedDate}</p>
               <p className="font-mono">Réf: {diagnostic.id.slice(0, 8).toUpperCase()}</p>
             </div>
-            <div className="text-center space-y-6">
+            <div className="text-center space-y-2">
               <p className="text-xs text-gray-400">Signature et cachet</p>
-              <div className="w-44 border-b-2 border-gray-300" />
+              {signatureDataUrl ? (
+                <div className="flex flex-col items-center gap-1">
+                  <img
+                    src={signatureDataUrl}
+                    alt="Signature du médecin"
+                    className="h-20 max-w-[176px] object-contain"
+                  />
+                  <div className="w-44 border-b border-gray-200" />
+                </div>
+              ) : (
+                <div className="w-44 border-b-2 border-gray-300 mt-12" />
+              )}
               {diagnostic.practitioner_name && (
                 <p className="text-xs font-medium text-gray-700">
                   {diagnostic.practitioner_title} {diagnostic.practitioner_name}
