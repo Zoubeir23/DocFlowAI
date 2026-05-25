@@ -6,7 +6,7 @@ import {
   startOfMonth, subMonths, format, eachMonthOfInterval,
   getHours, parseISO,
   startOfWeek, subWeeks, eachWeekOfInterval,
-  getDay, subDays, startOfDay,
+  getDay,
 } from "date-fns";
 
 export type AnalyticsPeriod = 3 | 6 | 12;
@@ -107,7 +107,12 @@ function computeVariation(current: number, previous: number): KpiVariation {
   return { current, previous, changePercent };
 }
 
-export async function getAnalyticsData(period: AnalyticsPeriod = 6): Promise<AnalyticsData | null> {
+export async function getAnalyticsData(periodInput: AnalyticsPeriod = 6): Promise<AnalyticsData | null> {
+  const VALID_PERIODS: AnalyticsPeriod[] = [3, 6, 12];
+  const period: AnalyticsPeriod = VALID_PERIODS.includes(periodInput as AnalyticsPeriod)
+    ? periodInput
+    : 6;
+
   try {
     const clinicId = await getAuthenticatedClinicId();
     if (!clinicId) return null;
@@ -118,7 +123,6 @@ export async function getAnalyticsData(period: AnalyticsPeriod = 6): Promise<Ana
     const now = new Date();
     const periodStart = startOfMonth(subMonths(now, period - 1));
     const previousPeriodStart = startOfMonth(subMonths(now, period * 2 - 1));
-    const previousPeriodEnd = startOfMonth(subMonths(now, period));
 
     // ── Current period appointments ─────────────────────────────────────────────
     const { data: appointments } = await db
@@ -166,21 +170,25 @@ export async function getAnalyticsData(period: AnalyticsPeriod = 6): Promise<Ana
 
     const allApptsList: any[] = allAppts ?? [];
 
-    // ── Patient retention — patients with 2+ RDV vs. first-timers ───────────────
-    // Count unique patient IDs with RDV in the period
+    // ── Patient retention — returning (had ≥1 RDV before period) vs. new ─────────
     const periodPatientIds = Array.from(new Set(appts.map((a: any) => a.patient_id).filter(Boolean))) as string[];
 
-    // For each, check if they had any RDV before the period start
     let returningCount = 0;
     if (periodPatientIds.length > 0) {
-      const { data: prevRdvCheck } = await db
-        .from("appointments")
-        .select("patient_id")
-        .eq("clinic_id", clinicId)
-        .lt("start_at", periodStart.toISOString())
-        .in("patient_id", periodPatientIds.slice(0, 500));
-
-      const returningIds = new Set((prevRdvCheck ?? []).map((r: any) => r.patient_id));
+      const CHUNK_SIZE = 200;
+      const returningIds = new Set<string>();
+      for (let i = 0; i < periodPatientIds.length; i += CHUNK_SIZE) {
+        const chunk = periodPatientIds.slice(i, i + CHUNK_SIZE);
+        const { data: prevRdvCheck } = await db
+          .from("appointments")
+          .select("patient_id")
+          .eq("clinic_id", clinicId)
+          .lt("start_at", periodStart.toISOString())
+          .in("patient_id", chunk);
+        for (const r of prevRdvCheck ?? []) {
+          returningIds.add(r.patient_id);
+        }
+      }
       returningCount = returningIds.size;
     }
     const newUniquePatients = periodPatientIds.length - returningCount;

@@ -34,7 +34,13 @@ function CustomTooltip({ active, payload, label }: any) {
 }
 
 function VariationBadge({ variation }: { variation: KpiVariation }) {
-  if (variation.changePercent === null) return null;
+  if (variation.changePercent === null) {
+    return (
+      <span className="inline-flex items-center text-xs font-semibold px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground">
+        —
+      </span>
+    );
+  }
   const isPositive = variation.changePercent >= 0;
   return (
     <span className={cn(
@@ -90,6 +96,11 @@ const PERIODS: { label: string; value: AnalyticsPeriod }[] = [
 
 // ── CSV export ────────────────────────────────────────────────────────────────
 
+function escapeCsvField(value: string): string {
+  const escaped = value.replace(/"/g, '""');
+  return `"${escaped}"`;
+}
+
 function exportAnalyticsCsv(data: Awaited<ReturnType<typeof getAnalyticsData>>) {
   if (!data) return;
 
@@ -101,7 +112,7 @@ function exportAnalyticsCsv(data: Awaited<ReturnType<typeof getAnalyticsData>>) 
     "",
     "Service,Nombre RDV,CA (€)",
     ...data.topServices.map((s) =>
-      `"${s.name}",${s.count},${s.revenue.toFixed(2)}`
+      `${escapeCsvField(s.name)},${s.count},${s.revenue.toFixed(2)}`
     ),
     "",
     "Heure,Nombre RDV",
