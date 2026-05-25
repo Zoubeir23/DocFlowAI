@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
-import { MoreHorizontal, CheckCircle, XCircle, Clock, AlertCircle, Bot, Pencil, FileText } from "lucide-react";
+import { MoreHorizontal, CheckCircle, XCircle, Clock, AlertCircle, Bot, Pencil, FileText, Download } from "lucide-react";
 import { toast } from "sonner";
 import type { AppointmentWithRelations } from "@/types";
 import { getStatusColor } from "@/lib/utils";
@@ -180,15 +180,25 @@ export function AppointmentTable({ appointments, loading, onRefresh }: Appointme
               {/* Receipt */}
               <td className="py-4 px-2">
                 {appointment.status === "completed" && (
-                  <a
-                    href={`/api/receipts/${appointment.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Générer le reçu"
-                    className="inline-flex items-center justify-center h-9 w-9 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted border border-transparent hover:border-border text-muted-foreground hover:text-primary"
-                  >
-                    <FileText className="w-4 h-4" />
-                  </a>
+                  <div className="flex items-center gap-1">
+                    <a
+                      href={`/api/receipts/${appointment.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Voir le reçu"
+                      className="inline-flex items-center justify-center h-9 w-9 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted border border-transparent hover:border-border text-muted-foreground hover:text-primary"
+                    >
+                      <FileText className="w-4 h-4" />
+                    </a>
+                    <a
+                      href={`/api/receipts/${appointment.id}/pdf`}
+                      download
+                      title="Télécharger le reçu PDF"
+                      className="inline-flex items-center justify-center h-9 w-9 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted border border-transparent hover:border-border text-muted-foreground hover:text-primary"
+                    >
+                      <Download className="w-4 h-4" />
+                    </a>
+                  </div>
                 )}
               </td>
 
