@@ -10,28 +10,46 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_patients_auth_user_id
   WHERE auth_user_id IS NOT NULL;
 
 -- Patient peut lire sa propre fiche
-CREATE POLICY "Patient peut voir sa propre fiche"
-  ON patients FOR SELECT
-  USING (auth_user_id = auth.uid());
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'patients' AND policyname = 'Patient peut voir sa propre fiche'
+  ) THEN
+    CREATE POLICY "Patient peut voir sa propre fiche"
+      ON patients FOR SELECT
+      USING (auth_user_id = auth.uid());
+  END IF;
+END $$;
 
 -- Patient peut lire ses propres RDV
-CREATE POLICY "Patient peut voir ses propres RDV"
-  ON appointments FOR SELECT
-  USING (
-    patient_id IN (
-      SELECT id FROM patients WHERE auth_user_id = auth.uid()
-    )
-  );
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'appointments' AND policyname = 'Patient peut voir ses propres RDV'
+  ) THEN
+    CREATE POLICY "Patient peut voir ses propres RDV"
+      ON appointments FOR SELECT
+      USING (
+        patient_id IN (
+          SELECT id FROM patients WHERE auth_user_id = auth.uid()
+        )
+      );
+  END IF;
+END $$;
 
 -- Patient peut annuler ses RDV (status → cancelled uniquement)
-CREATE POLICY "Patient peut annuler ses RDV"
-  ON appointments FOR UPDATE
-  USING (
-    patient_id IN (
-      SELECT id FROM patients WHERE auth_user_id = auth.uid()
-    )
-  )
-  WITH CHECK (status = 'cancelled');
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'appointments' AND policyname = 'Patient peut annuler ses RDV'
+  ) THEN
+    CREATE POLICY "Patient peut annuler ses RDV"
+      ON appointments FOR UPDATE
+      USING (
+        patient_id IN (
+          SELECT id FROM patients WHERE auth_user_id = auth.uid()
+        )
+      )
+      WITH CHECK (status = 'cancelled');
+  END IF;
+END $$;
 
 -- Patient peut lire ses diagnostics
 DO $$

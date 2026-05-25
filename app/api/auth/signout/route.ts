@@ -5,7 +5,7 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient();
   await supabase.auth.signOut();
 
-  const referer = req.headers.get("referer") ?? "";
-  const redirectTo = referer.includes("/portail") ? "/portail/login" : "/login";
+  const { searchParams } = new URL(req.url);
+  const redirectTo = searchParams.get("from") === "portail" ? "/portail/login" : "/login";
   return NextResponse.redirect(new URL(redirectTo, req.url));
 }
