@@ -27,7 +27,7 @@ import { z } from "zod";
 import { getPatient, getPatientAppointments, updatePatient } from "@/actions/patients";
 import { updateAppointmentMedicalNotes } from "@/actions/appointments";
 import { InvitePatientButton } from "@/components/portail/invite-patient-button";
-import { PreconsultationCard } from "@/components/appointments/preconsultation-card";
+import { PreconsultationCard, type PreconsultationData } from "@/components/appointments/preconsultation-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -191,7 +191,7 @@ function AppointmentRow({ appointment, onSaveMedicalNotes, isSavingNotes }: Appo
         <div className="p-4 bg-muted/20 border-t border-border space-y-4">
           {/* Formulaire pré-consultation */}
           <PreconsultationCard
-            formData={appointment.preconsultation_form as any}
+            formData={appointment.preconsultation_form as PreconsultationData | null}
             submittedAt={appointment.preconsultation_submitted_at}
           />
 

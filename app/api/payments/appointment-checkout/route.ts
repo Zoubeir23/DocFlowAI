@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { getStripeServerClient } from "@/lib/stripe/client";
 
 export const runtime = "nodejs";
@@ -52,14 +52,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (appointment.payment_status === "paid") {
     return NextResponse.json({ error: "Ce rendez-vous est déjà payé" }, { status: 400 });
   }
+  if (appointment.payment_status === "pending") {
+    return NextResponse.json({ error: "Un paiement est déjà en cours pour ce rendez-vous" }, { status: 400 });
+  }
 
   const price = appointment.services?.price;
   if (!price || price <= 0) {
     return NextResponse.json({ error: "Ce rendez-vous n'a pas de tarif défini" }, { status: 400 });
   }
 
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (!appUrl) {
+    return NextResponse.json({ error: "Configuration serveur manquante" }, { status: 500 });
+  }
+
   const stripe = getStripeServerClient();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
 
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
@@ -87,14 +94,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     cancel_url: `${appUrl}/portail/dashboard?payment=cancelled`,
   });
 
-  // Marquer le RDV en attente de paiement
-  await supabaseAny
+  // Marquer le RDV en attente de paiement (atomic — condition sur payment_status actuel)
+  const adminSupabase = await createAdminClient();
+  const { error: updateError } = await (adminSupabase as any)
     .from("appointments")
     .update({
       payment_status: "pending",
       stripe_checkout_session_id: session.id,
     })
-    .eq("id", appointmentId);
+    .eq("id", appointmentId)
+    .eq("payment_status", "not_required");
+
+  if (updateError) {
+    console.error("[Checkout] Failed to update appointment payment status:", updateError.message);
+    return NextResponse.json({ error: "Erreur lors de l'initialisation du paiement" }, { status: 500 });
+  }
 
   return NextResponse.json({ url: session.url });
 }

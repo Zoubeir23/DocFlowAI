@@ -1,6 +1,6 @@
 import { ClipboardList, AlertTriangle } from "lucide-react";
 
-interface PreconsultationData {
+export interface PreconsultationData {
   reason?: string;
   symptoms?: string;
   medications?: string;

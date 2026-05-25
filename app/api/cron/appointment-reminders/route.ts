@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { sendNotification } from "@/lib/notifications";
 
 interface AppointmentWithRelations {
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = await createClient();
+  const supabase = await createAdminClient();
 
   const windowStart = new Date(
     Date.now() + REMINDER_WINDOW_START_HOURS * 60 * 60 * 1000
@@ -100,10 +100,12 @@ export async function GET(request: Request) {
     }
   }
 
-  console.log(`[Cron] Reminders sent: ${sentCount}, failures: ${failures.length}`);
+  if (failures.length > 0) {
+    console.error(`[Cron] Reminder failures (${failures.length}):`, failures);
+  }
 
-  return NextResponse.json({
-    sent: sentCount,
-    failures: failures.length > 0 ? failures : undefined,
-  });
+  return NextResponse.json(
+    { sent: sentCount, failures: failures.length > 0 ? failures : undefined },
+    { status: failures.length > 0 && sentCount === 0 ? 500 : 200 }
+  );
 }

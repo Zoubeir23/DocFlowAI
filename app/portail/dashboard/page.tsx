@@ -38,7 +38,7 @@ export default async function PortailDashboardPage({
 
   return (
     <div className="space-y-8">
-      {payment && <PaymentStatusBanner status={payment} />}
+      {["success", "cancelled"].includes(payment ?? "") && <PaymentStatusBanner status={payment!} />}
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -94,7 +94,7 @@ export default async function PortailDashboardPage({
               const config = STATUS_CONFIG[appointment.status] ?? STATUS_CONFIG.booked;
               const StatusIcon = config.icon;
               const canCancel = ["booked", "confirmed"].includes(appointment.status) && isFuture(new Date(appointment.start_at));
-              const canPay = service?.price > 0 && appointment.payment_status !== "paid" && appointment.payment_status !== "not_required";
+              const canPay = (service?.price ?? 0) > 0 && appointment.payment_status !== "paid" && appointment.payment_status !== "not_required" && appointment.payment_status !== "pending";
 
               return (
                 <div key={appointment.id} className="bg-card border border-border rounded-2xl p-4">
