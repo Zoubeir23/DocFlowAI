@@ -1,13 +1,20 @@
 'use client'
 
-import { useCallback, useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format, parseISO } from 'date-fns'
 import { toast } from 'sonner'
-import { CalendarDays, Clock, User, HeartPulse, Lock, Zap } from 'lucide-react'
+import { CalendarDays, Clock, User, HeartPulse, Lock, Zap, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { updateAppointmentTime, updateAppointmentStatus } from '@/actions/appointments'
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useTranslations, useLocale } from 'next-intl'
 import {
   Dialog,
@@ -16,8 +23,30 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import type { AppointmentWithRelations } from '@/types'
+import type { TeamMember } from '@/actions/team'
 import { getStatusColor, getStatusLabel } from '@/lib/utils'
 import Link from 'next/link'
+
+const PRACTITIONER_COLORS = [
+  '#6366f1',
+  '#0891b2',
+  '#059669',
+  '#d97706',
+  '#dc2626',
+  '#7c3aed',
+  '#0284c7',
+  '#65a30d',
+]
+
+async function fetchTeamMembers(clinicId: string): Promise<TeamMember[]> {
+  const supabase = createClient() as any
+  const { data } = await supabase
+    .from('users')
+    .select('id, full_name, email, role, created_at')
+    .eq('clinic_id', clinicId)
+    .order('created_at')
+  return (data ?? []) as TeamMember[]
+}
 
 async function fetchClinicInfo(): Promise<{ clinicId: string; plan: string } | null> {
   const supabase = createClient() as any
@@ -64,6 +93,7 @@ export default function CalendarPage() {
   const t = useTranslations('calendar')
   const locale = useLocale()
   const [selectedAppt, setSelectedAppt] = useState<AppointmentWithRelations | null>(null)
+  const [selectedPractitionerId, setSelectedPractitionerId] = useState<string | null>(null)
   const queryClient = useQueryClient()
 
   const { data: clinicInfo } = useQuery({
@@ -79,6 +109,19 @@ export default function CalendarPage() {
     queryFn: () => fetchCalendarAppointments(clinicId!),
     enabled: !!clinicId,
   })
+
+  const { data: teamMembers = [] } = useQuery({
+    queryKey: ['calendar-team-members', clinicId],
+    queryFn: () => fetchTeamMembers(clinicId!),
+    enabled: !!clinicId,
+  })
+
+  const practitionerColorMap: Record<string, string> = Object.fromEntries(
+    teamMembers.map((member, index) => [
+      member.id,
+      PRACTITIONER_COLORS[index % PRACTITIONER_COLORS.length],
+    ])
+  )
 
   const updateTimeMutation = useMutation({
     mutationFn: ({ id, startAt, endAt }: { id: string; startAt: string; endAt: string }) =>
@@ -100,16 +143,23 @@ export default function CalendarPage() {
     },
   })
 
-  const events = appointments.map((appt) => ({
-    id: appt.id,
-    title: `${appt.patient?.full_name} — ${appt.service?.name}`,
-    start: appt.start_at,
-    end: appt.end_at,
-    backgroundColor: STATUS_COLORS[appt.status] || STATUS_COLORS.booked,
-    borderColor: STATUS_COLORS[appt.status] || STATUS_COLORS.booked,
-    textColor: '#ffffff',
-    extendedProps: { appointment: appt },
-  }))
+  const selectedPractitionerColor = selectedPractitionerId
+    ? practitionerColorMap[selectedPractitionerId]
+    : null
+
+  const events = appointments.map((appt) => {
+    const eventColor = selectedPractitionerColor ?? STATUS_COLORS[appt.status] ?? STATUS_COLORS.booked
+    return {
+      id: appt.id,
+      title: `${appt.patient?.full_name} — ${appt.service?.name}`,
+      start: appt.start_at,
+      end: appt.end_at,
+      backgroundColor: eventColor,
+      borderColor: eventColor,
+      textColor: '#ffffff',
+      extendedProps: { appointment: appt },
+    }
+  })
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -146,7 +196,71 @@ export default function CalendarPage() {
                 {t('fullCalendarBadge')}
               </div>
             )}
-            {/* Legend */}
+
+            {/* Practitioner filter */}
+            {teamMembers.length > 0 && (
+              <div className="flex flex-col items-end gap-2">
+                <div className="flex items-center gap-2">
+                  <Users className="w-3.5 h-3.5 text-muted-foreground" />
+                  <Select
+                    value={selectedPractitionerId ?? 'all'}
+                    onValueChange={(value) =>
+                      setSelectedPractitionerId(value === 'all' ? null : value)
+                    }
+                  >
+                    <SelectTrigger className="h-8 text-xs w-44 border-border bg-background">
+                      <SelectValue placeholder="All practitioners" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all" className="text-xs">
+                        All practitioners
+                      </SelectItem>
+                      {teamMembers.map((member) => (
+                        <SelectItem key={member.id} value={member.id} className="text-xs">
+                          {member.full_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {/* Practitioner color legend */}
+                <div className="flex items-center gap-2 flex-wrap justify-end">
+                  {teamMembers.map((member, index) => (
+                    <button
+                      key={member.id}
+                      onClick={() =>
+                        setSelectedPractitionerId(
+                          selectedPractitionerId === member.id ? null : member.id
+                        )
+                      }
+                      className={`flex items-center gap-1.5 text-[10px] font-semibold px-2 py-1 rounded-full border transition-all ${
+                        selectedPractitionerId === member.id
+                          ? 'border-transparent opacity-100 shadow-sm'
+                          : 'border-border opacity-70 hover:opacity-100'
+                      }`}
+                      style={
+                        selectedPractitionerId === member.id
+                          ? {
+                              backgroundColor: `${PRACTITIONER_COLORS[index % PRACTITIONER_COLORS.length]}20`,
+                              borderColor: PRACTITIONER_COLORS[index % PRACTITIONER_COLORS.length],
+                            }
+                          : {}
+                      }
+                    >
+                      <span
+                        className="w-2 h-2 rounded-full flex-shrink-0"
+                        style={{
+                          backgroundColor: PRACTITIONER_COLORS[index % PRACTITIONER_COLORS.length],
+                        }}
+                      />
+                      <span className="text-foreground">{member.full_name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Status legend */}
             <div className="flex items-center gap-2 md:gap-3 flex-wrap bg-background/50 backdrop-blur border border-border p-2 md:p-3 rounded-2xl">
               {Object.entries(STATUS_LABELS).map(([status, { labelKey, className }]) => (
                 <div key={status} className={`flex items-center gap-1.5 text-[10px] md:text-xs font-bold uppercase tracking-wider px-2 py-1 md:px-3 md:py-1.5 rounded-full shadow-sm ${className}`}>

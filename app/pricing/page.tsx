@@ -7,16 +7,27 @@ import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Tarifs DocFlow IA — Plans et abonnements logiciel médical',
+  title: 'Tarifs Logiciel Médical IA — Gratuit à 99€/mois · DocFlow',
   description:
-    'Découvrez les plans DocFlow IA : plan gratuit, Starter à 49€/mois, Professionnel à 99€/mois et Entreprise. Logiciel de gestion de cabinet médical avec IA.',
+    'Comparez les plans DocFlow IA : gratuit (50 RDV/mois), Starter 49€, Pro 99€, Entreprise. Logiciel médical IA sans engagement. Démarrez gratuitement en 2 minutes.',
   alternates: {
     canonical: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://docflow.ia'}/pricing`,
+    languages: {
+      fr: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://docflow.ia'}/pricing`,
+      en: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://docflow.ia'}/pricing`,
+    },
   },
   openGraph: {
-    title: 'Tarifs DocFlow IA — Plans et abonnements',
-    description: 'Choisissez le plan DocFlow IA adapté à votre cabinet médical. Démarrez gratuitement, sans carte bancaire.',
+    title: 'Tarifs DocFlow IA — Plans logiciel médical dès 0€',
+    description: 'Plan gratuit, Starter 49€/mois, Pro 99€/mois. Logiciel de gestion de cabinet médical avec IA. Sans engagement.',
     url: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://docflow.ia'}/pricing`,
+    images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'Tarifs DocFlow IA — Logiciel médical IA' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Tarifs DocFlow IA — dès 0€/mois',
+    description: 'Gratuit, Starter 49€, Pro 99€. Logiciel médical IA sans engagement.',
+    images: ['/og-image.jpg'],
   },
 }
 
@@ -132,7 +143,7 @@ export default async function PricingPage() {
                   
                   <div className="flex items-end gap-2">
                     <span className="font-cormorant font-normal text-[56px] leading-none text-foreground">
-                      ${price}
+                      {price === 0 ? t('free') : `${price}€`}
                     </span>
                     <span className="font-mono text-[14px] uppercase tracking-widest text-foreground/70 mb-2">
                       /{period}

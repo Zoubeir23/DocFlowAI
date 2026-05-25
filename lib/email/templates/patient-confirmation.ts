@@ -16,6 +16,7 @@ interface PatientConfirmationData {
   serviceName: string;
   startAt: string;
   locale: EmailLocale;
+  cancelToken?: string;
 }
 
 const STRINGS = {
@@ -30,7 +31,8 @@ const STRINGS = {
     labelDateTime: "Date & Heure",
     labelClinic: "Clinique",
     instructions:
-      "Merci d'arriver 5 à 10 minutes avant l'heure prévue. En cas d'annulation ou de report, veuillez nous contacter au moins 24 heures à l'avance.",
+      "Merci d'arriver 5 à 10 minutes avant l'heure prévue. En cas d'annulation, utilisez le lien ci-dessous au moins 24 heures à l'avance.",
+    cancelLabel: "Annuler mon rendez-vous",
     footer: "Propulsé par <strong>DocFlow AI</strong> · Message automatique",
   },
   en: {
@@ -44,7 +46,8 @@ const STRINGS = {
     labelDateTime: "Date & Time",
     labelClinic: "Clinic",
     instructions:
-      "Please arrive 5–10 minutes early. If you need to cancel or reschedule, please contact us at least 24 hours in advance.",
+      "Please arrive 5–10 minutes early. To cancel, use the link below at least 24 hours in advance.",
+    cancelLabel: "Cancel my appointment",
     footer: "Powered by <strong>DocFlow AI</strong> · Automated message",
   },
 } as const;
@@ -60,7 +63,9 @@ export function buildPatientConfirmationSubject(
 export function buildPatientConfirmationHtml(
   data: PatientConfirmationData
 ): string {
-  const { patientName, clinicName, serviceName, startAt, locale } = data;
+  const { patientName, clinicName, serviceName, startAt, locale, cancelToken } = data;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://docflow.ia";
+  const cancelUrl = cancelToken ? `${appUrl}/rdv/${cancelToken}/annuler` : null;
   const s = STRINGS[locale];
   const formattedTime = formatDateTime(startAt);
 
@@ -124,6 +129,13 @@ export function buildPatientConfirmationHtml(
             </table>
 
             <p style="margin:0 0 8px;color:#64748b;font-size:14px;line-height:1.7;">${s.instructions}</p>
+
+            ${cancelUrl ? `
+            <div style="margin-top:24px;text-align:center;">
+              <a href="${cancelUrl}" style="display:inline-block;padding:12px 28px;background:#f1f5f9;border-radius:50px;color:#64748b;font-size:13px;font-weight:600;text-decoration:none;border:1px solid #e2e8f0;">
+                ${s.cancelLabel}
+              </a>
+            </div>` : ""}
           </td>
         </tr>
 

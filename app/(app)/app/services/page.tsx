@@ -18,7 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { Service } from "@/types";
 import { useTranslations } from "next-intl";
 
-const EMOJI_LIST = ["🩺", "💉", "🔬", "🧬", "🩻", "🩹", "💊", "🏥", "🦷", "👁️", "🧠", "🦴", "🩸", "🧫", "⚕️", "🩺", "🚑", "🧑‍⚕️", "👩‍⚕️"];
+const EMOJI_LIST = ["🩺", "💉", "🔬", "🧬", "🩻", "🩹", "💊", "🏥", "🦷", "👁️", "🧠", "🦴", "🩸", "🧫", "⚕️", "🚑", "🧑‍⚕️", "👩‍⚕️"];
 
 async function fetchClinicId() {
   const supabase = createClient() as any;

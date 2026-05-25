@@ -5,6 +5,10 @@ import {
   buildPatientConfirmationHtml,
 } from "./templates/patient-confirmation";
 import {
+  buildPatientReminderSubject,
+  buildPatientReminderHtml,
+} from "./templates/patient-reminder";
+import {
   buildDoctorNotificationSubject,
   buildDoctorNotificationHtml,
 } from "./templates/doctor-notification";
@@ -37,22 +41,30 @@ export async function sendConfirmationEmail(
   if (!resend) return [{ success: false, channel: "email", error: "Resend not configured" }];
 
   if (payload.patientEmail) {
+    const isReminder = payload.type === "appointment_reminder";
     try {
       const { data, error } = await resend.emails.send({
         from: FROM_ADDRESS,
         to: DEV_OVERRIDE || payload.patientEmail,
-        subject: buildPatientConfirmationSubject(
-          payload.serviceName,
-          payload.clinicName,
-          locale
-        ),
-        html: buildPatientConfirmationHtml({
-          patientName: payload.patientName,
-          clinicName: payload.clinicName,
-          serviceName: payload.serviceName,
-          startAt: payload.startAt,
-          locale,
-        }),
+        subject: isReminder
+          ? buildPatientReminderSubject(payload.serviceName, payload.clinicName, locale)
+          : buildPatientConfirmationSubject(payload.serviceName, payload.clinicName, locale),
+        html: isReminder
+          ? buildPatientReminderHtml({
+              patientName: payload.patientName,
+              clinicName: payload.clinicName,
+              serviceName: payload.serviceName,
+              startAt: payload.startAt,
+              locale,
+            })
+          : buildPatientConfirmationHtml({
+              patientName: payload.patientName,
+              clinicName: payload.clinicName,
+              serviceName: payload.serviceName,
+              startAt: payload.startAt,
+              locale,
+              cancelToken: payload.cancelToken,
+            }),
       });
 
       if (error) {

@@ -30,11 +30,11 @@ const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://docflow.ia";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "DocFlow IA — Logiciel de gestion de clinique avec IA",
-    template: "%s | DocFlow IA",
+    default: "DocFlow IA — Logiciel Gestion Cabinet Médical avec IA",
+    template: "%s · DocFlow IA",
   },
   description:
-    "DocFlow IA automatise la prise de rendez-vous médicaux 24h/24 grâce à l'intelligence artificielle. Gestion de cabinet, agenda intelligent et dossiers patients pour médecins et cliniques.",
+    "DocFlow IA automatise la prise de rendez-vous médicaux 24h/24 avec l'IA. Agenda médical intelligent, dossiers patients et gestion de cabinet pour médecins. Gratuit dès 0€.",
   keywords: [
     "logiciel cabinet médical",
     "prise de rendez-vous en ligne",
@@ -70,7 +70,7 @@ export const metadata: Metadata = {
       "Automatisez la prise de rendez-vous et la gestion de votre cabinet médical grâce à l'IA. Disponible 24h/24, 7j/7.",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-image.jpg",
         width: 1200,
         height: 630,
         alt: "DocFlow IA — Gestion de clinique intelligente",
@@ -82,11 +82,15 @@ export const metadata: Metadata = {
     title: "DocFlow IA — Logiciel de gestion de clinique avec IA",
     description:
       "Automatisez la prise de rendez-vous et la gestion de votre cabinet médical grâce à l'IA.",
-    images: ["/og-image.png"],
+    images: ["/og-image.jpg"],
   },
   icons: {
-    icon: "/logo.png",
-    apple: "/logo.png",
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
   alternates: {
     canonical: siteUrl,

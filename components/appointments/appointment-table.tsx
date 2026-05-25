@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
-import { MoreHorizontal, CheckCircle, XCircle, Clock, AlertCircle, Bot, Pencil } from "lucide-react";
+import { MoreHorizontal, CheckCircle, XCircle, Clock, AlertCircle, Bot, Pencil, FileText } from "lucide-react";
 import { toast } from "sonner";
 import type { AppointmentWithRelations } from "@/types";
 import { getStatusColor } from "@/lib/utils";
@@ -99,6 +99,7 @@ export function AppointmentTable({ appointments, loading, onRefresh }: Appointme
             <th className="text-left text-xs font-bold text-muted-foreground uppercase tracking-widest pb-4 px-4">{t('columns.source')}</th>
             <th className="text-left text-xs font-bold text-muted-foreground uppercase tracking-widest pb-4 px-4">{t('columns.status')}</th>
             <th className="pb-4 w-12" />
+            <th className="pb-4 w-12" />
           </tr>
         </thead>
         <tbody className="divide-y divide-border/30">
@@ -157,6 +158,21 @@ export function AppointmentTable({ appointments, loading, onRefresh }: Appointme
                 <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide ${STATUS_STYLES[appointment.status] || "status-completed"}`}>
                   {t(`status.${appointment.status === 'no_show' ? 'noShow' : appointment.status}`)}
                 </span>
+              </td>
+
+              {/* Receipt */}
+              <td className="py-4 px-2">
+                {appointment.status === "completed" && (
+                  <a
+                    href={`/api/receipts/${appointment.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Générer le reçu"
+                    className="inline-flex items-center justify-center h-9 w-9 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted border border-transparent hover:border-border text-muted-foreground hover:text-primary"
+                  >
+                    <FileText className="w-4 h-4" />
+                  </a>
+                )}
               </td>
 
               {/* Actions */}

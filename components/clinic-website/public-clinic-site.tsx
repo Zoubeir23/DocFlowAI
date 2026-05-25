@@ -46,26 +46,10 @@ function isLightColor(hex: string): boolean {
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.65;
 }
 
-const TESTIMONIALS = [
-  {
-    text: "Accueil chaleureux, médecin très à l'écoute. J'ai enfin trouvé un praticien qui prend le temps d'expliquer chaque étape.",
-    name: "Marie L.",
-    context: "Patiente depuis 3 ans",
-  },
-  {
-    text: "La prise de rendez-vous en ligne est un vrai gain de temps. Cabinet moderne, attente très raisonnable.",
-    name: "Thomas B.",
-    context: "Patient régulier",
-  },
-  {
-    text: "Suivi sérieux et professionnel. Rassurée après chaque consultation, je ne changerais pour rien au monde.",
-    name: "Fatou D.",
-    context: "Recommandée par un ami",
-  },
-];
 
 export function PublicClinicSite({ website, clinic, services, doctor }: PublicClinicSiteProps) {
-  const { style_config, hero_data, about_data, contact_data, show_chat_widget, show_services } = website;
+  const { style_config, hero_data, about_data, contact_data, show_chat_widget, show_services, show_testimonials, testimonials } = website;
+  const patientTestimonials: Array<{ text: string; name: string; context: string }> = Array.isArray(testimonials) ? testimonials : [];
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -750,52 +734,52 @@ export function PublicClinicSite({ website, clinic, services, doctor }: PublicCl
 
 
         {/* ═══════ TESTIMONIALS ═══════ */}
-        <section id="testimonials" className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: cream }}>
-          <div className="max-w-6xl mx-auto">
+        {show_testimonials !== false && patientTestimonials.length > 0 && (
+          <section id="testimonials" className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: cream }}>
+            <div className="max-w-6xl mx-auto">
 
-            <div className="text-center mb-14">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-3" style={{ color: primary }}>
-                Témoignages
-              </p>
-              <h2 className="bbn leading-[0.95]" style={{ fontSize: "clamp(2.8rem,5.5vw,4.5rem)", color: dark }}>
-                CE QUE DISENT{" "}
-                <span className="pfdi italic font-normal" style={{ color: primary }}>nos patients</span>
-              </h2>
-            </div>
+              <div className="text-center mb-14">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-3" style={{ color: primary }}>
+                  Témoignages
+                </p>
+                <h2 className="bbn leading-[0.95]" style={{ fontSize: "clamp(2.8rem,5.5vw,4.5rem)", color: dark }}>
+                  CE QUE DISENT{" "}
+                  <span className="pfdi italic font-normal" style={{ color: primary }}>nos patients</span>
+                </h2>
+              </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6">
-              {TESTIMONIALS.map((t, i) => (
-                <div
-                  key={i}
-                  className="rounded-3xl p-7 lg:p-8 flex flex-col group hover:-translate-y-1 transition-all duration-300 hover:shadow-xl"
-                  style={{ backgroundColor: i === 1 ? primary : i === 2 ? teal : dark }}
-                >
-                  {/* Stars */}
-                  <div className="flex items-center gap-1 mb-5">
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <Star key={s} className="w-4 h-4 fill-white text-white opacity-90" />
-                    ))}
-                  </div>
-
-                  {/* Large quote */}
-                  <div className="bbn text-7xl leading-none mb-2 select-none text-white opacity-20">"</div>
-
-                  <p className="text-sm leading-relaxed flex-1 text-white opacity-80">{t.text}</p>
-
-                  <div className="flex items-center gap-3 mt-6 pt-5 border-t border-white/15">
-                    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold shrink-0 text-white bbn">
-                      {t.name.charAt(0)}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6">
+                {patientTestimonials.map((testimonial, i) => (
+                  <div
+                    key={i}
+                    className="rounded-3xl p-7 lg:p-8 flex flex-col group hover:-translate-y-1 transition-all duration-300 hover:shadow-xl"
+                    style={{ backgroundColor: i % 3 === 1 ? primary : i % 3 === 2 ? teal : dark }}
+                  >
+                    <div className="flex items-center gap-1 mb-5">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star key={s} className="w-4 h-4 fill-white text-white opacity-90" />
+                      ))}
                     </div>
-                    <div>
-                      <p className="text-sm font-bold text-white">{t.name}</p>
-                      <p className="text-[11px] text-white/55">{t.context}</p>
+
+                    <div className="bbn text-7xl leading-none mb-2 select-none text-white opacity-20">"</div>
+
+                    <p className="text-sm leading-relaxed flex-1 text-white opacity-80">{testimonial.text}</p>
+
+                    <div className="flex items-center gap-3 mt-6 pt-5 border-t border-white/15">
+                      <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold shrink-0 text-white bbn">
+                        {testimonial.name.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-white">{testimonial.name}</p>
+                        <p className="text-[11px] text-white/55">{testimonial.context}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
 
         {/* ═══════ CONTACT / CTA ═══════ */}
