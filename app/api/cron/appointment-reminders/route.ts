@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { sendConfirmationEmail } from "@/lib/email/router";
+import { sendNotification } from "@/lib/notifications";
 
 interface AppointmentWithRelations {
   id: string;
@@ -70,7 +70,7 @@ export async function GET(request: Request) {
     }
 
     try {
-      const results = await sendConfirmationEmail({
+      const results = await sendNotification({
         type: "appointment_reminder",
         appointmentId: appointment.id,
         patientName: patient.full_name,
@@ -79,7 +79,6 @@ export async function GET(request: Request) {
         clinicName: clinic.name,
         serviceName: service.name,
         startAt: appointment.start_at,
-        locale: "fr",
       });
 
       const allSucceeded = results.every((r) => r.success);
