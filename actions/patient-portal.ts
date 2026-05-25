@@ -80,6 +80,20 @@ export async function invitePatientToPortal(patientId: string): Promise<{ succes
   if (!patient) return { success: false, error: "Patient introuvable" };
   if (!patient.email) return { success: false, error: "Ce patient n'a pas d'email enregistré" };
 
+  // Bloquer si l'email appartient déjà à un compte médecin/staff
+  const { data: existingStaff } = await supabase
+    .from("users")
+    .select("id")
+    .eq("email", patient.email)
+    .maybeSingle() as { data: { id: string } | null };
+
+  if (existingStaff) {
+    return {
+      success: false,
+      error: "Cet email est déjà associé à un compte médecin. Veuillez utiliser une adresse email différente pour ce patient.",
+    };
+  }
+
   // Rate limiting : empêcher les invitations répétées dans les 5 minutes
   if (patient.portal_invited_at) {
     const lastInvitedAt = new Date(patient.portal_invited_at).getTime();
