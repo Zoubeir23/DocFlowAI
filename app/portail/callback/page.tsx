@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { linkPatientToAuth } from "@/actions/patient-portal";
+import { createClient } from "@/lib/supabase/client";
 import { Loader2, AlertTriangle } from "lucide-react";
 
 export default function PortailCallbackPage() {
@@ -11,12 +11,25 @@ export default function PortailCallbackPage() {
 
   useEffect(() => {
     async function handleCallback() {
-      const result = await linkPatientToAuth();
+      const supabase = createClient();
 
-      if (result.success) {
-        router.replace("/portail/dashboard");
+      // Supabase traite le hash/token automatiquement via onAuthStateChange
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError || !session) {
+        setError("Lien invalide ou expiré. Demandez un nouveau lien de connexion.");
+        return;
+      }
+
+      // Vérifier si le patient a déjà un mot de passe (user_metadata.has_password)
+      // Si c'est la première connexion via magic link → setup-password
+      const { data: { user } } = await supabase.auth.getUser();
+      const isFirstLogin = !user?.user_metadata?.portal_password_set;
+
+      if (isFirstLogin) {
+        router.replace("/portail/setup-password");
       } else {
-        setError(result.error ?? "Liaison du compte impossible");
+        router.replace("/portail/dashboard");
       }
     }
 
@@ -30,13 +43,10 @@ export default function PortailCallbackPage() {
           <div className="w-14 h-14 bg-destructive/10 rounded-2xl flex items-center justify-center mx-auto">
             <AlertTriangle className="w-7 h-7 text-destructive" />
           </div>
-          <h1 className="text-xl font-bold text-foreground">Connexion impossible</h1>
+          <h1 className="text-xl font-bold text-foreground">Lien expiré</h1>
           <p className="text-sm text-muted-foreground">{error}</p>
-          <a
-            href="/portail/login"
-            className="inline-block text-sm text-primary hover:underline"
-          >
-            Réessayer
+          <a href="/portail/login" className="inline-block text-sm text-primary hover:underline">
+            Demander un nouveau lien
           </a>
         </div>
       </div>

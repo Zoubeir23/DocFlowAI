@@ -143,6 +143,11 @@ export async function linkPatientToAuth(): Promise<{ success: boolean; patientId
     return { success: false, error: "Aucun dossier patient trouvé pour cet email" };
   }
 
+  // Marquer que le mot de passe a été défini
+  await supabase.auth.updateUser({
+    data: { portal_password_set: true },
+  });
+
   return { success: true, patientId: patient.id };
 }
 

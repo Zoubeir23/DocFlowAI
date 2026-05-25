@@ -1,71 +1,42 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Mail } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 
 export default function PortailLoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!email.trim()) return;
     setLoading(true);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: {
-        emailRedirectTo: `${window.location.origin}/portail/callback`,
-        shouldCreateUser: false,
-      },
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     setLoading(false);
 
     if (error) {
-      toast.error("Aucun compte patient trouvé pour cet email");
+      toast.error("Email ou mot de passe incorrect");
       return;
     }
 
-    setSent(true);
-  }
-
-  if (sent) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4 max-w-sm">
-          <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto">
-            <Mail className="w-8 h-8 text-primary" />
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">Vérifiez vos emails</h1>
-          <p className="text-muted-foreground text-sm leading-relaxed">
-            Un lien de connexion a été envoyé à{" "}
-            <span className="font-semibold text-foreground">{email}</span>.
-            <br />
-            Cliquez sur le lien pour accéder à votre espace.
-          </p>
-          <button
-            onClick={() => setSent(false)}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Utiliser un autre email
-          </button>
-        </div>
-      </div>
-    );
+    router.replace("/portail/dashboard");
   }
 
   return (
-    <div className="flex items-center justify-center min-h-[60vh]">
+    <div className="flex items-center justify-center min-h-[70vh]">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-1">
           <h1 className="text-2xl font-bold text-foreground">Votre espace patient</h1>
           <p className="text-sm text-muted-foreground">
-            Entrez votre email pour recevoir un lien de connexion
+            Connectez-vous avec votre email et mot de passe
           </p>
         </div>
 
@@ -81,24 +52,48 @@ export default function PortailLoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="votre@email.com"
               required
+              autoComplete="email"
               className="w-full h-11 px-3 rounded-xl border border-border bg-background text-foreground text-sm caret-primary placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
             />
           </div>
 
+          <div className="space-y-1.5">
+            <label htmlFor="password" className="text-sm font-medium text-foreground">
+              Mot de passe
+            </label>
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Votre mot de passe"
+                required
+                autoComplete="current-password"
+                className="w-full h-11 px-3 pr-10 rounded-xl border border-border bg-background text-foreground text-sm caret-primary placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
           <button
             type="submit"
-            disabled={loading || !email.trim()}
+            disabled={loading || !email || !password}
             className="w-full h-11 bg-primary text-primary-foreground rounded-xl text-sm font-semibold flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-            {loading ? "Envoi en cours…" : "Recevoir le lien de connexion"}
+            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+            {loading ? "Connexion…" : "Se connecter"}
           </button>
         </form>
 
         <p className="text-center text-xs text-muted-foreground">
-          Un nouveau lien vous sera envoyé à chaque connexion — aucun mot de passe à retenir.
-          <br className="mb-1" />
-          Votre email doit correspondre à celui de votre dossier patient.
+          Première connexion ? Utilisez le lien reçu par email de votre médecin.
         </p>
       </div>
     </div>
