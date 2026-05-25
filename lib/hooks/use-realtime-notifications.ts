@@ -23,15 +23,19 @@ interface RawAppointment {
   services: { name: string } | null;
 }
 
-export function useRealtimeNotifications(clinicId: string | null) {
+export function useRealtimeNotifications(
+  clinicId: string | null,
+  onNavigate?: (path: string) => void
+) {
   const [notifications, setNotifications] = useState<RealtimeNotification[]>([]);
-  const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   useEffect(() => {
     if (!clinicId) return;
+
+    const supabase = supabaseRef.current;
 
     const channel = supabase
       .channel(`clinic-appointments-${clinicId}`)
@@ -44,27 +48,35 @@ export function useRealtimeNotifications(clinicId: string | null) {
           filter: `clinic_id=eq.${clinicId}`,
         },
         async (payload) => {
-          const raw = payload.new as { id: string; start_at: string; patient_id: string; service_id: string; source: string };
+          const raw = payload.new as {
+            id: string;
+            start_at: string;
+            source: string;
+          };
 
-          const { data } = await (supabase as any)
+          const { data, error } = await supabase
             .from("appointments")
             .select("id, start_at, patients(full_name), services(name)")
             .eq("id", raw.id)
-            .single() as { data: RawAppointment | null };
+            .single();
 
-          if (!data) return;
+          if (error || !data) return;
 
-          const patientName = data.patients?.full_name ?? "Patient";
-          const serviceName = data.services?.name ?? "Consultation";
-          const formattedTime = format(new Date(data.start_at), "EEE d MMM 'à' HH:mm", { locale: fr });
-          const isWidget = raw.source === "widget";
+          const appointment = data as unknown as RawAppointment;
+          const patientName = appointment.patients?.full_name ?? "Patient";
+          const serviceName = appointment.services?.name ?? "Consultation";
+          const formattedTime = format(
+            new Date(appointment.start_at),
+            "EEE d MMM 'à' HH:mm",
+            { locale: fr }
+          );
 
           const notification: RealtimeNotification = {
             id: crypto.randomUUID(),
-            appointmentId: data.id,
+            appointmentId: appointment.id,
             patientName,
             serviceName,
-            startAt: data.start_at,
+            startAt: appointment.start_at,
             receivedAt: new Date(),
             read: false,
           };
@@ -72,15 +84,13 @@ export function useRealtimeNotifications(clinicId: string | null) {
           setNotifications((prev) => [notification, ...prev].slice(0, 50));
 
           toast.success(
-            isWidget ? `Nouveau RDV via le widget` : `Nouveau RDV`,
+            raw.source === "widget" ? "Nouveau RDV via le widget" : "Nouveau RDV",
             {
               description: `${patientName} — ${serviceName} le ${formattedTime}`,
               duration: 6000,
               action: {
                 label: "Voir",
-                onClick: () => {
-                  window.location.href = "/app/appointments";
-                },
+                onClick: () => onNavigate?.("/app/appointments"),
               },
             }
           );
@@ -88,12 +98,10 @@ export function useRealtimeNotifications(clinicId: string | null) {
       )
       .subscribe();
 
-    channelRef.current = channel;
-
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [clinicId]);
+  }, [clinicId, onNavigate]);
 
   function markAllRead() {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Bell } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useRealtimeNotifications } from "@/lib/hooks/use-realtime-notifications";
 import { cn } from "@/lib/utils";
@@ -13,19 +14,25 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const markAllReadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const router = useRouter();
+
+  // Single stable Supabase client instance
+  const supabaseRef = useRef(createClient());
 
   useEffect(() => {
-    const supabase = createClient();
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+    const supabase = supabaseRef.current;
+    supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
-      const { data } = await (supabase as any)
+      supabase
         .from("users")
         .select("clinic_id")
         .eq("id", user.id)
-        .single() as { data: { clinic_id: string } | null };
-      if (data) setClinicId(data.clinic_id);
-    })();
+        .single()
+        .then(({ data, error }) => {
+          if (!error && data) setClinicId((data as { clinic_id: string }).clinic_id);
+        });
+    });
   }, []);
 
   useEffect(() => {
@@ -43,15 +50,33 @@ export function NotificationBell() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Clear pending markAllRead timer on unmount
+  useEffect(() => {
+    return () => {
+      if (markAllReadTimerRef.current) clearTimeout(markAllReadTimerRef.current);
+    };
+  }, []);
+
+  const handleNavigate = useCallback(
+    (path: string) => router.push(path),
+    [router]
+  );
+
   const { notifications, unreadCount, markAllRead, markRead } =
-    useRealtimeNotifications(clinicId);
+    useRealtimeNotifications(clinicId, handleNavigate);
 
   const handleToggle = () => {
     const next = !open;
     setOpen(next);
     if (next && unreadCount > 0) {
-      setTimeout(markAllRead, 1500);
+      if (markAllReadTimerRef.current) clearTimeout(markAllReadTimerRef.current);
+      markAllReadTimerRef.current = setTimeout(markAllRead, 1500);
     }
+  };
+
+  const navigateToAppointments = () => {
+    setOpen(false);
+    router.push("/app/appointments");
   };
 
   return (
@@ -101,8 +126,7 @@ export function NotificationBell() {
                   key={notification.id}
                   onClick={() => {
                     markRead(notification.id);
-                    setOpen(false);
-                    window.location.href = "/app/appointments";
+                    navigateToAppointments();
                   }}
                   className={cn(
                     "w-full text-left px-4 py-3 hover:bg-accent transition-colors",
@@ -110,10 +134,12 @@ export function NotificationBell() {
                   )}
                 >
                   <div className="flex items-start gap-3">
-                    <span className={cn(
-                      "mt-1.5 w-2 h-2 rounded-full flex-shrink-0",
-                      !notification.read ? "bg-primary" : "bg-transparent"
-                    )} />
+                    <span
+                      className={cn(
+                        "mt-1.5 w-2 h-2 rounded-full flex-shrink-0",
+                        !notification.read ? "bg-primary" : "bg-transparent"
+                      )}
+                    />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-foreground truncate">
                         Nouveau RDV — {notification.patientName}
@@ -123,7 +149,10 @@ export function NotificationBell() {
                         {format(new Date(notification.startAt), "d MMM 'à' HH:mm", { locale: fr })}
                       </p>
                       <p className="text-xs text-muted-foreground/60 mt-0.5">
-                        {formatDistanceToNow(notification.receivedAt, { addSuffix: true, locale: fr })}
+                        {formatDistanceToNow(notification.receivedAt, {
+                          addSuffix: true,
+                          locale: fr,
+                        })}
                       </p>
                     </div>
                   </div>
@@ -136,10 +165,7 @@ export function NotificationBell() {
           {notifications.length > 0 && (
             <div className="px-4 py-2.5 border-t border-border bg-muted/30 text-center">
               <button
-                onClick={() => {
-                  setOpen(false);
-                  window.location.href = "/app/appointments";
-                }}
+                onClick={navigateToAppointments}
                 className="text-xs text-primary hover:underline"
               >
                 Voir tous les rendez-vous →
