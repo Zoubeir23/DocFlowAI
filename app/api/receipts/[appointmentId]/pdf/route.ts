@@ -85,12 +85,13 @@ export async function GET(
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
+  const filenameBase = patientSlug || `recu-${appointmentId.slice(0, 8)}`;
 
   return new NextResponse(new Uint8Array(pdfBuffer), {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="recu-${patientSlug}.pdf"`,
+      "Content-Disposition": `attachment; filename="${filenameBase}.pdf"`,
       "Cache-Control": "no-store",
     },
   });
