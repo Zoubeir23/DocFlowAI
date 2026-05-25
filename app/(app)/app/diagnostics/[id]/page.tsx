@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Stethoscope } from "lucide-react";
 import { getDiagnosticById } from "@/actions/diagnostics";
+import { getDoctorSignature } from "@/actions/doctor-signature";
 import { PrescriptionPrintDocument } from "@/components/diagnostics/prescription-print-document";
 
 interface DiagnosticDetailPageProps {
@@ -10,7 +11,10 @@ interface DiagnosticDetailPageProps {
 
 export default async function DiagnosticDetailPage({ params }: DiagnosticDetailPageProps) {
   const { id } = await params;
-  const diagnostic = await getDiagnosticById(id);
+  const [diagnostic, signature] = await Promise.all([
+    getDiagnosticById(id),
+    getDoctorSignature(),
+  ]);
 
   if (!diagnostic) notFound();
 
@@ -61,7 +65,10 @@ export default async function DiagnosticDetailPage({ params }: DiagnosticDetailP
       </div>
 
       <div className="max-w-4xl mx-auto px-4 md:px-6 py-8">
-        <PrescriptionPrintDocument diagnostic={diagnostic} />
+        <PrescriptionPrintDocument
+          diagnostic={diagnostic}
+          signatureDataUrl={signature?.signature_data_url}
+        />
       </div>
     </div>
   );
