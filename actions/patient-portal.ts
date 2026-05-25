@@ -80,17 +80,19 @@ export async function invitePatientToPortal(patientId: string): Promise<{ succes
   if (!patient) return { success: false, error: "Patient introuvable" };
   if (!patient.email) return { success: false, error: "Ce patient n'a pas d'email enregistré" };
 
-  // Bloquer si l'email appartient déjà à un compte médecin/staff
-  const { data: existingStaff } = await supabase
+  // Bloquer si l'email appartient déjà à un compte auth (médecin, admin ou autre)
+  const adminSupabaseForCheck = await createAdminClient();
+  const { data: existingAuthUsers } = await (adminSupabaseForCheck as any)
+    .schema("auth")
     .from("users")
     .select("id")
     .eq("email", patient.email)
-    .maybeSingle() as { data: { id: string } | null };
+    .limit(1);
 
-  if (existingStaff) {
+  if (existingAuthUsers && existingAuthUsers.length > 0) {
     return {
       success: false,
-      error: "Cet email est déjà associé à un compte médecin. Veuillez utiliser une adresse email différente pour ce patient.",
+      error: "Cet email est déjà associé à un compte existant. Veuillez utiliser une adresse email différente pour ce patient.",
     };
   }
 
