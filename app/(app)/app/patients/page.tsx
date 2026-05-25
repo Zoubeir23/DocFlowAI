@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, Phone, Mail, FileText, Users, X, CalendarDays } from "lucide-react";
+import { Plus, Search, Phone, Mail, FileText, Users, X, CalendarDays, Upload } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getStatusColor, getStatusLabel } from "@/lib/utils";
 import type { Patient } from "@/types";
 import { useTranslations } from "next-intl";
+import { CsvImportDialog } from "@/components/patients/csv-import-dialog";
 
 async function fetchClinicId() {
   const supabase = createClient() as any;
@@ -41,6 +42,7 @@ export default function PatientsPage() {
   const [search, setSearch] = useState("");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showCsvImport, setShowCsvImport] = useState(false);
   const queryClient = useQueryClient();
   const t = useTranslations("patients");
 
@@ -102,13 +104,23 @@ export default function PatientsPage() {
             </p>
           </div>
         </div>
-        <Button
-          onClick={() => setShowAddModal(true)}
-          className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-medium shadow-sm"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          {t("addPatient")}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShowCsvImport(true)}
+            className="rounded-xl font-medium"
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Importer CSV
+          </Button>
+          <Button
+            onClick={() => setShowAddModal(true)}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-medium shadow-sm"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            {t("addPatient")}
+          </Button>
+        </div>
       </div>
 
       {/* Search */}
@@ -335,6 +347,12 @@ export default function PatientsPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <CsvImportDialog
+        open={showCsvImport}
+        onOpenChange={setShowCsvImport}
+        onImportComplete={() => queryClient.invalidateQueries({ queryKey: ["patients"] })}
+      />
     </div>
   );
 }
