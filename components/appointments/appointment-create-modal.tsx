@@ -205,12 +205,17 @@ export function AppointmentCreateModal({ onCreated }: AppointmentCreateModalProp
               <User2 className="w-3.5 h-3.5" />
               Praticien
             </label>
-            <Select value={practitionerId} onValueChange={setPractitionerId}>
+            <Select
+              value={practitionerId || "unassigned"}
+              onValueChange={(value) =>
+                setPractitionerId(value === "unassigned" ? "" : value)
+              }
+            >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Non assigné" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Non assigné</SelectItem>
+                <SelectItem value="unassigned">Non assigné</SelectItem>
                 {practitioners.map((practitioner) => (
                   <SelectItem key={practitioner.id} value={practitioner.id}>
                     {practitioner.full_name}
