@@ -278,7 +278,7 @@ export function PrescriptionBuilderStep({
                 <select
                   value={treatment.route}
                   onChange={(e) => updateTreatment(index, "route", e.target.value)}
-                  className="w-full h-10 rounded-xl border border-border bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className="w-full h-10 rounded-xl border border-border bg-card px-3 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                 >
                   {ROUTES.map((route) => (
                     <option key={route.value} value={route.value}>{route.label}</option>
