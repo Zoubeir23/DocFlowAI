@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format, parseISO } from 'date-fns'
 import { toast } from 'sonner'
-import { CalendarDays, Clock, User, HeartPulse, Lock, Zap, Users } from 'lucide-react'
+import { CalendarDays, Clock, User, HeartPulse, Lock, Zap, Users, Download } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { updateAppointmentTime, updateAppointmentStatus } from '@/actions/appointments'
 import { Button } from '@/components/ui/button'
@@ -186,7 +186,18 @@ export default function CalendarPage() {
           </div>
           
           <div className="flex flex-col items-end gap-3">
-            <AppointmentCreateModal onCreated={() => queryClient.invalidateQueries({ queryKey: ['calendar-appointments'] })} />
+            <div className="flex items-center gap-2">
+              <a
+                href="/api/calendar/export"
+                download
+                className="flex items-center gap-1.5 h-9 px-3 rounded-xl border border-border bg-card text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                title="Exporter l'agenda (.ics)"
+              >
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline">Export iCal</span>
+              </a>
+              <AppointmentCreateModal onCreated={() => queryClient.invalidateQueries({ queryKey: ['calendar-appointments'] })} />
+            </div>
             {/* Plan badge */}
             {!isPaidPlan && clinicInfo && (
               <Link href="/app/billing"
