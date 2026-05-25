@@ -88,7 +88,7 @@ export default function AnalyticsPage() {
     );
   }
 
-  const { monthly, topServices, statusBreakdown, peakHours, totals } = data;
+  const { monthly, topServices, statusBreakdown, peakHours, weeklyFillRate, weekly, totals } = data;
   const hasData = totals.allTime > 0;
 
   return (
@@ -170,14 +170,14 @@ export default function AnalyticsPage() {
             <div className="card-panel-header">
               <h3 className="font-bold text-foreground">Rendez-vous par mois</h3>
             </div>
-            <div className="p-4 h-72">
+            <div className="p-4 h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthly} barGap={4}>
+                <BarChart data={monthly} barGap={4} margin={{ bottom: 16 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="month" tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                   <Tooltip content={<CustomTooltip />} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
                   <Bar dataKey="completed" name="Terminés" fill="#22c55e" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="cancelled" name="Annulés" fill="#ef4444" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="no_show" name="Absent" fill="#f59e0b" radius={[4, 4, 0, 0]} />
@@ -192,7 +192,7 @@ export default function AnalyticsPage() {
               <h3 className="font-bold text-foreground">Nouveaux patients par mois</h3>
             </div>
             <div className="p-4 h-56">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height={224}>
                 <LineChart data={monthly}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="month" tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
@@ -222,7 +222,7 @@ export default function AnalyticsPage() {
                 </div>
                 <div className="p-4 flex items-center gap-6">
                   <div className="h-52 w-52 flex-shrink-0">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width={208} height={208}>
                       <PieChart>
                         <Pie
                           data={statusBreakdown}
@@ -307,7 +307,7 @@ export default function AnalyticsPage() {
               </div>
             </div>
             <div className="p-4 h-52">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height={208}>
                 <BarChart data={peakHours} barSize={24}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="hour" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
@@ -325,6 +325,72 @@ export default function AnalyticsPage() {
               </ResponsiveContainer>
             </div>
           </div>
+
+          {/* Weekly fill rate */}
+          {weeklyFillRate.length > 0 && (
+            <div className="card-panel">
+              <div className="card-panel-header">
+                <h3 className="font-bold text-foreground">Taux de remplissage</h3>
+                <span className="text-xs text-muted-foreground">
+                  Moy.{" "}
+                  <span className="font-bold text-foreground">
+                    {weeklyFillRate.length > 0
+                      ? `${Math.round(weeklyFillRate.reduce((sum, w) => sum + w.rate, 0) / weeklyFillRate.length)}%`
+                      : "—"}
+                  </span>{" "}
+                  sur 8 semaines
+                </span>
+              </div>
+              <div className="p-4 h-56">
+                <ResponsiveContainer width="100%" height={224}>
+                  <LineChart data={weeklyFillRate}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="week" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                    <YAxis
+                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                      axisLine={false}
+                      tickLine={false}
+                      domain={[0, 100]}
+                      tickFormatter={(value: number) => `${value}%`}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Line
+                      type="monotone"
+                      dataKey="rate"
+                      name="Remplissage"
+                      stroke="#3b82f6"
+                      strokeWidth={2.5}
+                      dot={{ fill: "#3b82f6", r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {/* Weekly trend */}
+          {weekly.length > 0 && (
+            <div className="card-panel">
+              <div className="card-panel-header">
+                <h3 className="font-bold text-foreground">Tendance hebdomadaire</h3>
+                <span className="text-xs text-muted-foreground">8 dernières semaines</span>
+              </div>
+              <div className="p-4 h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={weekly} barGap={2} margin={{ bottom: 16 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="week" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                    <Bar dataKey="total" name="Total" stackId="a" fill="#6366f1" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey="completed" name="Terminés" stackId="a" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
