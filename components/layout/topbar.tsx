@@ -1,6 +1,7 @@
 "use client";
 
-import { Bell, Search, ChevronDown, Settings2, CreditCard, LogOut, Menu } from "lucide-react";
+import { Search, ChevronDown, Settings2, CreditCard, LogOut, Menu } from "lucide-react";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -80,6 +81,9 @@ export function Topbar({ title, userName = "Doctor", userEmail }: TopbarProps) {
           <div className="flex items-center">
             <ThemeSwitcher />
           </div>
+
+          {/* Notifications */}
+          <NotificationBell />
 
           {/* User menu */}
           <DropdownMenu>
