@@ -65,9 +65,164 @@ export interface WidgetConfig {
   timezone: string;
 }
 
+// ── Medical Diagnostic System ─────────────────────────────────────────────────
+
+export type PatientAgeGroup = "infant" | "toddler" | "child" | "minor" | "adult";
+export type PatientSex = "male" | "female";
+export type BloodGroup = "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-" | "unknown";
+export type DiagnosticDocumentType =
+  | "consultation"
+  | "prescription"
+  | "receipt"
+  | "medical_report"
+  | "sick_leave";
+export type DiagnosticValidationStatus =
+  | "draft"
+  | "pending_validation"
+  | "validated"
+  | "rejected";
+
+export interface IcdCode {
+  id: string;
+  code: string;
+  title: string;
+}
+
+export interface IcdCandidate extends IcdCode {
+  score: number;
+  probability: number;
+  is_serious: boolean;
+}
+
+export interface PrescriptionTreatment {
+  drug_name: string;
+  dosage_mg: string;
+  frequency: string;
+  duration_days: number;
+  route: "oral" | "iv" | "im" | "topical" | "inhaled" | "sublingual";
+  precautions: string;
+  is_generic: boolean;
+}
+
+export interface VitalSigns {
+  temperature: number | null;
+  blood_pressure_systolic: number | null;
+  blood_pressure_diastolic: number | null;
+  heart_rate: number | null;
+  respiratory_rate: number | null;
+  oxygen_saturation: number | null;
+}
+
+export interface DiagnosticRecord {
+  id: string;
+  clinic_id: string;
+  patient_id: string | null;
+
+  // Step 1 — demographics
+  patient_full_name: string;
+  patient_age_years: number;
+  patient_age_group: PatientAgeGroup;
+  patient_sex: PatientSex;
+  patient_weight_kg: number | null;
+  patient_height_cm: number | null;
+  patient_blood_group: BloodGroup | null;
+
+  // Step 1b — medical history
+  chronic_conditions: string[];
+  allergies: string[];
+  current_medications: string[];
+  surgical_history: string[];
+  family_history: string[];
+
+  // Step 2 — vitals
+  vital_temperature: number | null;
+  vital_blood_pressure_systolic: number | null;
+  vital_blood_pressure_diastolic: number | null;
+  vital_heart_rate: number | null;
+  vital_respiratory_rate: number | null;
+  vital_oxygen_saturation: number | null;
+
+  // Step 2b — symptoms
+  chief_complaint: string;
+  symptoms: string[];
+  symptom_duration: string | null;
+  symptom_intensity: number | null;
+  aggravating_factors: string[];
+  relieving_factors: string[];
+
+  // Step 3 — ICD analysis
+  icd_candidates: IcdCandidate[];
+  additional_tests_required: string[];
+  clinical_notes: string | null;
+
+  // Step 4 — validation
+  validation_status: DiagnosticValidationStatus;
+  validated_diagnosis_code: string | null;
+  validated_diagnosis_name: string | null;
+  validated_by: string | null;
+  validated_at: string | null;
+  rejection_reason: string | null;
+
+  // Step 5 — prescription
+  document_type: DiagnosticDocumentType;
+  treatments: PrescriptionTreatment[];
+  recommendations: string[];
+  follow_up_delay_days: number | null;
+  follow_up_tests: string[];
+  practitioner_name: string | null;
+  practitioner_title: string | null;
+  practitioner_rpps: string | null;
+
+  created_at: string;
+  updated_at: string;
+}
+
+// Partial inputs per step
+export interface PatientProfileInput {
+  patient_full_name: string;
+  patient_age_years: number;
+  patient_age_group: PatientAgeGroup;
+  patient_sex: PatientSex;
+  patient_weight_kg: number | null;
+  patient_height_cm: number | null;
+  patient_blood_group: BloodGroup;
+  chronic_conditions: string[];
+  allergies: string[];
+  current_medications: string[];
+  surgical_history: string[];
+  family_history: string[];
+}
+
+export interface SymptomsInput {
+  chief_complaint: string;
+  symptoms: string[];
+  symptom_duration: string;
+  symptom_intensity: number;
+  aggravating_factors: string[];
+  relieving_factors: string[];
+  vital_temperature: number | null;
+  vital_blood_pressure_systolic: number | null;
+  vital_blood_pressure_diastolic: number | null;
+  vital_heart_rate: number | null;
+  vital_respiratory_rate: number | null;
+  vital_oxygen_saturation: number | null;
+}
+
+export interface PrescriptionInput {
+  document_type: DiagnosticDocumentType;
+  treatments: PrescriptionTreatment[];
+  recommendations: string[];
+  follow_up_delay_days: number | null;
+  follow_up_tests: string[];
+  practitioner_name: string;
+  practitioner_title: string;
+  practitioner_rpps: string;
+}
+
 export interface NotificationPayload {
   type: "appointment_confirmation" | "appointment_reminder" | "appointment_cancellation";
   appointmentId: string;
+  cancelToken?: string;
   patientName: string;
   patientPhone: string;
   patientEmail?: string;

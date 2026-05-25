@@ -28,7 +28,9 @@
     "planExpiresSoon": "{days} jour{plural} restant{plural}",
     "planRenewNow": "Renouveler pour maintenir l'accès",
     "planRenewBefore": "Renouvelez avant expiration",
-    "subscriptionRenew": "Abonnement à renouveler"
+    "subscriptionRenew": "Abonnement à renouveler",
+    "waitlist": "Liste d'attente",
+    "diagnostics": "Diagnostics"
   },
   "topbar": {
     "searchPlaceholder": "Rechercher patients, rendez-vous...",
@@ -185,7 +187,8 @@
     "adding": "Ajout en cours...",
     "addButton": "Ajouter le patient",
     "cancelButton": "Annuler",
-    "sinceLabel": "Depuis"
+    "sinceLabel": "Depuis",
+    "viewRecord": "Voir le dossier"
   },
   "services": {
     "title": "Services",
@@ -703,8 +706,8 @@
     "hero": {
       "badge": "Propulsé par Claude AI · Assistant de réservation 24h/24",
       "badgeNew": "Nouveau",
-      "titlePart1": "La gestion médicale",
-      "titleHighlight": "redéfinie.",
+      "titlePart1": "Logiciel de gestion de cabinet médical",
+      "titleHighlight": "propulsé par l'IA.",
       "titlePart2": "Automatiquement",
       "subtitle": "Assistant de réservation intelligent pour les cliniques. Les patients discutent naturellement pour réserver, reporter ou annuler. Vous vous concentrez sur les soins — l'IA gère l'administratif.",
       "ctaPrimary": "Démarrer l'essai gratuit de 14 jours",
@@ -761,22 +764,20 @@
       "step3Title": "L'IA réserve vos patients",
       "step3Desc": "Les patients discutent avec votre IA pour réserver 24h/24. Vous êtes notifié et gérez tout depuis votre tableau de bord."
     },
-    "testimonials": {
-      "t1": {
-        "name": "Dr. Sarah Mitchell",
-        "role": "Médecin Généraliste",
-        "text": "DocFlow IA a réduit nos appels de 70%. Les patients adorent réserver à toute heure."
-      },
-      "t2": {
-        "name": "Dr. James Park",
-        "role": "Pédiatre",
-        "text": "L'assistant IA est remarquablement naturel. Les parents réservent de façon conversationnelle."
-      },
-      "t3": {
-        "name": "Dr. Maria Santos",
-        "role": "Dermatologue",
-        "text": "Configuration en une heure, patients réservant via IA le jour même. ROI incroyable."
-      }
+    "stats": {
+      "available": "IA disponible",
+      "setup": "Pour démarrer",
+      "free": "Pour commencer",
+      "trial": "Essai gratuit"
+    },
+    "earlyAdopters": {
+      "badge": "Accès anticipé",
+      "title": "Soyez parmi les premiers cabinets à adopter l'IA",
+      "subtitle": "DocFlow IA est en phase de lancement. Rejoignez les premiers praticiens et bénéficiez d'un accès prioritaire, d'un accompagnement personnalisé et d'un tarif garanti.",
+      "spot": "Place disponible",
+      "available": "En attente d'un praticien",
+      "cta": "Réserver ma place bêta — gratuit",
+      "noCreditCard": "Sans carte bancaire · Annulable à tout moment · Support humain inclus"
     },
     "cta": {
       "titlePart1": "La médecine digitale",
@@ -785,9 +786,12 @@
       "button": "Créer un compte"
     },
     "footer": {
+      "features": "Fonctionnalités",
+      "howItWorks": "Comment ça marche",
       "pricing": "Tarifs",
       "login": "Connexion",
-      "signup": "Inscription"
+      "signup": "Inscription",
+      "rights": "Tous droits réservés."
     }
   },
   "widgetChat": {
@@ -901,5 +905,16 @@
     "expand": "Agrandir le sidebar",
     "colClinicName": "Nom clinique",
     "enterprise": "Enterprise"
+  },
+  "diagnostics": {
+    "title": "Diagnostics médicaux",
+    "newDiagnostic": "Nouveau diagnostic",
+    "allStatuses": "Tous",
+    "draft": "Brouillon",
+    "pendingValidation": "En attente",
+    "validated": "Validé",
+    "rejected": "Rejeté",
+    "noResults": "Aucun diagnostic",
+    "searchPlaceholder": "Rechercher un patient, diagnostic..."
   }
 }
