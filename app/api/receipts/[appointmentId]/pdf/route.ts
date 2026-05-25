@@ -40,6 +40,9 @@ export async function GET(
   if (error || !appt) {
     return NextResponse.json({ error: "Rendez-vous introuvable" }, { status: 404 });
   }
+  if (appt.status !== "completed") {
+    return NextResponse.json({ error: "Rendez-vous introuvable" }, { status: 404 });
+  }
 
   // Accès : staff de la clinique OU patient propriétaire
   const { data: staffCheck } = await db
