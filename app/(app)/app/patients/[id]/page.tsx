@@ -27,6 +27,7 @@ import { z } from "zod";
 import { getPatient, getPatientAppointments, updatePatient } from "@/actions/patients";
 import { updateAppointmentMedicalNotes } from "@/actions/appointments";
 import { InvitePatientButton } from "@/components/portail/invite-patient-button";
+import { PreconsultationCard } from "@/components/appointments/preconsultation-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,6 +46,8 @@ interface AppointmentWithService {
   status: string;
   notes: string | null;
   medical_notes: string | null;
+  preconsultation_form: Record<string, unknown> | null;
+  preconsultation_submitted_at: string | null;
   service: {
     id: string;
     name: string;
@@ -186,6 +189,12 @@ function AppointmentRow({ appointment, onSaveMedicalNotes, isSavingNotes }: Appo
       {/* Expandable detail panel */}
       {isExpanded && (
         <div className="p-4 bg-muted/20 border-t border-border space-y-4">
+          {/* Formulaire pré-consultation */}
+          <PreconsultationCard
+            formData={appointment.preconsultation_form as any}
+            submittedAt={appointment.preconsultation_submitted_at}
+          />
+
           {/* Booking notes */}
           {appointment.notes && (
             <div>
