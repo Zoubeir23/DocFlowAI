@@ -32,7 +32,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
-    await handleCheckoutSessionCompleted(session);
+    if (session.metadata?.type === "appointment_payment") {
+      await handleAppointmentPaymentCompleted(session);
+    } else {
+      await handleCheckoutSessionCompleted(session);
+    }
   }
 
   if (event.type === "customer.subscription.deleted") {
@@ -46,6 +50,32 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   return NextResponse.json({ received: true });
+}
+
+async function handleAppointmentPaymentCompleted(
+  session: Stripe.Checkout.Session
+): Promise<void> {
+  const appointmentId = session.metadata?.appointment_id;
+  if (!appointmentId) {
+    console.error("[StripeWebhook] Missing appointment_id in session metadata");
+    return;
+  }
+
+  const supabase = await createAdminClient();
+  const db = supabase as any;
+
+  const { error } = await db
+    .from("appointments")
+    .update({ payment_status: "paid" })
+    .eq("id", appointmentId)
+    .eq("stripe_checkout_session_id", session.id);
+
+  if (error) {
+    console.error("[StripeWebhook] Failed to mark appointment as paid:", error.message);
+    return;
+  }
+
+  console.log(`[StripeWebhook] Appointment paid — id: ${appointmentId}`);
 }
 
 async function handleCheckoutSessionCompleted(

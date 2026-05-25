@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { sendConfirmationEmail } from "@/lib/email/router";
+import { createAdminClient } from "@/lib/supabase/server";
+import { sendNotification } from "@/lib/notifications";
 
 interface AppointmentWithRelations {
   id: string;
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = await createClient();
+  const supabase = await createAdminClient();
 
   const windowStart = new Date(
     Date.now() + REMINDER_WINDOW_START_HOURS * 60 * 60 * 1000
@@ -70,7 +70,7 @@ export async function GET(request: Request) {
     }
 
     try {
-      const results = await sendConfirmationEmail({
+      const results = await sendNotification({
         type: "appointment_reminder",
         appointmentId: appointment.id,
         patientName: patient.full_name,
@@ -79,7 +79,6 @@ export async function GET(request: Request) {
         clinicName: clinic.name,
         serviceName: service.name,
         startAt: appointment.start_at,
-        locale: "fr",
       });
 
       const allSucceeded = results.every((r) => r.success);
@@ -101,10 +100,12 @@ export async function GET(request: Request) {
     }
   }
 
-  console.log(`[Cron] Reminders sent: ${sentCount}, failures: ${failures.length}`);
+  if (failures.length > 0) {
+    console.error(`[Cron] Reminder failures (${failures.length}):`, failures);
+  }
 
-  return NextResponse.json({
-    sent: sentCount,
-    failures: failures.length > 0 ? failures : undefined,
-  });
+  return NextResponse.json(
+    { sent: sentCount, failures: failures.length > 0 ? failures : undefined },
+    { status: failures.length > 0 && sentCount === 0 ? 500 : 200 }
+  );
 }

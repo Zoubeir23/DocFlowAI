@@ -5,6 +5,9 @@ import { format, isPast, isFuture } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Calendar, Clock, CheckCircle2, XCircle, AlertTriangle, FileText, LogOut } from "lucide-react";
 import { CancelAppointmentButton } from "@/components/portail/cancel-appointment-button";
+import { PayAppointmentButton } from "@/components/portail/pay-appointment-button";
+import { PaymentStatusBanner } from "@/components/portail/payment-status-banner";
+import { PreconsultationForm } from "@/components/portail/preconsultation-form";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   booked:     { label: "Confirmé",  color: "text-blue-600 bg-blue-50 border-blue-200",    icon: Calendar },
@@ -14,7 +17,11 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
   no_show:    { label: "Absent",    color: "text-amber-600 bg-amber-50 border-amber-200", icon: AlertTriangle },
 };
 
-export default async function PortailDashboardPage() {
+export default async function PortailDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ payment?: string }>;
+}) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/portail/login");
@@ -23,6 +30,7 @@ export default async function PortailDashboardPage() {
   if (!portalData) redirect("/portail/login");
 
   const { patient, appointments } = portalData;
+  const { payment } = await searchParams;
   const upcoming = appointments.filter((a) => a.status !== "cancelled" && a.status !== "no_show" && isFuture(new Date(a.start_at)));
   const past = appointments.filter((a) => a.status === "completed" || a.status === "no_show" || (a.status === "cancelled") || isPast(new Date(a.start_at)));
 
@@ -30,6 +38,7 @@ export default async function PortailDashboardPage() {
 
   return (
     <div className="space-y-8">
+      {["success", "cancelled"].includes(payment ?? "") && <PaymentStatusBanner status={payment!} />}
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -85,35 +94,49 @@ export default async function PortailDashboardPage() {
               const config = STATUS_CONFIG[appointment.status] ?? STATUS_CONFIG.booked;
               const StatusIcon = config.icon;
               const canCancel = ["booked", "confirmed"].includes(appointment.status) && isFuture(new Date(appointment.start_at));
+              const canPay = (service?.price ?? 0) > 0 && appointment.payment_status !== "paid" && appointment.payment_status !== "not_required" && appointment.payment_status !== "pending";
 
               return (
-                <div key={appointment.id} className="bg-card border border-border rounded-2xl p-4 flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3 min-w-0">
-                    <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Calendar className="w-5 h-5 text-primary" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-semibold text-foreground text-sm">{service?.name ?? "Consultation"}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {format(new Date(appointment.start_at), "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
-                      </p>
-                      {service?.price && (
-                        <p className="text-xs text-muted-foreground">
-                          {Number(service.price).toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}
+                <div key={appointment.id} className="bg-card border border-border rounded-2xl p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <Calendar className="w-5 h-5 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-foreground text-sm">{service?.name ?? "Consultation"}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {format(new Date(appointment.start_at), "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
                         </p>
+                        {service?.price && (
+                          <p className="text-xs text-muted-foreground">
+                            {Number(service.price).toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                      <span className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border ${config.color}`}>
+                        <StatusIcon className="w-3 h-3" />
+                        {config.label}
+                      </span>
+                      {canPay && (
+                        <PayAppointmentButton
+                          appointmentId={appointment.id}
+                          price={Number(service.price)}
+                          paymentStatus={appointment.payment_status}
+                        />
+                      )}
+                      {canCancel && (
+                        <CancelAppointmentButton appointmentId={appointment.id} />
                       )}
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                    <span className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border ${config.color}`}>
-                      <StatusIcon className="w-3 h-3" />
-                      {config.label}
-                    </span>
-                    {canCancel && (
-                      <CancelAppointmentButton appointmentId={appointment.id} />
-                    )}
-                  </div>
+                  <PreconsultationForm
+                    appointmentId={appointment.id}
+                    alreadySubmitted={!!appointment.preconsultation_submitted_at}
+                  />
                 </div>
               );
             })}
