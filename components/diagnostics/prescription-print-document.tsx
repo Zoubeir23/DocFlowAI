@@ -2,9 +2,8 @@
 
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Printer, Download } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import type { DiagnosticRecord } from "@/types";
+import { PdfDownloadButton } from "./pdf-download-button";
 
 const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   consultation: "Compte rendu de consultation",
@@ -48,10 +47,8 @@ export function PrescriptionPrintDocument({
   return (
     <div className="space-y-4">
       {/* Actions */}
-      <div className="flex gap-2 justify-end print:hidden">
-        <Button onClick={() => window.print()} variant="outline" className="rounded-xl gap-2">
-          <Printer className="w-4 h-4" /> Imprimer
-        </Button>
+      <div className="flex gap-2 justify-end">
+        <PdfDownloadButton diagnostic={diagnostic} clinicName={clinicName} />
       </div>
 
       {/* Document */}
