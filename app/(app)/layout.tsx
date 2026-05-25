@@ -34,13 +34,18 @@ export default async function AppLayout({
   };
 
   if (!userData) redirect("/onboarding");
+
   const clinic = userData.clinic;
+
+  // super_admin sans clinique → redirige vers le panel admin, pas l'onboarding
+  if (!clinic && userData.role === "super_admin") redirect("/admin");
+
   if (!clinic) redirect("/onboarding");
 
   return (
     <div className="flex h-screen overflow-hidden bg-muted/30 dark:bg-background">
       <NavigationProgress />
-      <Sidebar clinicName={clinic.name} />
+      <Sidebar clinicName={clinic?.name ?? "DocFlow IA"} />
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <Topbar
           title="DocFlow IA"

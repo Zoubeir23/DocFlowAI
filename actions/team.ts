@@ -286,15 +286,33 @@ export async function acceptInvitation(
   return { success: true, clinicId: invitation.clinic_id, role: invitation.role };
 }
 
+export async function getMyRole(): Promise<{ role: string; clinicId: string } | null> {
+  const supabase = await createClient();
+  const db = supabase as any;
+
+  const { data: authData } = await db.auth.getUser();
+  if (!authData.user) return null;
+
+  const { data: userData } = await db
+    .from("users")
+    .select("role, clinic_id")
+    .eq("id", authData.user.id)
+    .single();
+
+  if (!userData) return null;
+  return { role: userData.role, clinicId: userData.clinic_id };
+}
+
+// Returns only non-PII fields — email is withheld and verified server-side in acceptInvitation
 export async function getInvitationByToken(
   token: string
-): Promise<{ email: string; role: StaffRole; clinic_name: string; expires_at: string } | null> {
+): Promise<{ role: StaffRole; clinic_name: string; expires_at: string } | null> {
   const supabase = await createClient();
   const db = supabase as any;
 
   const { data } = await db
     .from("staff_invitations")
-    .select("email, role, expires_at, clinic:clinics(name)")
+    .select("role, expires_at, clinic:clinics(name)")
     .eq("token", token)
     .eq("status", "pending")
     .single();
@@ -302,7 +320,6 @@ export async function getInvitationByToken(
   if (!data) return null;
 
   return {
-    email: data.email,
     role: data.role,
     clinic_name: data.clinic?.name ?? "DocFlow IA",
     expires_at: data.expires_at,

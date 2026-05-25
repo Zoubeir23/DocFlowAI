@@ -224,8 +224,7 @@ function CryptoPaymentModal({ plan, clinicId, onClose }: CryptoPaymentModalProps
         body: JSON.stringify({
           txHash: hash,
           plan: plan.plan,
-          clinicId,
-          expectedAmountUsdc: plan.priceUsdc,
+          // clinicId et expectedAmountUsdc sont dérivés côté serveur
         }),
       });
       const verifyData = await verifyRes.json();
@@ -893,25 +892,29 @@ export default function BillingPage() {
               key={plan.plan}
               className={`relative flex flex-col overflow-hidden rounded-xl border transition-all duration-300 hover:shadow-lg hover:-translate-y-1
                 ${plan.popular
-                  ? "border-primary/40 bg-gradient-to-b from-primary/[0.04] to-background shadow-md shadow-primary/5"
+                  ? "border-primary/50 bg-gradient-to-b from-primary/[0.06] to-background shadow-lg shadow-primary/10"
                   : "border-border bg-background hover:border-primary/20"
                 }
-                ${isCurrentPlan ? "ring-2 ring-primary/50" : ""}`}
+                ${isCurrentPlan && plan.popular ? "ring-2 ring-emerald-500/40" : isCurrentPlan ? "ring-2 ring-emerald-500/30" : ""}`}
             >
-              {/* Badge row — inside card, no overflow */}
-              <div className="flex items-center justify-between px-5 pt-5 pb-0 min-h-[28px]">
+              {/* "Le plus populaire" — full-width top strip */}
+              {plan.popular && (
+                <div className="bg-gradient-to-r from-primary to-primary/80 px-4 py-1.5 flex items-center justify-center gap-1.5">
+                  <Zap className="w-3 h-3 text-white fill-white" />
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-white">
+                    {t('mostPopular')}
+                  </span>
+                </div>
+              )}
+
+              {/* "Plan actuel" badge — inside card, only when current */}
+              <div className={`flex items-center px-5 min-h-[36px] ${plan.popular ? "pt-3 pb-0" : "pt-5 pb-0"}`}>
                 {isCurrentPlan ? (
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary bg-primary/10 border border-primary/15 px-2.5 py-1 rounded-md">
-                    <CheckCircle className="w-3 h-3" />
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-2.5 py-1 rounded-full">
+                    <CheckCircle className="w-3 h-3 fill-emerald-500/20" />
                     {t('currentPlanBadge')}
                   </span>
                 ) : <span />}
-                {plan.popular && (
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-md">
-                    <Zap className="w-3 h-3" />
-                    {t('mostPopular')}
-                  </span>
-                )}
               </div>
 
               <div className="p-5 pt-3 flex flex-col flex-1">

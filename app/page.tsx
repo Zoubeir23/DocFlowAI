@@ -17,6 +17,39 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 
+export const metadata = {
+  title: "DocFlow IA — Logiciel de gestion de clinique avec IA",
+  description:
+    "DocFlow IA automatise la prise de rendez-vous médicaux 24h/24 grâce à l'intelligence artificielle. Gestion de cabinet, agenda intelligent et dossiers patients.",
+  alternates: {
+    canonical: process.env.NEXT_PUBLIC_APP_URL ?? "https://docflow.ia",
+  },
+};
+
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "DocFlow IA",
+  applicationCategory: "HealthApplication",
+  operatingSystem: "Web",
+  description:
+    "Logiciel de gestion de clinique avec intelligence artificielle. Automatisation de la prise de rendez-vous, gestion des dossiers patients et agenda intelligent pour médecins et cabinets médicaux.",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "EUR",
+    description: "Plan gratuit disponible",
+  },
+  featureList: [
+    "Prise de rendez-vous automatique 24h/24",
+    "Assistant IA pour la gestion de cabinet",
+    "Agenda médical intelligent",
+    "Dossiers patients numériques",
+    "Notifications SMS et email",
+    "Conformité HIPAA",
+  ],
+};
+
 export default async function HomePage() {
   const t = await getTranslations("landing");
 
@@ -26,6 +59,10 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-background font-sans text-foreground selection:bg-primary/30 selection:text-primary">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
       
       {/* ── NAVBAR ───────────────────────────────────────────────────────── */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border transition-all">

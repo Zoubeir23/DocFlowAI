@@ -5,6 +5,15 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { sendRawEmail } from "@/lib/email/router";
 import type { ApiResponse } from "@/types";
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
 // ── Auth guard ────────────────────────────────────────────────────────────────
 
 async function requireSuperAdmin(): Promise<{ userId: string } | null> {
@@ -320,15 +329,30 @@ export async function updateClinicPlan(
 
   const db = (await createAdminClient()) as any;
 
+  const now = new Date();
+  const periodStart = now.toISOString();
+  const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
   const { error } = await db
     .from("subscriptions")
-    .update({ plan, status: "active" })
+    .update({
+      plan,
+      status: "active",
+      current_period_start: periodStart,
+      current_period_end: periodEnd,
+    })
     .eq("clinic_id", clinicId);
 
   if (error) {
     const { error: insertError } = await db
       .from("subscriptions")
-      .insert({ clinic_id: clinicId, plan, status: "active" });
+      .insert({
+        clinic_id: clinicId,
+        plan,
+        status: "active",
+        current_period_start: periodStart,
+        current_period_end: periodEnd,
+      });
 
     if (insertError) return { success: false, error: "Erreur lors de la mise à jour du plan" };
   }
@@ -423,9 +447,9 @@ export async function replyToMessage(
             <h2 style="color:white;margin:0;font-size:18px">Réponse de l'équipe DocFlow</h2>
           </div>
           <div style="background:#f8fafc;border:1px solid #e2e8f0;border-top:none;padding:24px;border-radius:0 0 12px 12px">
-            <p style="color:#475569;font-size:14px;white-space:pre-wrap">${replyText.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+            <p style="color:#475569;font-size:14px;white-space:pre-wrap">${escapeHtml(replyText)}</p>
             <hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0"/>
-            <p style="color:#94a3b8;font-size:12px">Ceci est une réponse à votre message : <em>${message.subject}</em></p>
+            <p style="color:#94a3b8;font-size:12px">Ceci est une réponse à votre message : <em>${escapeHtml(message.subject)}</em></p>
           </div>
         </div>
       `,

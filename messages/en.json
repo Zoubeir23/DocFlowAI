@@ -28,7 +28,9 @@
     "planExpiresSoon": "{days} day{plural} remaining",
     "planRenewNow": "Renew to maintain access",
     "planRenewBefore": "Renew before expiration",
-    "subscriptionRenew": "Subscription renewal needed"
+    "subscriptionRenew": "Subscription renewal needed",
+    "waitlist": "Waitlist",
+    "diagnostics": "Diagnostics"
   },
   "topbar": {
     "searchPlaceholder": "Search patients, appointments...",
@@ -185,7 +187,8 @@
     "adding": "Adding...",
     "addButton": "Add Patient",
     "cancelButton": "Cancel",
-    "sinceLabel": "Since"
+    "sinceLabel": "Since",
+    "viewRecord": "View record"
   },
   "services": {
     "title": "Services",
@@ -683,8 +686,8 @@
     "hero": {
       "badge": "Powered by Claude AI · 24/7 Booking Assistant",
       "badgeNew": "New",
-      "titlePart1": "Medical Management",
-      "titleHighlight": "redefined.",
+      "titlePart1": "Medical Practice Management Software",
+      "titleHighlight": "powered by AI.",
       "titlePart2": "Automatically",
       "subtitle": "Intelligent booking assistant for clinics. Patients chat naturally to book, reschedule, or cancel. You focus on care — AI handles the admin.",
       "ctaPrimary": "Start 14-Day Free Trial",
@@ -741,22 +744,20 @@
       "step3Title": "AI Books Patients",
       "step3Desc": "Patients chat with your AI to book appointments 24/7. You get notified and manage everything from your dashboard."
     },
-    "testimonials": {
-      "t1": {
-        "name": "Dr. Sarah Mitchell",
-        "role": "General Practitioner",
-        "text": "DocFlow AI reduced our call volume by 70%. Patients love booking at any time of day."
-      },
-      "t2": {
-        "name": "Dr. James Park",
-        "role": "Pediatrician",
-        "text": "The AI assistant is remarkably natural. Parents book appointments completely conversationally."
-      },
-      "t3": {
-        "name": "Dr. Maria Santos",
-        "role": "Dermatologist",
-        "text": "Set up in an hour, patients booking via AI the exact same day. Incredible ROI."
-      }
+    "stats": {
+      "available": "AI available",
+      "setup": "To get started",
+      "free": "To begin",
+      "trial": "Free trial"
+    },
+    "earlyAdopters": {
+      "badge": "Early access",
+      "title": "Be among the first clinics to adopt AI",
+      "subtitle": "DocFlow AI is in its launch phase. Join the first practitioners and get priority access, personalized onboarding, and a guaranteed rate.",
+      "spot": "Spot available",
+      "available": "Waiting for a practitioner",
+      "cta": "Reserve my beta spot — free",
+      "noCreditCard": "No credit card · Cancel anytime · Human support included"
     },
     "cta": {
       "titlePart1": "Digital medicine",
@@ -765,9 +766,12 @@
       "button": "Create an account"
     },
     "footer": {
+      "features": "Features",
+      "howItWorks": "How It Works",
       "pricing": "Pricing",
       "login": "Login",
-      "signup": "Sign Up"
+      "signup": "Sign Up",
+      "rights": "All rights reserved."
     }
   },
   "widgetChat": {
@@ -881,5 +885,16 @@
     "expand": "Expand sidebar",
     "colClinicName": "Clinic name",
     "enterprise": "Enterprise"
+  },
+  "diagnostics": {
+    "title": "Medical diagnostics",
+    "newDiagnostic": "New diagnostic",
+    "allStatuses": "All",
+    "draft": "Draft",
+    "pendingValidation": "Pending",
+    "validated": "Validated",
+    "rejected": "Rejected",
+    "noResults": "No diagnostics",
+    "searchPlaceholder": "Search patient, diagnosis..."
   }
 }
