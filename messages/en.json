@@ -494,7 +494,27 @@
     "saveSettings": "Save AI Settings",
     "saving": "Saving...",
     "settingsSaved": "AI settings saved",
-    "failedToSave": "Failed to save"
+    "failedToSave": "Failed to save",
+    "addBtn": "Add",
+    "addedBtn": "Added",
+    "defaultWelcomeMessage": "Hello! I am your booking assistant. How can I help you today?",
+    "defaultBookingBehavior": "Guide patients through booking. Always suggest the nearest available slot.",
+    "faq1Q": "What are your opening hours?",
+    "faq1A": "We are open Monday to Friday, from 9am to 5pm.",
+    "faq2Q": "How can I book an appointment?",
+    "faq2A": "You can book directly here by telling me the date and service you need.",
+    "faq3Q": "Do you accept walk-in patients?",
+    "faq3A": "We prefer appointments, but we accommodate urgent cases based on availability.",
+    "faq4Q": "Do you accept health insurance?",
+    "faq4A": "Yes, we accept most health insurance plans.",
+    "faq5Q": "How can I cancel or reschedule an appointment?",
+    "faq5A": "You can cancel or reschedule via this chat at least 24 hours in advance.",
+    "faq6Q": "Is there parking available?",
+    "faq6A": "Yes, free parking is available in front of the clinic.",
+    "faq7Q": "How long does a consultation last?",
+    "faq7A": "A standard consultation lasts approximately 30 minutes.",
+    "faq8Q": "Do you offer video consultations?",
+    "faq8A": "Yes, you can request a teleconsultation when booking your appointment."
   },
   "auth": {
     "login": {
