@@ -38,7 +38,7 @@ export async function createService(
     .select()
     .maybeSingle();
 
-  if (error) return { success: false, error: error.message };
+  if (error || !service) return { success: false, error: error?.message ?? "Service creation failed" };
   return { success: true, data: { id: service.id } };
 }
 

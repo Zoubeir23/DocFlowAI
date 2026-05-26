@@ -92,7 +92,7 @@ export async function createPatient(
     .select()
     .maybeSingle();
 
-  if (error) return { success: false, error: error.message };
+  if (error || !patient) return { success: false, error: error?.message ?? "Patient creation failed" };
   return { success: true, data: { id: patient.id } };
 }
 

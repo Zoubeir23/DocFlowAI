@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { saveDoctorSignature, deleteDoctorSignature, getDoctorSignature } from "@/actions/doctor-signature";
 import { SignaturePad } from "./signature-pad";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import type { DoctorSignature } from "@/actions/doctor-signature";
 
 export function SignatureSettingsPanel() {
   const t = useTranslations("signature");
+  const locale = useLocale();
   const [currentSignature, setCurrentSignature] = useState<DoctorSignature | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -112,7 +113,7 @@ export function SignatureSettingsPanel() {
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              {t("lastUpdated")} {new Date(currentSignature.updated_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+              {t("lastUpdated")} {new Date(currentSignature.updated_at).toLocaleDateString(locale, { day: "numeric", month: "long", year: "numeric" })}
             </p>
           </div>
         ) : (
