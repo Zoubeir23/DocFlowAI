@@ -90,7 +90,7 @@ export async function GET(
     .replace(/^-|-$/g, "");
   const filenameBase = patientSlug || `recu-${appointmentId.slice(0, 8)}`;
 
-  return new NextResponse(pdfBuffer, {
+  return new NextResponse(new Uint8Array(pdfBuffer), {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",

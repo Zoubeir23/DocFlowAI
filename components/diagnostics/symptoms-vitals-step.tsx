@@ -94,6 +94,8 @@ export function SymptomsVitalsStep({ onNext, onBack }: SymptomsVitalsStepProps) 
   const [customSymptom, setCustomSymptom] = useState("");
   const [selectedAggravating, setSelectedAggravating] = useState<string[]>([]);
   const [selectedRelieving, setSelectedRelieving] = useState<string[]>([]);
+  const [customAggravating, setCustomAggravating] = useState("");
+  const [customRelieving, setCustomRelieving] = useState("");
 
   const { register, handleSubmit, control, watch, setValue, formState: { errors } } = useForm<SymptomsInput>({
     resolver: zodResolver(symptomsSchema),
@@ -144,6 +146,24 @@ export function SymptomsVitalsStep({ onNext, onBack }: SymptomsVitalsStepProps) 
       : [...selectedRelieving, factor];
     setSelectedRelieving(updated);
     setValue("relieving_factors", updated);
+  }
+
+  function addCustomAggravating() {
+    const trimmed = customAggravating.trim();
+    if (!trimmed || selectedAggravating.includes(trimmed)) return;
+    const updated = [...selectedAggravating, trimmed];
+    setSelectedAggravating(updated);
+    setValue("aggravating_factors", updated);
+    setCustomAggravating("");
+  }
+
+  function addCustomRelieving() {
+    const trimmed = customRelieving.trim();
+    if (!trimmed || selectedRelieving.includes(trimmed)) return;
+    const updated = [...selectedRelieving, trimmed];
+    setSelectedRelieving(updated);
+    setValue("relieving_factors", updated);
+    setCustomRelieving("");
   }
 
   function getIntensityColor(value: number): string {
@@ -239,6 +259,23 @@ export function SymptomsVitalsStep({ onNext, onBack }: SymptomsVitalsStepProps) 
                   {factor}
                 </button>
               ))}
+              {selectedAggravating.filter((f) => !COMMON_AGGRAVATING.includes(f)).map((f) => (
+                <span key={f} className="flex items-center gap-1 px-2.5 py-1 bg-orange-50 border border-orange-400 rounded-lg text-xs text-orange-700">
+                  {f}<button type="button" onClick={() => toggleAggravating(f)}><X className="w-3 h-3" /></button>
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-2 mt-1">
+              <Input
+                placeholder="Autre facteur aggravant..."
+                value={customAggravating}
+                onChange={(e) => setCustomAggravating(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCustomAggravating())}
+                className="h-8 text-xs rounded-lg"
+              />
+              <Button type="button" onClick={addCustomAggravating} variant="outline" size="sm" className="rounded-lg gap-1 h-8 text-xs">
+                <Plus className="w-3 h-3" /> Ajouter
+              </Button>
             </div>
           </div>
           <div className="space-y-2">
@@ -254,6 +291,23 @@ export function SymptomsVitalsStep({ onNext, onBack }: SymptomsVitalsStepProps) 
                   {factor}
                 </button>
               ))}
+              {selectedRelieving.filter((f) => !COMMON_RELIEVING.includes(f)).map((f) => (
+                <span key={f} className="flex items-center gap-1 px-2.5 py-1 bg-green-50 border border-green-400 rounded-lg text-xs text-green-700">
+                  {f}<button type="button" onClick={() => toggleRelieving(f)}><X className="w-3 h-3" /></button>
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-2 mt-1">
+              <Input
+                placeholder="Autre facteur atténuant..."
+                value={customRelieving}
+                onChange={(e) => setCustomRelieving(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCustomRelieving())}
+                className="h-8 text-xs rounded-lg"
+              />
+              <Button type="button" onClick={addCustomRelieving} variant="outline" size="sm" className="rounded-lg gap-1 h-8 text-xs">
+                <Plus className="w-3 h-3" /> Ajouter
+              </Button>
             </div>
           </div>
         </div>
