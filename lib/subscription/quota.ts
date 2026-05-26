@@ -23,9 +23,8 @@ export async function checkAppointmentQuota(clinicId: string, db: any): Promise<
     .eq("clinic_id", clinicId)
     .maybeSingle();
 
-  const plan = ((sub?.plan as PlanName) ?? "free") in PLAN_LIMITS
-    ? (sub?.plan as PlanName)
-    : "free";
+  const rawPlan = sub?.plan as PlanName | undefined;
+  const plan: PlanName = rawPlan && rawPlan in PLAN_LIMITS ? rawPlan : "free";
 
   const planLimits = PLAN_LIMITS[plan];
   const limit = planLimits.appointments;
@@ -71,9 +70,8 @@ export async function checkStaffQuota(clinicId: string, db: any): Promise<QuotaR
     .eq("clinic_id", clinicId)
     .maybeSingle();
 
-  const plan = ((sub?.plan as PlanName) ?? "free") in PLAN_LIMITS
-    ? (sub?.plan as PlanName)
-    : "free";
+  const rawPlan = sub?.plan as PlanName | undefined;
+  const plan: PlanName = rawPlan && rawPlan in PLAN_LIMITS ? rawPlan : "free";
 
   const planLimits = PLAN_LIMITS[plan];
   const limit = planLimits.staff;
