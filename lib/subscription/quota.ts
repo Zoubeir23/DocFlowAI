@@ -21,7 +21,7 @@ export async function checkAppointmentQuota(clinicId: string, db: any): Promise<
     .from("subscriptions")
     .select("plan, status, current_period_start, current_period_end")
     .eq("clinic_id", clinicId)
-    .single();
+    .maybeSingle();
 
   const plan = ((sub?.plan as PlanName) ?? "free") in PLAN_LIMITS
     ? (sub?.plan as PlanName)
@@ -69,7 +69,7 @@ export async function checkStaffQuota(clinicId: string, db: any): Promise<QuotaR
     .from("subscriptions")
     .select("plan")
     .eq("clinic_id", clinicId)
-    .single();
+    .maybeSingle();
 
   const plan = ((sub?.plan as PlanName) ?? "free") in PLAN_LIMITS
     ? (sub?.plan as PlanName)

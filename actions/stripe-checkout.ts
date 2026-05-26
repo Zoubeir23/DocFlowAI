@@ -30,7 +30,7 @@ export async function createStripeCheckoutSession(
     .from("users")
     .select("clinic_id, email, full_name")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   if (userError || !userData) {
     return { checkoutUrl: null, error: "Données utilisateur introuvables" };

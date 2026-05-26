@@ -21,7 +21,7 @@ export async function getClinicQuotaUsage(): Promise<QuotaUsage | null> {
       .from("users")
       .select("clinic_id")
       .eq("id", authData.user.id)
-      .single();
+      .maybeSingle();
 
     if (!userData) return null;
 
