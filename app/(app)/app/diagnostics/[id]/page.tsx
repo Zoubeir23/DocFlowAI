@@ -4,6 +4,8 @@ import { ArrowLeft, Stethoscope } from "lucide-react";
 import { getDiagnosticById } from "@/actions/diagnostics";
 import { getDoctorSignature } from "@/actions/doctor-signature";
 import { PrescriptionPrintDocument } from "@/components/diagnostics/prescription-print-document";
+import { DiagnosticValidationPanel } from "@/components/diagnostics/diagnostic-validation-panel";
+import { ComorbiditiesPanel } from "@/components/diagnostics/comorbidities-panel";
 
 interface DiagnosticDetailPageProps {
   params: Promise<{ id: string }>;
@@ -64,7 +66,21 @@ export default async function DiagnosticDetailPage({ params }: DiagnosticDetailP
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 md:px-6 py-8">
+      <div className="max-w-4xl mx-auto px-4 md:px-6 py-8 space-y-6">
+        {diagnostic.validation_status === "pending_validation" && (
+          <DiagnosticValidationPanel
+            diagnosticId={diagnostic.id}
+            diagnosisCode={diagnostic.icd_candidates?.[0]?.code ?? ""}
+            diagnosisName={diagnostic.icd_candidates?.[0]?.title ?? diagnostic.chief_complaint ?? ""}
+          />
+        )}
+        {diagnostic.validated_diagnosis_code && (
+          <ComorbiditiesPanel
+            diagnosisCode={diagnostic.validated_diagnosis_code}
+            diagnosisName={diagnostic.validated_diagnosis_name ?? diagnostic.chief_complaint ?? ""}
+          />
+        )}
+
         <PrescriptionPrintDocument
           diagnostic={diagnostic}
           signatureDataUrl={signature?.signature_data_url}

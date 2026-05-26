@@ -70,16 +70,16 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Admin area — require super_admin role
+  // Admin area — require is_super_admin = true
   if (user && isAdminPath) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: userData } = await (supabase as any)
       .from("users")
-      .select("role, is_active")
+      .select("is_super_admin")
       .eq("id", user.id)
       .single();
 
-    if (!userData || userData.role !== "super_admin") {
+    if (!userData?.is_super_admin) {
       const url = request.nextUrl.clone();
       url.pathname = "/app/dashboard";
       return NextResponse.redirect(url);

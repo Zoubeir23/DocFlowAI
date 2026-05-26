@@ -89,8 +89,12 @@ export default function BillingPage() {
     setStripeStatus(params.get("stripe"));
   }, []);
 
-  const { data: subscription } = useQuery({ queryKey: ["subscription"], queryFn: fetchSubscription });
+  const { data: subscription, isSuccess: subscriptionLoaded } = useQuery({ queryKey: ["subscription"], queryFn: fetchSubscription });
   const { data: quotaUsage } = useQuery<QuotaUsage | null>({ queryKey: ["quotaUsage"], queryFn: getClinicQuotaUsage });
+
+  const effectivePlan = subscriptionLoaded
+    ? (subscription?.plan ?? "free")
+    : null;
 
   const handleStripeCheckout = (plan: StripePlan) => {
     setStripeError(null);
@@ -303,7 +307,7 @@ export default function BillingPage() {
       {/* Plans grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         {PLANS.map((plan) => {
-          const isCurrentPlan = subscription?.plan === plan.plan;
+          const isCurrentPlan = effectivePlan === plan.plan;
           const isStripeLoading = stripeLoadingPlan === plan.plan;
 
           return (
@@ -372,7 +376,7 @@ export default function BillingPage() {
                   {plan.priceEur === 0 ? (
                     // Free plan — disabled if already on free or on a paid plan
                     (() => {
-                      const isOnPaidPlan = !!subscription && subscription.plan !== "free";
+                      const isOnPaidPlan = !!effectivePlan && effectivePlan !== "free";
                       const isDisabled = isCurrentPlan || isOnPaidPlan;
                       return (
                         <Button

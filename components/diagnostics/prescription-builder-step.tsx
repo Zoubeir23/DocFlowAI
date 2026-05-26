@@ -4,7 +4,9 @@ import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Trash2, AlertTriangle, Pill, ClipboardList } from "lucide-react";
+import { Plus, Trash2, AlertTriangle, Pill, ClipboardList, Stethoscope } from "lucide-react";
+import { AtcDrugSearch } from "@/components/diagnostics/atc-drug-search";
+import { IchiSearchField } from "@/components/diagnostics/ichi-search-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,6 +59,7 @@ const COMMON_RECOMMENDATIONS: string[] = [
 
 const EMPTY_TREATMENT: PrescriptionTreatment = {
   drug_name: "",
+  atc_code: "",
   dosage_mg: "",
   frequency: "1 fois par jour",
   duration_days: 7,
@@ -239,11 +242,13 @@ export function PrescriptionBuilderStep({
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <div className="col-span-2 md:col-span-1 space-y-1.5">
                 <Label className="text-xs font-medium">Médicament <span className="text-destructive">*</span></Label>
-                <Input
+                <AtcDrugSearch
                   value={treatment.drug_name}
-                  onChange={(e) => updateTreatment(index, "drug_name", e.target.value)}
-                  placeholder="Nom commercial ou DCI"
-                  className="rounded-xl border-border text-sm"
+                  atcCode={treatment.atc_code}
+                  onSelect={(name, atcCode) => {
+                    updateTreatment(index, "drug_name", name);
+                    updateTreatment(index, "atc_code", atcCode);
+                  }}
                 />
               </div>
               <div className="space-y-1.5">

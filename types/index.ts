@@ -103,6 +103,7 @@ export interface IcdCandidate extends IcdCode {
 
 export interface PrescriptionTreatment {
   drug_name: string;
+  atc_code: string;
   dosage_mg: string;
   frequency: string;
   duration_days: number;
