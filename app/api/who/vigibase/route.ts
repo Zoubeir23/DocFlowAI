@@ -3,29 +3,35 @@
  * WHO VigiAccess does not have a public programmatic API.
  * OpenFDA provides similar adverse event data from FAERS (FDA Adverse Event Reporting System).
  * Reference: https://open.fda.gov/apis/drug/event/
+ *
+ * Set OPENFDA_API_KEY env var to raise the rate limit from 40 to 240 req/min.
  */
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import type { PharmacovigilanceSignal } from "@/types";
 
 const OPENFDA_BASE_URL = "https://api.fda.gov/drug/event.json";
 
-export interface PharmacovigilanceSignal {
-  drugName: string;
-  rxcui: string;
-  totalReports: number;
-  seriousReports: number;
-  seriousnessRate: number;
-  topReactions: string[];
-  source: "FDA FAERS";
+function buildOpenFdaUrl(base: string, params: Record<string, string>): string {
+  const apiKey = process.env.OPENFDA_API_KEY;
+  const searchParams = new URLSearchParams(params);
+  if (apiKey) searchParams.set("api_key", apiKey);
+  return `${base}?${searchParams}`;
 }
 
-async function fetchAdverseEventSignals(rxcui: string, drugName: string): Promise<PharmacovigilanceSignal | null> {
+async function fetchAdverseEventSignals(
+  rxcui: string,
+  drugName: string
+): Promise<PharmacovigilanceSignal | null> {
   try {
-    const searchQuery = encodeURIComponent(`patient.drug.openfda.rxcui:"${rxcui}"`);
-    const countUrl = `${OPENFDA_BASE_URL}?search=${searchQuery}&count=patient.reaction.reactionmeddrapt.exact&limit=5`;
+    const reactionUrl = buildOpenFdaUrl(OPENFDA_BASE_URL, {
+      search: `patient.drug.openfda.rxcui:"${rxcui}"`,
+      count: "patient.reaction.reactionmeddrapt.exact",
+      limit: "5",
+    });
 
-    const response = await fetch(countUrl, {
+    const response = await fetch(reactionUrl, {
       headers: { Accept: "application/json" },
       next: { revalidate: 86400 },
     });
@@ -42,9 +48,11 @@ async function fetchAdverseEventSignals(rxcui: string, drugName: string): Promis
 
     if (totalReports === 0) return null;
 
-    // Fetch serious reports count
-    const seriousQuery = encodeURIComponent(`patient.drug.openfda.rxcui:"${rxcui}" AND serious:1`);
-    const seriousUrl = `${OPENFDA_BASE_URL}?search=${seriousQuery}&limit=1`;
+    const seriousUrl = buildOpenFdaUrl(OPENFDA_BASE_URL, {
+      search: `patient.drug.openfda.rxcui:"${rxcui}" AND serious:1`,
+      limit: "1",
+    });
+
     const seriousResponse = await fetch(seriousUrl, {
       headers: { Accept: "application/json" },
       next: { revalidate: 86400 },
@@ -52,11 +60,13 @@ async function fetchAdverseEventSignals(rxcui: string, drugName: string): Promis
 
     let seriousReports = 0;
     if (seriousResponse.ok) {
-      const seriousJson: { meta?: { results?: { total?: number } } } = await seriousResponse.json();
+      const seriousJson: { meta?: { results?: { total?: number } } } =
+        await seriousResponse.json();
       seriousReports = seriousJson.meta?.results?.total ?? 0;
     }
 
-    const seriousnessRate = totalReports > 0 ? Math.round((seriousReports / totalReports) * 100) : 0;
+    const seriousnessRate =
+      totalReports > 0 ? Math.round((seriousReports / totalReports) * 100) : 0;
 
     return {
       drugName,
@@ -74,7 +84,9 @@ async function fetchAdverseEventSignals(rxcui: string, drugName: string): Promis
 
 export async function GET(request: Request) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -83,8 +95,11 @@ export async function GET(request: Request) {
   const rxcui = searchParams.get("rxcui");
   const drugName = searchParams.get("drugName") ?? "";
 
-  if (!rxcui) {
-    return NextResponse.json({ error: "rxcui param required" }, { status: 400 });
+  if (!rxcui || !/^\d+$/.test(rxcui)) {
+    return NextResponse.json(
+      { error: "rxcui param must be a numeric RxNorm CUI" },
+      { status: 400 }
+    );
   }
 
   const signal = await fetchAdverseEventSignals(rxcui, drugName);

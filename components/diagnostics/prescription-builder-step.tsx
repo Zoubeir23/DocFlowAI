@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Trash2, AlertTriangle, Pill, ClipboardList, Stethoscope, ActivitySquare, Loader2 } from "lucide-react";
+import { Plus, Trash2, AlertTriangle, Pill, ClipboardList, ActivitySquare, Loader2 } from "lucide-react";
 import { AtcDrugSearch } from "@/components/diagnostics/atc-drug-search";
 import { IchiSearchField } from "@/components/diagnostics/ichi-search-field";
 import { IcfSearchField } from "@/components/diagnostics/icf-search-field";
@@ -13,7 +13,6 @@ import { DrugInteractionWarning } from "@/components/diagnostics/drug-interactio
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { checkAllergyConflicts } from "@/lib/diagnostic-scoring";
 import type { PrescriptionInput, PrescriptionTreatment, DiagnosticDocumentType, IcfCode, DrugInteractionPair, PharmacovigilanceSignal } from "@/types";
 
@@ -62,6 +61,7 @@ const COMMON_RECOMMENDATIONS: string[] = [
 
 const EMPTY_TREATMENT: PrescriptionTreatment = {
   drug_name: "",
+  rxcui: "",
   atc_code: "",
   dosage_mg: "",
   frequency: "1 fois par jour",
@@ -70,6 +70,34 @@ const EMPTY_TREATMENT: PrescriptionTreatment = {
   precautions: "",
   is_generic: false,
 };
+
+function VigibaseSignalBadge({ signal }: { signal: PharmacovigilanceSignal }) {
+  const isHighRisk = signal.seriousnessRate > 50;
+  return (
+    <div
+      className={`flex items-start gap-2 p-2.5 rounded-lg border text-xs ${
+        isHighRisk
+          ? "bg-orange-50 border-orange-200 text-orange-800"
+          : "bg-blue-50 border-blue-200 text-blue-800"
+      }`}
+    >
+      <AlertTriangle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+      <div>
+        <span className="font-semibold">
+          {signal.totalReports.toLocaleString()} effets indésirables signalés (FDA FAERS)
+        </span>
+        {signal.seriousnessRate > 0 && (
+          <span className="ml-1 opacity-75">• {signal.seriousnessRate}% graves</span>
+        )}
+        {signal.topReactions.length > 0 && (
+          <p className="mt-0.5 opacity-75">
+            Top réactions: {signal.topReactions.slice(0, 3).join(", ")}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 interface PrescriptionBuilderStepProps {
   validatedDiagnosisName: string;
@@ -113,8 +141,8 @@ export function PrescriptionBuilderStep({
   // Check drug-drug interactions whenever treatments with rxcui change
   const checkInteractions = useCallback(async (currentTreatments: PrescriptionTreatment[]) => {
     const rxcuis = currentTreatments
-      .map((treatment) => treatment.atc_code)
-      .filter((code) => code && code.trim() !== "");
+      .map((treatment) => treatment.rxcui)
+      .filter((code) => code && code.trim() !== "" && /^\d+$/.test(code));
 
     if (rxcuis.length < 2) {
       setDrugInteractions([]);
@@ -139,9 +167,8 @@ export function PrescriptionBuilderStep({
     }
   }, []);
 
-  // Fetch pharmacovigilance signal for a single drug
   async function fetchVigibaseSignal(rxcui: string, drugName: string) {
-    if (!rxcui || vigibaseSignals.has(rxcui)) return;
+    if (!rxcui || !/^\d+$/.test(rxcui) || vigibaseSignals.has(rxcui)) return;
     try {
       const response = await fetch(
         `/api/who/vigibase?rxcui=${encodeURIComponent(rxcui)}&drugName=${encodeURIComponent(drugName)}`
@@ -173,16 +200,16 @@ export function PrescriptionBuilderStep({
         });
       }
 
-      // Fetch vigibase signal when an ATC/rxcui code is set
-      if (field === "atc_code" && value) {
-        fetchVigibaseSignal(value as string, treatment.drug_name);
+      // Fetch vigibase signal when a valid rxcui is set
+      if (field === "rxcui" && value) {
+        fetchVigibaseSignal(value as string, newTreatment.drug_name);
       }
 
       return newTreatment;
     });
     setTreatments(updated);
-    // Re-check interactions when drug selection changes
-    if (field === "atc_code") {
+    // Re-check interactions when rxcui changes
+    if (field === "rxcui") {
       checkInteractions(updated);
     }
   }
@@ -313,9 +340,10 @@ export function PrescriptionBuilderStep({
                 <AtcDrugSearch
                   value={treatment.drug_name}
                   atcCode={treatment.atc_code}
-                  onSelect={(name, atcCode) => {
+                  onSelect={(name, atcCode, rxcui) => {
                     updateTreatment(index, "drug_name", name);
                     updateTreatment(index, "atc_code", atcCode);
+                    updateTreatment(index, "rxcui", rxcui);
                   }}
                 />
               </div>
@@ -370,32 +398,9 @@ export function PrescriptionBuilderStep({
             </div>
 
             {/* Vigibase pharmacovigilance signal */}
-            {treatment.atc_code && vigibaseSignals.has(treatment.atc_code) && (() => {
-              const signal = vigibaseSignals.get(treatment.atc_code)!;
-              const isHighRisk = signal.seriousnessRate > 50;
-              return (
-                <div className={`flex items-start gap-2 p-2.5 rounded-lg border text-xs ${
-                  isHighRisk
-                    ? "bg-orange-50 border-orange-200 text-orange-800"
-                    : "bg-blue-50 border-blue-200 text-blue-800"
-                }`}>
-                  <AlertTriangle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <span className="font-semibold">
-                      {signal.totalReports.toLocaleString()} effets indésirables signalés (FDA FAERS)
-                    </span>
-                    {signal.seriousnessRate > 0 && (
-                      <span className="ml-1 opacity-75">• {signal.seriousnessRate}% graves</span>
-                    )}
-                    {signal.topReactions.length > 0 && (
-                      <p className="mt-0.5 opacity-75">
-                        Top réactions: {signal.topReactions.slice(0, 3).join(", ")}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              );
-            })()}
+            {treatment.rxcui && vigibaseSignals.has(treatment.rxcui) && (
+              <VigibaseSignalBadge signal={vigibaseSignals.get(treatment.rxcui)!} />
+            )}
 
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 text-sm cursor-pointer">

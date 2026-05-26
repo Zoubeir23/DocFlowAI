@@ -103,6 +103,7 @@ export interface IcdCandidate extends IcdCode {
 
 export interface PrescriptionTreatment {
   drug_name: string;
+  rxcui: string;
   atc_code: string;
   dosage_mg: string;
   frequency: string;
@@ -177,6 +178,7 @@ export interface DiagnosticRecord {
   recommendations: string[];
   follow_up_delay_days: number | null;
   follow_up_tests: string[];
+  icf_codes: IcfCode[];
   practitioner_name: string | null;
   practitioner_title: string | null;
   practitioner_rpps: string | null;

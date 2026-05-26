@@ -3,15 +3,13 @@
  * RxNav provides free access to interaction data from several sources
  * (DrugBank, ONCHigh, NDF-RT) based on RxCUI identifiers already available
  * from the existing ATC drug search (lib/who-atc.ts).
+ *
+ * IMPORTANT: the rxcuis parameter must contain numeric RxNorm CUI values
+ * (e.g. "41493"), NOT ATC codes (e.g. "A10BA02"). The rxcui is returned
+ * by the /api/drugs/search endpoint alongside the ATC code.
  */
 
-export interface DrugInteractionPair {
-  drug1Name: string;
-  drug2Name: string;
-  severity: "high" | "moderate" | "low";
-  description: string;
-  source: string;
-}
+import type { DrugInteractionPair } from "@/types";
 
 export interface DrugInteractionResult {
   hasCritical: boolean;
@@ -49,11 +47,7 @@ function normalizeSeverity(raw: string): DrugInteractionPair["severity"] {
 export async function checkDrugInteractions(
   rxcuis: string[]
 ): Promise<DrugInteractionResult> {
-  if (rxcuis.length < 2) {
-    return { hasCritical: false, interactions: [] };
-  }
-
-  const validRxcuis = rxcuis.filter((id) => id && id.trim() !== "");
+  const validRxcuis = rxcuis.filter((id) => id && id.trim() !== "" && /^\d+$/.test(id));
   if (validRxcuis.length < 2) {
     return { hasCritical: false, interactions: [] };
   }
@@ -70,6 +64,7 @@ export async function checkDrugInteractions(
     }
 
     const data: RxNormInteractionResponse = await response.json();
+    const seen = new Set<string>();
     const interactions: DrugInteractionPair[] = [];
 
     for (const group of data.fullInteractionTypeGroup ?? []) {
@@ -78,6 +73,11 @@ export async function checkDrugInteractions(
           const drug1 = pair.interactionConcept[0]?.minConceptItem.name ?? "";
           const drug2 = pair.interactionConcept[1]?.minConceptItem.name ?? "";
           const severity = normalizeSeverity(pair.severity ?? "low");
+
+          // Deduplicate pairs regardless of order
+          const pairKey = [drug1, drug2].sort().join("|");
+          if (seen.has(pairKey)) continue;
+          seen.add(pairKey);
 
           interactions.push({
             drug1Name: drug1,

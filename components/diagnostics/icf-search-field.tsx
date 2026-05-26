@@ -35,6 +35,12 @@ export function IcfSearchField({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
   function handleInputChange(inputValue: string) {
     setQuery(inputValue);
 

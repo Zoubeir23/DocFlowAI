@@ -44,12 +44,13 @@ export function DrugInteractionWarning({ interactions }: DrugInteractionWarningP
 
   return (
     <div className="space-y-2">
-      {sortedInteractions.map((interaction, index) => {
+      {sortedInteractions.map((interaction) => {
         const config = SEVERITY_CONFIG[interaction.severity];
         const { Icon } = config;
+        const stableKey = `${interaction.drug1Name}|${interaction.drug2Name}|${interaction.source}`;
         return (
           <div
-            key={index}
+            key={stableKey}
             className={`flex items-start gap-3 p-3 rounded-xl border ${config.containerClass}`}
           >
             <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${config.iconClass}`} />

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { IcdSearchField } from "./icd-search-field";
-import { scoreAndRankCandidates, detectRequiredTests } from "@/lib/diagnostic-scoring";
+import { scoreAndRankCandidates, detectRequiredTests, applyGhoPrevalenceWeighting } from "@/lib/diagnostic-scoring";
 import type { IcdCandidate, IcdCode, VitalSigns, SymptomsInput, PatientProfileInput } from "@/types";
 
 interface IcdAnalysisStepProps {
@@ -70,9 +70,12 @@ export function IcdAnalysisStep({
         currentMedications: patientProfile.current_medications,
       });
 
-      const tests = detectRequiredTests(scored, vitals);
+      // Apply GHO epidemiological prevalence weighting (best-effort: silently skipped on failure)
+      const weighted = await applyGhoPrevalenceWeighting(scored).catch(() => scored);
 
-      setRankedCandidates(scored);
+      const tests = detectRequiredTests(weighted, vitals);
+
+      setRankedCandidates(weighted);
       setAdditionalTests(tests);
       setHasAnalyzed(true);
     } catch (error) {

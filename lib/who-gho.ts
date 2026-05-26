@@ -6,7 +6,6 @@
  */
 
 export interface GhoPrevalenceEntry {
-  icdCode: string;
   indicatorCode: string;
   countryCode: string;
   year: number;
@@ -16,51 +15,45 @@ export interface GhoPrevalenceEntry {
 const GHO_BASE_URL = "https://ghoapi.azureedge.net/api";
 
 /**
- * Maps ICD-11 chapter root codes to relevant GHO indicator codes.
- * These are WHO-maintained indicators for major disease groups.
+ * Maps ICD-11 chapter first-character to relevant GHO indicator codes.
+ * ICD-11 codes: chapters 1-9 start with "1"-"9"; chapters 10+ start with letters
+ * (A=10 Ear, B=11 Circulatory, C=12 Respiratory, D=13 Digestive, F=15 Musculoskeletal, etc.)
  */
-const ICD_CHAPTER_TO_GHO_INDICATORS: Record<string, string> = {
-  // Infectious & parasitic diseases
-  "1": "MORT_COMM_CAUSE",
-  // Neoplasms
-  "2": "NCD_NCD_MORT_30_70",
-  // Blood diseases
-  "3": "NCD_ANAEMIA_TOTAL",
-  // Endocrine / diabetes
-  "5": "NCD_GLUC_04",
-  // Mental disorders
-  "6": "MH_12",
-  // Nervous system
-  "8": "SA_0000001462",
-  // Circulatory system
-  "11": "NCD_HYP_PREVALENCE_A",
-  // Respiratory
-  "12": "SA_0000001462",
-  // Digestive
-  "13": "MORT_COMM_CAUSE",
-  // Musculoskeletal
-  "15": "NCD_BMI_30A",
+const ICD_CHAPTER_TO_GHO_INDICATOR: Record<string, string> = {
+  "1": "MORT_COMM_CAUSE",       // Chapter 1: Infectious & parasitic diseases
+  "2": "NCD_NCD_MORT_30_70",    // Chapter 2: Neoplasms
+  "3": "NCD_ANAEMIA_TOTAL",     // Chapter 3: Blood diseases
+  "5": "NCD_GLUC_04",           // Chapter 5: Endocrine / diabetes
+  "6": "MH_12",                 // Chapter 6: Mental disorders
+  "8": "SA_0000001462",         // Chapter 8: Nervous system
+  "B": "NCD_HYP_PREVALENCE_A",  // Chapter 11: Circulatory
+  "C": "SA_0000001462",          // Chapter 12: Respiratory
+  "D": "MORT_COMM_CAUSE",        // Chapter 13: Digestive
+  "F": "NCD_BMI_30A",            // Chapter 15: Musculoskeletal
 };
 
 const prevalenceCache = new Map<string, { data: GhoPrevalenceEntry[]; fetchedAt: number }>();
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 export async function getGhoPrevalenceForIndicator(
   indicatorCode: string,
-  countryCode = "GLOBAL"
+  countryCode?: string
 ): Promise<GhoPrevalenceEntry[]> {
-  const cacheKey = `${indicatorCode}:${countryCode}`;
+  const cacheKey = `${indicatorCode}:${countryCode ?? "ALL"}`;
   const cached = prevalenceCache.get(cacheKey);
   if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
     return cached.data;
   }
 
   try {
-    const filter = countryCode === "GLOBAL"
-      ? `$filter=TimeDim ge 2018&$orderby=TimeDim desc&$top=5`
-      : `$filter=SpatialDim eq '${countryCode}' and TimeDim ge 2018&$orderby=TimeDim desc&$top=3`;
-
+    // When a specific country is requested, filter spatially.
+    // For global context (default), fetch without spatial filter and take recent data.
+    const spatialFilter = countryCode
+      ? ` and SpatialDim eq '${countryCode}'`
+      : "";
+    const filter = `$filter=TimeDim ge 2018${spatialFilter}&$orderby=TimeDim desc&$top=20`;
     const url = `${GHO_BASE_URL}/${indicatorCode}?${filter}`;
+
     const response = await fetch(url, {
       headers: { Accept: "application/json" },
       next: { revalidate: 86400 },
@@ -68,17 +61,17 @@ export async function getGhoPrevalenceForIndicator(
 
     if (!response.ok) return [];
 
-    const json: { value: Array<{ SpatialDim: string; TimeDim: number; NumericValue: number | null }> } =
-      await response.json();
+    const json: {
+      value: Array<{ SpatialDim: string; TimeDim: number; NumericValue: number | null }>;
+    } = await response.json();
 
     const entries: GhoPrevalenceEntry[] = (json.value ?? [])
-      .filter((row) => row.NumericValue !== null)
+      .filter((row) => row.NumericValue !== null && row.NumericValue > 0)
       .map((row) => ({
-        icdCode: "",
         indicatorCode,
         countryCode: row.SpatialDim,
         year: row.TimeDim,
-        prevalencePerHundredThousand: row.NumericValue ?? 0,
+        prevalencePerHundredThousand: row.NumericValue!,
       }));
 
     prevalenceCache.set(cacheKey, { data: entries, fetchedAt: Date.now() });
@@ -89,35 +82,32 @@ export async function getGhoPrevalenceForIndicator(
 }
 
 /**
- * Returns a prevalence multiplier (0.8–1.5) for an ICD-11 candidate
+ * Returns a prevalence multiplier (0.85–1.3) for an ICD-11 candidate
  * based on GHO data. Higher prevalence = higher multiplier.
- * Used to re-weight scores in lib/diagnostic-scoring.ts.
+ * Used in lib/diagnostic-scoring.ts applyGhoPrevalenceWeighting().
  */
 export async function computeGhoPrevalenceMultiplier(
   icdCode: string
 ): Promise<number> {
-  // Use the first character of the ICD code to map to a GHO indicator
+  if (!icdCode) return 1.0;
+
+  // ICD-11 chapter is determined by the first character of the code
   const chapterKey = icdCode.charAt(0).toUpperCase();
-  const numericChapter = parseInt(chapterKey, 10);
-
-  let indicatorCode: string | undefined;
-  if (!isNaN(numericChapter)) {
-    indicatorCode = ICD_CHAPTER_TO_GHO_INDICATORS[String(numericChapter)];
-  }
-
+  const indicatorCode = ICD_CHAPTER_TO_GHO_INDICATOR[chapterKey];
   if (!indicatorCode) return 1.0;
 
   const entries = await getGhoPrevalenceForIndicator(indicatorCode);
   if (entries.length === 0) return 1.0;
 
-  // Use the most recent global value
-  const latest = entries[0];
-  const prevalence = latest.prevalencePerHundredThousand;
+  // Compute mean of all returned entries (mix of countries/regions = global proxy)
+  const mean =
+    entries.reduce((sum, entry) => sum + entry.prevalencePerHundredThousand, 0) /
+    entries.length;
 
-  // Normalize: >5000/100k = high prevalence → 1.3x, <100/100k = rare → 0.85x
-  if (prevalence > 5000) return 1.3;
-  if (prevalence > 1000) return 1.15;
-  if (prevalence > 100) return 1.0;
-  if (prevalence > 10) return 0.9;
+  // Coarse buckets: order of magnitude determines the multiplier
+  if (mean > 5000) return 1.3;
+  if (mean > 1000) return 1.15;
+  if (mean > 100) return 1.0;
+  if (mean > 10) return 0.9;
   return 0.85;
 }
