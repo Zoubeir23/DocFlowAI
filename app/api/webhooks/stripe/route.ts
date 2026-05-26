@@ -138,7 +138,7 @@ async function handleCheckoutSessionCompleted(
     .from("subscriptions")
     .select("id")
     .eq("clinic_id", clinicId)
-    .single();
+    .maybeSingle();
 
   if (existingSubscription) {
     const { error } = await db

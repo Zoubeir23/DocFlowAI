@@ -76,7 +76,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     .from("users")
     .select("clinic_id")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
   if (!userData?.clinic_id) {
     return NextResponse.json({ error: "Clinique introuvable" }, { status: 403 });
   }
@@ -183,7 +183,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     .from("subscriptions")
     .select("id")
     .eq("clinic_id", clinicId)
-    .single();
+    .maybeSingle();
 
   const subscriptionData = {
     plan,

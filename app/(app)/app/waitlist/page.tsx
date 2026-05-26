@@ -47,7 +47,7 @@ async function fetchServices(): Promise<ServiceOption[]> {
     .from("users")
     .select("clinic_id")
     .eq("id", authData.user.id)
-    .single();
+    .maybeSingle();
   if (!userData?.clinic_id) return [];
   const { data } = await supabase
     .from("services")

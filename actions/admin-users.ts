@@ -93,7 +93,7 @@ export async function toggleUserActive(userId: string): Promise<ApiResponse<{ is
   const db = (await createAdminClient()) as any;
 
   const { data: user } = await db
-    .from("users").select("is_active, role").eq("id", userId).single();
+    .from("users").select("is_active, role").eq("id", userId).maybeSingle();
 
   if (!user) return { success: false, error: "Utilisateur introuvable" };
   if (user.role === "super_admin") return { success: false, error: "Impossible de désactiver un super admin" };
@@ -114,7 +114,7 @@ export async function updateUserRole(
 
   const db = (await createAdminClient()) as any;
 
-  const { data: target } = await db.from("users").select("role").eq("id", userId).single();
+  const { data: target } = await db.from("users").select("role").eq("id", userId).maybeSingle();
   if (!target) return { success: false, error: "Utilisateur introuvable" };
 
   if (target.role === "super_admin" && auth.userId !== userId) {

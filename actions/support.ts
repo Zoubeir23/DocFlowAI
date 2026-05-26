@@ -35,7 +35,7 @@ async function getAuthenticatedUserContext(): Promise<{
     .from("users")
     .select("clinic_id, full_name, email, clinic:clinics(name)")
     .eq("id", authData.user.id)
-    .single();
+    .maybeSingle();
 
   if (!userData) return null;
 
@@ -43,7 +43,7 @@ async function getAuthenticatedUserContext(): Promise<{
     .from("subscriptions")
     .select("plan")
     .eq("clinic_id", userData.clinic_id)
-    .single();
+    .maybeSingle();
 
   return {
     userId: authData.user.id,

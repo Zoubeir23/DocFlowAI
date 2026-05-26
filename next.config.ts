@@ -29,7 +29,7 @@ const appSecurityHeaders = [
       "font-src 'self' data: https://fonts.gstatic.com",
       // Allow images from Supabase storage, Google user avatars, and common CDNs
       "img-src 'self' data: blob: https://*.supabase.co https://polygonscan.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com https:",
-      "connect-src 'self' https://*.supabase.co https://api.anthropic.com https://polygon-rpc.com https://rpc.ankr.com",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://polygon-rpc.com https://rpc.ankr.com",
       // Allow 'self' so the website-builder can preview the widget in an iframe
       "frame-src 'self'",
       "object-src 'none'",

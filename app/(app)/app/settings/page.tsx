@@ -26,7 +26,7 @@ async function fetchClinicId() {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return null
-  const { data } = await supabase.from('users').select('clinic_id').eq('id', user.id).single()
+  const { data } = await supabase.from('users').select('clinic_id').eq('id', user.id).maybeSingle()
   return { clinicId: data?.clinic_id || null, userId: user.id }
 }
 

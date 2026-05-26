@@ -24,7 +24,7 @@ export async function validateApiKey(
     .select("id, clinic_id")
     .eq("key_hash", hash)
     .eq("is_active", true)
-    .single();
+    .maybeSingle();
 
   if (!apiKey) return null;
 

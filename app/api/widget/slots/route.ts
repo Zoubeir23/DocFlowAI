@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
     .from("clinics")
     .select("id, timezone")
     .eq("slug", clinicSlug)
-    .single() as { data: { id: string; timezone: string } | null };
+    .maybeSingle() as { data: { id: string; timezone: string } | null };
 
   if (!clinic) {
     return NextResponse.json({ error: "Clinic not found" }, { status: 404 });
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
     .select("duration_minutes")
     .eq("id", serviceId)
     .eq("clinic_id", clinic.id)
-    .single() as { data: { duration_minutes: number } | null };
+    .maybeSingle() as { data: { duration_minutes: number } | null };
 
   if (!service) {
     return NextResponse.json({ error: "Service not found" }, { status: 404 });

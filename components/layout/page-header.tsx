@@ -26,7 +26,7 @@ export async function PageHeader({ title, description }: PageHeaderProps) {
     .from("users")
     .select("full_name, email")
     .eq("id", user.id)
-    .single() as { data: { full_name: string; email: string } | null };
+    .maybeSingle() as { data: { full_name: string; email: string } | null };
 
   const initials = (userData?.full_name || "U")
     .split(" ")

@@ -13,7 +13,7 @@ async function getDB() {
 async function getAuthenticatedClinicId(db: any): Promise<string | null> {
   const { data: authData } = await db.auth.getUser();
   if (!authData.user) return null;
-  const { data: userData } = await db.from("users").select("clinic_id").eq("id", authData.user.id).single();
+  const { data: userData } = await db.from("users").select("clinic_id").eq("id", authData.user.id).maybeSingle();
   return userData?.clinic_id ?? null;
 }
 
@@ -64,7 +64,7 @@ export async function upsertAvailabilityRule(
       .select("id")
       .eq("clinic_id", clinicId)
       .eq("day_of_week", data.day_of_week)
-      .single();
+      .maybeSingle();
 
     if (existing?.id) {
       ({ error } = await db.from("availability_rules").update(payload).eq("id", existing.id));
@@ -127,7 +127,7 @@ export async function getClinicSettings(clinicId: string): Promise<ClinicSetting
     .from("clinic_settings")
     .select("*")
     .eq("clinic_id", clinicId)
-    .single();
+    .maybeSingle();
   return data as ClinicSettings | null;
 }
 

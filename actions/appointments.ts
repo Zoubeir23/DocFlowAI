@@ -29,7 +29,7 @@ export async function getAppointments(
     .from("users")
     .select("clinic_id")
     .eq("id", authData.user.id)
-    .single();
+    .maybeSingle();
 
   if (!userData?.clinic_id) return { data: [], total: 0, page, pageSize, totalPages: 0 };
 
@@ -67,7 +67,7 @@ export async function createAppointment(
     .from("users")
     .select("clinic_id")
     .eq("id", authData.user.id)
-    .single();
+    .maybeSingle();
 
   if (!userData) return { success: false, error: "User not found" };
 
@@ -87,7 +87,7 @@ export async function createAppointment(
       .select("id")
       .eq("id", validated.data.practitioner_id)
       .eq("clinic_id", userData.clinic_id)
-      .single();
+      .maybeSingle();
     if (!practitionerCheck) {
       return { success: false, error: "Praticien invalide ou n'appartient pas à cette clinique." };
     }
@@ -97,7 +97,7 @@ export async function createAppointment(
     .from("appointments")
     .insert({ ...validated.data, clinic_id: userData.clinic_id })
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) return { success: false, error: error.message };
 
@@ -105,7 +105,7 @@ export async function createAppointment(
     .from("appointments")
     .select("*, patient:patients(*), service:services(*)")
     .eq("id", appt.id)
-    .single();
+    .maybeSingle();
 
   if (fullAppt) {
     const apptData = fullAppt as AppointmentWithRelations;
@@ -113,7 +113,7 @@ export async function createAppointment(
       .from("clinics")
       .select("name")
       .eq("id", userData.clinic_id)
-      .single();
+      .maybeSingle();
 
     await sendNotification({
       type: "appointment_confirmation",
@@ -148,7 +148,7 @@ export async function updateAppointmentStatus(
   // M1 fix: resolve clinic_id from session before updating
   const { data: authData } = await db.auth.getUser();
   if (!authData.user) return { success: false, error: "Not authenticated" };
-  const { data: userData } = await db.from("users").select("clinic_id").eq("id", authData.user.id).single();
+  const { data: userData } = await db.from("users").select("clinic_id").eq("id", authData.user.id).maybeSingle();
   if (!userData) return { success: false, error: "User not found" };
 
   const { error } = await db
@@ -181,7 +181,7 @@ export async function updateAppointmentTime(
   // M1 fix: resolve clinic_id from session before updating
   const { data: authData } = await db.auth.getUser();
   if (!authData.user) return { success: false, error: "Not authenticated" };
-  const { data: userData } = await db.from("users").select("clinic_id").eq("id", authData.user.id).single();
+  const { data: userData } = await db.from("users").select("clinic_id").eq("id", authData.user.id).maybeSingle();
   if (!userData) return { success: false, error: "User not found" };
 
   const { error } = await db
@@ -199,7 +199,7 @@ export async function cancelAppointment(appointmentId: string): Promise<ApiRespo
   // M2 fix: auth check before fetching data
   const { data: authData } = await db.auth.getUser();
   if (!authData.user) return { success: false, error: "Not authenticated" };
-  const { data: userData } = await db.from("users").select("clinic_id").eq("id", authData.user.id).single();
+  const { data: userData } = await db.from("users").select("clinic_id").eq("id", authData.user.id).maybeSingle();
   if (!userData) return { success: false, error: "User not found" };
 
   const { data: appt } = await db
@@ -207,7 +207,7 @@ export async function cancelAppointment(appointmentId: string): Promise<ApiRespo
     .select("*, patient:patients(*), service:services(*), clinic:clinics(*)")
     .eq("id", appointmentId)
     .eq("clinic_id", userData.clinic_id)
-    .single();
+    .maybeSingle();
 
   const { error } = await db
     .from("appointments")
@@ -250,7 +250,7 @@ export async function cancelAppointmentByToken(token: string): Promise<ApiRespon
     .from("appointments")
     .select("id, status, start_at, clinic_id, patient:patients(full_name, phone, email), service:services(name), clinic:clinics(name)")
     .eq("cancel_token", token)
-    .single();
+    .maybeSingle();
 
   if (fetchError || !appt) return { success: false, error: "Rendez-vous introuvable." };
   if (appt.status === "cancelled") return { success: false, error: "Déjà annulé." };
@@ -287,7 +287,7 @@ export async function updateAppointmentMedicalNotes(
     .from("users")
     .select("clinic_id")
     .eq("id", authData.user.id)
-    .single();
+    .maybeSingle();
 
   if (!userData) return { success: false, error: "User not found" };
 
@@ -307,7 +307,7 @@ export async function getDashboardStats(clinicId: string) {
   // M3 fix: verify the caller owns this clinicId
   const { data: authData } = await db.auth.getUser();
   if (!authData.user) throw new Error("Not authenticated");
-  const { data: userData } = await db.from("users").select("clinic_id").eq("id", authData.user.id).single();
+  const { data: userData } = await db.from("users").select("clinic_id").eq("id", authData.user.id).maybeSingle();
   if (!userData || userData.clinic_id !== clinicId) throw new Error("Unauthorized");
 
   const today = new Date();

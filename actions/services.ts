@@ -36,7 +36,7 @@ export async function createService(
     .from("services")
     .insert({ ...validated.data, clinic_id: clinicId })
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) return { success: false, error: error.message };
   return { success: true, data: { id: service.id } };

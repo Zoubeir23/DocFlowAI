@@ -48,7 +48,7 @@ async function getAuthenticatedClinicId(db: any): Promise<string | null> {
     .from("users")
     .select("clinic_id")
     .eq("id", authData.user.id)
-    .single();
+    .maybeSingle();
   return userData?.clinic_id ?? null;
 }
 
@@ -96,7 +96,7 @@ export async function addToWaitlist(
     .from("waitlist")
     .insert(insertPayload)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) return { success: false, error: error.message };
   return { success: true, data: { id: entry.id } };

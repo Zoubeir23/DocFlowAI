@@ -34,7 +34,7 @@ export async function createOnboarding(
       owner_id: user.id,
     })
     .select()
-    .single();
+    .maybeSingle();
 
   if (clinicError) {
     if (clinicError.code === "23505") {
@@ -103,7 +103,7 @@ export async function getCurrentClinic() {
     .from("users")
     .select("clinic_id, role")
     .eq("id", authData.user.id)
-    .single();
+    .maybeSingle();
 
   if (!userData) return null;
 
@@ -111,7 +111,7 @@ export async function getCurrentClinic() {
     .from("clinics")
     .select("*")
     .eq("id", userData.clinic_id)
-    .single();
+    .maybeSingle();
 
   return clinic ? { ...(clinic as Clinic), userRole: userData.role } : null;
 }
@@ -129,7 +129,7 @@ export async function updateClinic(
     .from("users")
     .select("clinic_id")
     .eq("id", authData.user.id)
-    .single();
+    .maybeSingle();
 
   if (!userData || userData.clinic_id !== clinicId) {
     return { success: false, error: "Unauthorized" };

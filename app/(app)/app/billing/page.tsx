@@ -58,9 +58,9 @@ async function fetchSubscription() {
   const db = supabase as any;
   const { data: { user } } = await db.auth.getUser();
   if (!user) return null;
-  const { data: userData } = await db.from("users").select("clinic_id").eq("id", user.id).single();
+  const { data: userData } = await db.from("users").select("clinic_id").eq("id", user.id).maybeSingle();
   if (!userData) return null;
-  const { data } = await db.from("subscriptions").select("*").eq("clinic_id", userData.clinic_id).single();
+  const { data } = await db.from("subscriptions").select("*").eq("clinic_id", userData.clinic_id).maybeSingle();
   return data as {
     plan: string;
     status: string;

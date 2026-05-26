@@ -49,14 +49,14 @@ export async function POST(req: NextRequest) {
     .from("clinics")
     .select("id, name, timezone")
     .eq("slug", clinicSlug)
-    .single() as { data: { id: string; name: string; timezone: string } | null };
+    .maybeSingle() as { data: { id: string; name: string; timezone: string } | null };
 
   if (!clinic) {
     return NextResponse.json({ error: "Clinic not found" }, { status: 404 });
   }
 
   const [settingsRes, servicesRes, availabilityRes, blockedRes] = await Promise.all([
-    db.from("clinic_settings").select("*").eq("clinic_id", clinic.id).single(),
+    db.from("clinic_settings").select("*").eq("clinic_id", clinic.id).maybeSingle(),
     db.from("services").select("*").eq("clinic_id", clinic.id).eq("is_active", true),
     db.from("availability_rules").select("*").eq("clinic_id", clinic.id),
     db.from("blocked_dates").select("*").eq("clinic_id", clinic.id).gte("date", new Date().toISOString().split("T")[0]),
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
       .select("*")
       .eq("id", conversationId)
       .eq("clinic_id", clinic.id)
-      .single();
+      .maybeSingle();
     if (data) {
       conversation = { id: data.id, messages: data.messages as unknown[] };
     }
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
         messages: [],
       })
       .select()
-      .single();
+      .maybeSingle();
     if (data) {
       conversation = { id: data.id, messages: [] };
     }

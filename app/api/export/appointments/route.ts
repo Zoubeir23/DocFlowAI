@@ -40,7 +40,7 @@ export async function GET() {
     .from("users")
     .select("clinic_id")
     .eq("id", authData.user.id)
-    .single();
+    .maybeSingle();
 
   if (!userData?.clinic_id) {
     return NextResponse.json({ error: "Clinique introuvable" }, { status: 403 });

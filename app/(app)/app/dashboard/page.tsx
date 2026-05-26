@@ -36,7 +36,7 @@ export default async function DashboardPage() {
     .from("users")
     .select("clinic_id, full_name, clinic:clinics(name)")
     .eq("id", user.id)
-    .single() as { data: { clinic_id: string; full_name: string; clinic: { name: string } } | null };
+    .maybeSingle() as { data: { clinic_id: string; full_name: string; clinic: { name: string } } | null };
 
   if (!userData) redirect("/onboarding");
 

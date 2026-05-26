@@ -25,7 +25,7 @@ export async function GET() {
     .from("users")
     .select("clinic_id, full_name, email")
     .eq("id", user.id)
-    .single() as { data: { clinic_id: string; full_name: string; email: string } | null };
+    .maybeSingle() as { data: { clinic_id: string; full_name: string; email: string } | null };
 
   if (!userData) return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
 

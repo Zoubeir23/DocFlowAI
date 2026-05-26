@@ -98,7 +98,7 @@ async function getAuthenticatedClinicId(): Promise<string | null> {
   const { data: authData } = await db.auth.getUser();
   if (!authData.user) return null;
   const { data: userData } = await db
-    .from("users").select("clinic_id").eq("id", authData.user.id).single();
+    .from("users").select("clinic_id").eq("id", authData.user.id).maybeSingle();
   return userData?.clinic_id ?? null;
 }
 

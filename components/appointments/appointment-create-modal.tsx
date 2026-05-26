@@ -68,7 +68,7 @@ export function AppointmentCreateModal({ onCreated }: AppointmentCreateModalProp
         .from("users")
         .select("clinic_id")
         .eq("id", authData.user.id)
-        .single();
+        .maybeSingle();
       if (!userData) return;
 
       const [patientsResult, servicesResult, practitionersResult] = await Promise.all([

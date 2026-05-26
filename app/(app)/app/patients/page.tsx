@@ -25,7 +25,7 @@ async function fetchClinicId() {
   const supabase = createClient() as any;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
-  const { data } = await supabase.from("users").select("clinic_id").eq("id", user.id).single();
+  const { data } = await supabase.from("users").select("clinic_id").eq("id", user.id).maybeSingle();
   return data?.clinic_id || null;
 }
 

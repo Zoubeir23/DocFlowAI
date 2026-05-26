@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .from("clinics")
     .select("name")
     .eq("slug", slug)
-    .single() as { data: { name: string } | null };
+    .maybeSingle() as { data: { name: string } | null };
 
   return {
     title: clinic ? `Book Appointment - ${clinic.name}` : "Book Appointment",
@@ -30,12 +30,12 @@ export default async function WidgetPage({ params }: Props) {
     .from("clinics")
     .select("id, name, slug, timezone")
     .eq("slug", slug)
-    .single() as { data: { id: string; name: string; slug: string; timezone: string } | null };
+    .maybeSingle() as { data: { id: string; name: string; slug: string; timezone: string } | null };
 
   if (!clinic) notFound();
 
   const [settingsRes, servicesRes] = await Promise.all([
-    db.from("clinic_settings").select("widget_color, welcome_message").eq("clinic_id", clinic.id).single(),
+    db.from("clinic_settings").select("widget_color, welcome_message").eq("clinic_id", clinic.id).maybeSingle(),
     db.from("services").select("id, name, duration_minutes, price").eq("clinic_id", clinic.id).eq("is_active", true),
   ]);
 

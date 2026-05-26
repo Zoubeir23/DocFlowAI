@@ -12,7 +12,7 @@ export async function requireSuperAdmin(): Promise<{ userId: string } | null> {
     .from("users")
     .select("role")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   if (!userData || userData.role !== "super_admin") return null;
   return { userId: user.id };

@@ -35,7 +35,7 @@ export async function GET(
     .from("appointments")
     .select("id, patient_id, clinic_id, start_at, end_at, status, notes, patients(full_name, phone, email), services(name, price, duration_minutes), clinics(name)")
     .eq("id", appointmentId)
-    .single() as { data: AppointmentRow | null; error: { message: string } | null };
+    .maybeSingle() as { data: AppointmentRow | null; error: { message: string } | null };
 
   if (error || !appt) {
     return NextResponse.json({ error: "Rendez-vous introuvable" }, { status: 404 });
@@ -50,7 +50,7 @@ export async function GET(
     .select("id")
     .eq("id", user.id)
     .eq("clinic_id", appt.clinic_id)
-    .single() as { data: { id: string } | null };
+    .maybeSingle() as { data: { id: string } | null };
 
   if (!staffCheck) {
     const { data: patientCheck } = await db
@@ -58,7 +58,7 @@ export async function GET(
       .select("id")
       .eq("auth_user_id", user.id)
       .eq("id", appt.patient_id)
-      .single() as { data: { id: string } | null };
+      .maybeSingle() as { data: { id: string } | null };
 
     if (!patientCheck) {
       return NextResponse.json({ error: "Rendez-vous introuvable" }, { status: 404 });

@@ -24,7 +24,7 @@ async function getOwnerClinicId(): Promise<{ clinicId: string } | null> {
     .from("users")
     .select("clinic_id, role")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   if (!userData) return null;
   if (userData.role !== "owner" && userData.role !== "super_admin") return null;
@@ -81,7 +81,7 @@ export async function createApiKey(
       key_prefix: keyPrefix,
     })
     .select("id")
-    .single();
+    .maybeSingle();
 
   if (error) return { success: false, error: "Erreur lors de la création" };
 

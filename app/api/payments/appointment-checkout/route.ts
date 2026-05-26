@@ -23,7 +23,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     .from("patients")
     .select("id, full_name, email")
     .eq("auth_user_id", user.id)
-    .single() as { data: { id: string; full_name: string; email: string | null } | null };
+    .maybeSingle() as { data: { id: string; full_name: string; email: string | null } | null };
 
   if (!patient) {
     return NextResponse.json({ error: "Dossier patient introuvable" }, { status: 403 });
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     .eq("id", appointmentId)
     .eq("patient_id", patient.id)
     .in("status", ["booked", "confirmed"])
-    .single() as {
+    .maybeSingle() as {
       data: {
         id: string;
         payment_status: string;

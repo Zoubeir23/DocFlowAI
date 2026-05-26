@@ -27,7 +27,7 @@ export async function createTeleconsultationRoom(
     .from("users")
     .select("clinic_id")
     .eq("id", user.id)
-    .single() as { data: { clinic_id: string } | null };
+    .maybeSingle() as { data: { clinic_id: string } | null };
 
   if (!userData) return { success: false, error: "Accès non autorisé" };
 
@@ -36,7 +36,7 @@ export async function createTeleconsultationRoom(
     .select("id, teleconsultation_room_id, teleconsultation_status, status")
     .eq("id", appointmentId)
     .eq("clinic_id", userData.clinic_id)
-    .single() as { data: {
+    .maybeSingle() as { data: {
       id: string;
       teleconsultation_room_id: string | null;
       teleconsultation_status: string | null;
@@ -97,7 +97,7 @@ export async function activateTeleconsultation(
     .from("users")
     .select("clinic_id")
     .eq("id", user.id)
-    .single() as { data: { clinic_id: string } | null };
+    .maybeSingle() as { data: { clinic_id: string } | null };
 
   if (!userData) return { success: false, error: "Accès non autorisé" };
 
@@ -125,7 +125,7 @@ export async function endTeleconsultation(
     .from("users")
     .select("clinic_id")
     .eq("id", user.id)
-    .single() as { data: { clinic_id: string } | null };
+    .maybeSingle() as { data: { clinic_id: string } | null };
 
   if (!userData) return { success: false, error: "Accès non autorisé" };
 
@@ -157,7 +157,7 @@ export async function getPatientTeleconsultationSession(
     .from("patients")
     .select("id")
     .eq("auth_user_id", user.id)
-    .single() as { data: { id: string } | null };
+    .maybeSingle() as { data: { id: string } | null };
 
   if (!patient) return null;
 
@@ -166,7 +166,7 @@ export async function getPatientTeleconsultationSession(
     .select("teleconsultation_room_id, teleconsultation_status")
     .eq("id", appointmentId)
     .eq("patient_id", patient.id)
-    .single() as { data: {
+    .maybeSingle() as { data: {
       teleconsultation_room_id: string | null;
       teleconsultation_status: string | null;
     } | null };

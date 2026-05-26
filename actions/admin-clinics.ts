@@ -155,7 +155,7 @@ export async function toggleClinicActive(clinicId: string): Promise<ApiResponse<
   const db = (await createAdminClient()) as any;
 
   const { data: clinic } = await db
-    .from("clinics").select("is_active").eq("id", clinicId).single();
+    .from("clinics").select("is_active").eq("id", clinicId).maybeSingle();
 
   if (!clinic) return { success: false, error: "Clinique introuvable" };
 

@@ -53,13 +53,13 @@ async function fetchClinicInfo(): Promise<{ clinicId: string; plan: string } | n
   const supabase = createClient() as any
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
-  const { data: userData } = await supabase.from('users').select('clinic_id').eq('id', user.id).single()
+  const { data: userData } = await supabase.from('users').select('clinic_id').eq('id', user.id).maybeSingle()
   if (!userData) return null
   const { data: sub } = await supabase
     .from('subscriptions')
     .select('plan')
     .eq('clinic_id', userData.clinic_id)
-    .single()
+    .maybeSingle()
   return { clinicId: userData.clinic_id, plan: sub?.plan ?? 'free' }
 }
 
