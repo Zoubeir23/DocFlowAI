@@ -24,7 +24,7 @@ export default async function AppLayout({
     .from("users")
     .select("full_name, email, role, clinic:clinics(name, slug)")
     .eq("id", user.id)
-    .single() as {
+    .maybeSingle() as {
     data: {
       full_name: string;
       email: string;
