@@ -225,6 +225,34 @@ export interface PrescriptionInput {
   practitioner_name: string;
   practitioner_title: string;
   practitioner_rpps: string;
+  icf_codes?: IcfCode[];
+}
+
+// ── WHO API Types ─────────────────────────────────────────────────────────────
+
+export interface IcfCode {
+  id: string;
+  code: string;
+  title: string;
+  definition?: string;
+}
+
+export interface DrugInteractionPair {
+  drug1Name: string;
+  drug2Name: string;
+  severity: "high" | "moderate" | "low";
+  description: string;
+  source: string;
+}
+
+export interface PharmacovigilanceSignal {
+  drugName: string;
+  rxcui: string;
+  totalReports: number;
+  seriousReports: number;
+  seriousnessRate: number;
+  topReactions: string[];
+  source: "FDA FAERS";
 }
 
 export interface NotificationPayload {

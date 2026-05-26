@@ -1,4 +1,5 @@
 import type { IcdCandidate, VitalSigns } from "@/types";
+import { computeGhoPrevalenceMultiplier } from "./who-gho";
 
 interface ScoringInput {
   symptoms: string[];
@@ -178,4 +179,40 @@ export function checkAllergyConflicts(
 ): boolean {
   const drug = drugName.toLowerCase();
   return allergies.some((allergy) => drug.includes(allergy.toLowerCase()));
+}
+
+/**
+ * Re-weight ICD-11 candidates using GHO disease prevalence data.
+ * Called after the initial scoring to adjust probabilities based on
+ * real-world epidemiological data from the WHO Global Health Observatory.
+ */
+export async function applyGhoPrevalenceWeighting(
+  candidates: IcdCandidate[]
+): Promise<IcdCandidate[]> {
+  const weighted = await Promise.all(
+    candidates.map(async (candidate) => {
+      const multiplier = await computeGhoPrevalenceMultiplier(candidate.code);
+      return {
+        ...candidate,
+        score: Math.min(candidate.score * multiplier, 1),
+      };
+    })
+  );
+
+  // Re-normalize probabilities after weighting
+  const totalScore = weighted.reduce((sum, candidate) => sum + candidate.score, 0);
+  return weighted
+    .map((candidate) => ({
+      ...candidate,
+      probability:
+        totalScore > 0
+          ? Math.round((candidate.score / totalScore) * 100)
+          : 0,
+    }))
+    .sort((firstCandidate, secondCandidate) => {
+      if (secondCandidate.is_serious !== firstCandidate.is_serious) {
+        return secondCandidate.is_serious ? 1 : -1;
+      }
+      return secondCandidate.score - firstCandidate.score;
+    });
 }

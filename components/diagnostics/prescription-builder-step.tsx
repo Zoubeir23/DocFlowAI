@@ -1,19 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Trash2, AlertTriangle, Pill, ClipboardList, Stethoscope } from "lucide-react";
+import { Plus, Trash2, AlertTriangle, Pill, ClipboardList, Stethoscope, ActivitySquare, Loader2 } from "lucide-react";
 import { AtcDrugSearch } from "@/components/diagnostics/atc-drug-search";
 import { IchiSearchField } from "@/components/diagnostics/ichi-search-field";
+import { IcfSearchField } from "@/components/diagnostics/icf-search-field";
+import { DrugInteractionWarning } from "@/components/diagnostics/drug-interaction-warning";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { checkAllergyConflicts } from "@/lib/diagnostic-scoring";
-import type { PrescriptionInput, PrescriptionTreatment, DiagnosticDocumentType } from "@/types";
+import type { PrescriptionInput, PrescriptionTreatment, DiagnosticDocumentType, IcfCode, DrugInteractionPair, PharmacovigilanceSignal } from "@/types";
 
 const prescriptionSchema = z.object({
   document_type: z.enum(["consultation", "prescription", "receipt", "medical_report", "sick_leave"]),
@@ -92,7 +94,12 @@ export function PrescriptionBuilderStep({
   const [customTest, setCustomTest] = useState("");
   const [allergyWarnings, setAllergyWarnings] = useState<Set<number>>(new Set());
 
-  const { register, handleSubmit, control, watch, formState: { errors } } = useForm<Omit<PrescriptionInput, "treatments" | "recommendations" | "follow_up_tests">>({
+  const [icfCodes, setIcfCodes] = useState<IcfCode[]>([]);
+  const [drugInteractions, setDrugInteractions] = useState<DrugInteractionPair[]>([]);
+  const [interactionLoading, setInteractionLoading] = useState(false);
+  const [vigibaseSignals, setVigibaseSignals] = useState<Map<string, PharmacovigilanceSignal>>(new Map());
+
+  const { register, handleSubmit, control, watch, formState: { errors } } = useForm<Omit<PrescriptionInput, "treatments" | "recommendations" | "follow_up_tests" | "icf_codes">>({
     resolver: zodResolver(prescriptionSchema.omit({ treatments: true, recommendations: true, follow_up_tests: true })),
     defaultValues: {
       document_type: "prescription",
@@ -102,6 +109,53 @@ export function PrescriptionBuilderStep({
   });
 
   const selectedDocumentType = watch("document_type");
+
+  // Check drug-drug interactions whenever treatments with rxcui change
+  const checkInteractions = useCallback(async (currentTreatments: PrescriptionTreatment[]) => {
+    const rxcuis = currentTreatments
+      .map((treatment) => treatment.atc_code)
+      .filter((code) => code && code.trim() !== "");
+
+    if (rxcuis.length < 2) {
+      setDrugInteractions([]);
+      return;
+    }
+
+    setInteractionLoading(true);
+    try {
+      const response = await fetch("/api/who/drug-interactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rxcuis }),
+      });
+      if (response.ok) {
+        const result: { interactions: DrugInteractionPair[] } = await response.json();
+        setDrugInteractions(result.interactions ?? []);
+      }
+    } catch {
+      // Silently ignore network errors — interactions are advisory only
+    } finally {
+      setInteractionLoading(false);
+    }
+  }, []);
+
+  // Fetch pharmacovigilance signal for a single drug
+  async function fetchVigibaseSignal(rxcui: string, drugName: string) {
+    if (!rxcui || vigibaseSignals.has(rxcui)) return;
+    try {
+      const response = await fetch(
+        `/api/who/vigibase?rxcui=${encodeURIComponent(rxcui)}&drugName=${encodeURIComponent(drugName)}`
+      );
+      if (response.ok) {
+        const data: { signal: PharmacovigilanceSignal | null } = await response.json();
+        if (data.signal) {
+          setVigibaseSignals((prev) => new Map(prev).set(rxcui, data.signal!));
+        }
+      }
+    } catch {
+      // Advisory only — ignore errors
+    }
+  }
 
   function updateTreatment(index: number, field: keyof PrescriptionTreatment, value: string | number | boolean) {
     const updated = treatments.map((treatment, idx) => {
@@ -119,9 +173,18 @@ export function PrescriptionBuilderStep({
         });
       }
 
+      // Fetch vigibase signal when an ATC/rxcui code is set
+      if (field === "atc_code" && value) {
+        fetchVigibaseSignal(value as string, treatment.drug_name);
+      }
+
       return newTreatment;
     });
     setTreatments(updated);
+    // Re-check interactions when drug selection changes
+    if (field === "atc_code") {
+      checkInteractions(updated);
+    }
   }
 
   function addTreatment() {
@@ -129,12 +192,14 @@ export function PrescriptionBuilderStep({
   }
 
   function removeTreatment(index: number) {
-    setTreatments(treatments.filter((_, idx) => idx !== index));
+    const updated = treatments.filter((_, idx) => idx !== index);
+    setTreatments(updated);
     setAllergyWarnings((prev) => {
       const next = new Set(prev);
       next.delete(index);
       return next;
     });
+    checkInteractions(updated);
   }
 
   function toggleRecommendation(rec: string) {
@@ -157,7 +222,7 @@ export function PrescriptionBuilderStep({
     setCustomTest("");
   }
 
-  async function handleFormSubmit(formData: Omit<PrescriptionInput, "treatments" | "recommendations" | "follow_up_tests">) {
+  async function handleFormSubmit(formData: Omit<PrescriptionInput, "treatments" | "recommendations" | "follow_up_tests" | "icf_codes">) {
     if (allergyWarnings.size > 0) return;
 
     // Validate treatments manually (outside RHF scope)
@@ -177,6 +242,7 @@ export function PrescriptionBuilderStep({
       treatments,
       recommendations: selectedRecommendations,
       follow_up_tests: followUpTests,
+      icf_codes: icfCodes,
     });
   }
 
@@ -303,6 +369,34 @@ export function PrescriptionBuilderStep({
               </div>
             </div>
 
+            {/* Vigibase pharmacovigilance signal */}
+            {treatment.atc_code && vigibaseSignals.has(treatment.atc_code) && (() => {
+              const signal = vigibaseSignals.get(treatment.atc_code)!;
+              const isHighRisk = signal.seriousnessRate > 50;
+              return (
+                <div className={`flex items-start gap-2 p-2.5 rounded-lg border text-xs ${
+                  isHighRisk
+                    ? "bg-orange-50 border-orange-200 text-orange-800"
+                    : "bg-blue-50 border-blue-200 text-blue-800"
+                }`}>
+                  <AlertTriangle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <span className="font-semibold">
+                      {signal.totalReports.toLocaleString()} effets indésirables signalés (FDA FAERS)
+                    </span>
+                    {signal.seriousnessRate > 0 && (
+                      <span className="ml-1 opacity-75">• {signal.seriousnessRate}% graves</span>
+                    )}
+                    {signal.topReactions.length > 0 && (
+                      <p className="mt-0.5 opacity-75">
+                        Top réactions: {signal.topReactions.slice(0, 3).join(", ")}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <input
@@ -323,6 +417,20 @@ export function PrescriptionBuilderStep({
           </div>
         ))}
       </section>
+
+      {/* Drug-drug interactions */}
+      {(drugInteractions.length > 0 || interactionLoading) && (
+        <section className="space-y-3 border-t border-border pt-6">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-500" />
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-amber-600">
+              Interactions médicamenteuses
+              {interactionLoading && <Loader2 className="inline ml-2 w-3 h-3 animate-spin" />}
+            </h3>
+          </div>
+          <DrugInteractionWarning interactions={drugInteractions} />
+        </section>
+      )}
 
       {/* Recommendations */}
       <section className="space-y-4 border-t border-border pt-6">
@@ -381,6 +489,26 @@ export function PrescriptionBuilderStep({
           </div>
         </div>
       </section>
+
+      {/* ICF codes — only for sick leave certificates */}
+      {selectedDocumentType === "sick_leave" && (
+        <section className="space-y-4 border-t border-border pt-6">
+          <div className="flex items-center gap-2">
+            <ActivitySquare className="w-4 h-4 text-teal-600" />
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-teal-600">
+              Limitations fonctionnelles (ICF — OMS)
+            </h3>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Documentez les limitations fonctionnelles du patient pour justifier l'arrêt de travail.
+          </p>
+          <IcfSearchField
+            selectedCodes={icfCodes}
+            onAdd={(code) => setIcfCodes((prev) => [...prev, code])}
+            onRemove={(codeId) => setIcfCodes((prev) => prev.filter((c) => c.id !== codeId))}
+          />
+        </section>
+      )}
 
       {/* Practitioner */}
       <section className="space-y-4 border-t border-border pt-6">
