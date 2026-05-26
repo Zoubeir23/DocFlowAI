@@ -28,7 +28,7 @@ export function NotificationBell() {
         .from("users")
         .select("clinic_id")
         .eq("id", user.id)
-        .single()
+        .maybeSingle()
         .then(({ data, error }) => {
           if (!error && data) setClinicId((data as { clinic_id: string }).clinic_id);
         });

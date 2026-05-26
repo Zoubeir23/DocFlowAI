@@ -64,13 +64,13 @@ async function fetchProfileData() {
         'id, full_name, email, role, clinic_id, created_at, clinic:clinics(id, name, slug, timezone, created_at)'
       )
       .eq('id', user.id)
-      .single(),
+      .maybeSingle(),
     supabase
       .from('appointments')
       .select('id, status, created_at')
       .eq(
         'clinic_id',
-        (await supabase.from('users').select('clinic_id').eq('id', user.id).single()).data
+        (await supabase.from('users').select('clinic_id').eq('id', user.id).maybeSingle()).data
           ?.clinic_id
       ),
   ])

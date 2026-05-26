@@ -15,7 +15,7 @@ async function getDB() {
 async function getAuthenticatedClinicId(db: any): Promise<string | null> {
   const { data: authData } = await db.auth.getUser();
   if (!authData.user) return null;
-  const { data: userData } = await db.from("users").select("clinic_id").eq("id", authData.user.id).single();
+  const { data: userData } = await db.from("users").select("clinic_id").eq("id", authData.user.id).maybeSingle();
   return userData?.clinic_id ?? null;
 }
 
@@ -57,7 +57,7 @@ export async function getPatients(
 
 export async function getPatient(patientId: string) {
   const db = await getDB();
-  const { data } = await db.from("patients").select("*").eq("id", patientId).single();
+  const { data } = await db.from("patients").select("*").eq("id", patientId).maybeSingle();
   return data as Patient | null;
 }
 
@@ -90,9 +90,9 @@ export async function createPatient(
     .from("patients")
     .insert({ ...validated.data, clinic_id: clinicId, email: validated.data.email || null })
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error) return { success: false, error: error.message };
+  if (error || !patient) return { success: false, error: error?.message ?? "Patient creation failed" };
   return { success: true, data: { id: patient.id } };
 }
 

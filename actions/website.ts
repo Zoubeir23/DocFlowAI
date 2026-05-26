@@ -19,7 +19,7 @@ export async function getClinicWebsite(clinicId?: string) {
     .from("clinic_websites")
     .select("*")
     .eq("clinic_id", targetClinicId)
-    .single();
+    .maybeSingle();
 
   if (error && error.code !== "PGRST116") { // PGRST116 is "No rows found"
     return { success: false, error: error.message };
@@ -46,7 +46,7 @@ export async function initializeClinicWebsite(templateId: string = "medical-mode
       .from("users")
       .select("full_name, avatar_url")
       .eq("id", authData.user.id)
-      .single();
+      .maybeSingle();
       
     if (userData) {
       doctorAvatar = userData.avatar_url || "";
@@ -80,7 +80,7 @@ export async function initializeClinicWebsite(templateId: string = "medical-mode
     .from("clinic_websites")
     .insert(newWebsite)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     return { success: false, error: error.message };
@@ -101,7 +101,7 @@ export async function updateClinicWebsite(updates: any) {
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq("clinic_id", clinic.id)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     return { success: false, error: error.message };
@@ -122,7 +122,7 @@ export async function getPublicWebsiteData(slug: string): Promise<{success: bool
     .from("clinics")
     .select("id, name, slug")
     .eq("slug", slug)
-    .single();
+    .maybeSingle();
     
   if (clinicError || !clinic) {
     return { success: false, error: "Clinic not found" };
@@ -134,7 +134,7 @@ export async function getPublicWebsiteData(slug: string): Promise<{success: bool
     .select("*")
     .eq("clinic_id", clinic.id)
     .eq("is_published", true)
-    .single();
+    .maybeSingle();
     
   if (websiteError || !website) {
     return { success: false, error: "Website not found or not published" };
@@ -157,7 +157,7 @@ export async function getPublicWebsiteData(slug: string): Promise<{success: bool
     .from("clinic_settings")
     .select("widget_color")
     .eq("clinic_id", clinic.id)
-    .single();
+    .maybeSingle();
     
   // 5. Get doctor info
   const { data: doctors } = await db

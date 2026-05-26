@@ -34,7 +34,7 @@ async function getAuthenticatedOwnerClinicId(): Promise<{ clinicId: string; user
     .from("users")
     .select("clinic_id, role")
     .eq("id", authData.user.id)
-    .single();
+    .maybeSingle();
 
   if (!userData || (userData.role !== "owner" && userData.role !== "super_admin")) return null;
 
@@ -52,7 +52,7 @@ export async function listTeamMembers(): Promise<TeamMember[]> {
     .from("users")
     .select("clinic_id")
     .eq("id", authData.user.id)
-    .single();
+    .maybeSingle();
 
   if (!userData) return [];
 
@@ -124,7 +124,7 @@ export async function inviteTeamMember(
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     }, { onConflict: "clinic_id,email" })
     .select("token")
-    .single();
+    .maybeSingle();
 
   if (inviteError || !invitation) {
     console.error("[inviteTeamMember] upsert error:", inviteError);
@@ -136,7 +136,7 @@ export async function inviteTeamMember(
     .from("clinics")
     .select("name")
     .eq("id", auth.clinicId)
-    .single();
+    .maybeSingle();
 
   const clinicName = clinicData?.name ?? "DocFlow IA";
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -200,7 +200,7 @@ export async function removeTeamMember(
     .from("users")
     .select("clinic_id, role")
     .eq("id", memberId)
-    .single();
+    .maybeSingle();
 
   if (!member || member.clinic_id !== auth.clinicId) {
     return { success: false, error: "Membre introuvable" };
@@ -248,7 +248,7 @@ export async function acceptInvitation(
     .select("*")
     .eq("token", token)
     .eq("status", "pending")
-    .single();
+    .maybeSingle();
 
   if (!invitation) {
     return { success: false, error: "Invitation introuvable ou expirée" };
@@ -297,7 +297,7 @@ export async function getMyRole(): Promise<{ role: string; clinicId: string } | 
     .from("users")
     .select("role, clinic_id")
     .eq("id", authData.user.id)
-    .single();
+    .maybeSingle();
 
   if (!userData) return null;
   return { role: userData.role, clinicId: userData.clinic_id };
@@ -315,7 +315,7 @@ export async function getInvitationByToken(
     .select("role, expires_at, clinic:clinics(name)")
     .eq("token", token)
     .eq("status", "pending")
-    .single();
+    .maybeSingle();
 
   if (!data) return null;
 

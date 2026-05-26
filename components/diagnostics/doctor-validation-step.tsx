@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { ShieldCheck, AlertTriangle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +34,7 @@ export function DoctorValidationStep({
   onBack,
   isSubmitting,
 }: DoctorValidationStepProps) {
+  const t = useTranslations("diagnostics.validation");
   const [selectedCandidateIndex, setSelectedCandidateIndex] = useState(0);
   const [validatedBy, setValidatedBy] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
@@ -74,10 +76,9 @@ export function DoctorValidationStep({
       <div className="flex items-start gap-3 p-5 bg-amber-50 border border-amber-200 rounded-xl">
         <ShieldCheck className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
         <div>
-          <p className="font-semibold text-amber-800">Validation médicale obligatoire</p>
+          <p className="font-semibold text-amber-800">{t("obligatoryTitle")}</p>
           <p className="text-sm text-amber-700 mt-1">
-            Le médecin doit valider le diagnostic avant toute génération d'ordonnance.
-            La responsabilité de la prescription reste celle du praticien signataire.
+            {t("obligatoryDesc")}
           </p>
         </div>
       </div>
@@ -192,22 +193,22 @@ export function DoctorValidationStep({
 
       {/* Validator identity */}
       <section className="space-y-2 border-t border-border pt-6">
-        <Label className="text-sm font-medium">Nom du médecin validateur <span className="text-destructive">*</span></Label>
+        <Label className="text-sm font-medium">{t("validatorName")} <span className="text-destructive">*</span></Label>
         <Input
           value={validatedBy}
           onChange={(e) => setValidatedBy(e.target.value)}
-          placeholder="Dr. Prénom Nom"
+          placeholder={t("validatorPlaceholder")}
           className="rounded-xl border-border max-w-sm"
         />
         {!validatedBy.trim() && (
-          <p className="text-xs text-muted-foreground">Requis pour valider</p>
+          <p className="text-xs text-muted-foreground">{t("requiredHint")}</p>
         )}
       </section>
 
       {/* Actions */}
       <div className="flex flex-col sm:flex-row gap-3 pt-2">
         <Button type="button" onClick={onBack} variant="outline" className="rounded-xl border-border">
-          Retour
+          {t("back")}
         </Button>
 
         {!showRejectionForm ? (
@@ -219,7 +220,7 @@ export function DoctorValidationStep({
               className="rounded-xl border-destructive/40 text-destructive hover:bg-destructive/10 gap-2"
             >
               <XCircle className="w-4 h-4" />
-              Rejeter — demander bilan
+              {t("rejectRequestTests")}
             </Button>
             <Button
               type="button"
@@ -228,7 +229,7 @@ export function DoctorValidationStep({
               className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-medium flex-1 gap-2"
             >
               <ShieldCheck className="w-4 h-4" />
-              {isSubmitting ? "Validation..." : "Valider le diagnostic et générer l'ordonnance"}
+              {isSubmitting ? t("validating") : t("validateAndPrescribe")}
             </Button>
           </>
         ) : (
@@ -236,13 +237,13 @@ export function DoctorValidationStep({
             <Textarea
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
-              placeholder="Motif du rejet (examens manquants, diagnostic non concluant...)..."
+              placeholder={t("rejectionReasonDoctorStep")}
               className="rounded-xl border-destructive/40 resize-none"
               rows={2}
             />
             <div className="flex gap-2">
               <Button type="button" onClick={() => setShowRejectionForm(false)} variant="outline" className="rounded-xl">
-                Annuler
+                {t("cancel")}
               </Button>
               <Button
                 type="button"
@@ -250,7 +251,7 @@ export function DoctorValidationStep({
                 disabled={!validatedBy.trim() || !rejectionReason.trim() || isSubmitting}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl font-medium flex-1"
               >
-                {isSubmitting ? "Envoi..." : "Confirmer le rejet"}
+                {isSubmitting ? t("sending") : t("confirmReject")}
               </Button>
             </div>
           </div>

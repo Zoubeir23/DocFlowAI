@@ -75,7 +75,7 @@ export async function sendNewsletter(input: {
       created_by: auth.userId,
     })
     .select("id")
-    .single();
+    .maybeSingle();
 
   if (campaignError || !campaign) {
     return { success: false, error: "Erreur de création de campagne" };

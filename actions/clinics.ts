@@ -34,7 +34,7 @@ export async function listUserClinics(): Promise<ClinicAccessEntry[]> {
     .from("users")
     .select("clinic_id")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   const activeclinicId = userData?.clinic_id;
 
@@ -65,7 +65,7 @@ export async function switchActiveClinic(
     .select("clinic_id, role")
     .eq("user_id", user.id)
     .eq("clinic_id", clinicId)
-    .single();
+    .maybeSingle();
 
   if (!accessEntry) {
     return { success: false, error: "Accès non autorisé à cette clinique" };
@@ -112,7 +112,7 @@ export async function createNewClinic(
     .from("users")
     .select("clinic_id, role")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   if (!userData?.clinic_id) {
     return { success: false, error: "Clinique principale introuvable" };
@@ -126,7 +126,7 @@ export async function createNewClinic(
     .from("subscriptions")
     .select("plan")
     .eq("clinic_id", userData.clinic_id)
-    .single();
+    .maybeSingle();
 
   if (sub?.plan !== "enterprise") {
     return {
@@ -168,7 +168,7 @@ export async function createNewClinic(
       owner_id: user.id,
     })
     .select()
-    .single();
+    .maybeSingle();
 
   if (clinicError) {
     console.error("[createNewClinic] insert error:", clinicError.code);

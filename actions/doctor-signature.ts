@@ -28,7 +28,7 @@ export async function getDoctorSignature(): Promise<DoctorSignature | null> {
     .from("doctor_signatures")
     .select("*")
     .eq("user_id", user.id)
-    .single() as { data: DoctorSignature | null };
+    .maybeSingle() as { data: DoctorSignature | null };
 
   return data;
 }
@@ -47,7 +47,7 @@ export async function saveDoctorSignature(
     .from("users")
     .select("clinic_id")
     .eq("id", user.id)
-    .single() as { data: { clinic_id: string } | null };
+    .maybeSingle() as { data: { clinic_id: string } | null };
 
   if (!userData) return { success: false, error: "Utilisateur introuvable" };
 
@@ -92,7 +92,7 @@ export async function getDoctorSignatureByUserId(
     .from("users")
     .select("clinic_id")
     .eq("id", user.id)
-    .single() as { data: { clinic_id: string } | null };
+    .maybeSingle() as { data: { clinic_id: string } | null };
 
   if (!callerData) return null;
 
@@ -101,7 +101,7 @@ export async function getDoctorSignatureByUserId(
     .select("*")
     .eq("user_id", userId)
     .eq("clinic_id", callerData.clinic_id)
-    .single() as { data: DoctorSignature | null };
+    .maybeSingle() as { data: DoctorSignature | null };
 
   return data;
 }

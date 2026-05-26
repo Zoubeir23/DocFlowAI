@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { Search, X, Plus, Tag } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import type { IcdCode } from "@/types";
@@ -17,6 +18,7 @@ interface IcdSearchResult {
 }
 
 export function IcdSearchField({ selectedCodes, onCodesChange }: IcdSearchFieldProps) {
+  const t = useTranslations("diagnostics.icd");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<IcdSearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -108,7 +110,7 @@ export function IcdSearchField({ selectedCodes, onCodesChange }: IcdSearchFieldP
             onChange={(e) => handleQueryChange(e.target.value)}
             onFocus={() => results.length > 0 && setIsOpen(true)}
             onBlur={() => setTimeout(() => setIsOpen(false), 150)}
-            placeholder="Rechercher un diagnostic ICD-11 (ex: diabète, hypertension...)"
+            placeholder={t("searchPlaceholder")}
             className="pl-10 h-10 rounded-xl border-border bg-card focus:ring-primary focus:border-primary text-sm"
           />
           {isLoading && (

@@ -31,7 +31,7 @@ export async function submitPreconsultationForm(
     .from("patients")
     .select("id")
     .eq("auth_user_id", user.id)
-    .single() as { data: { id: string } | null };
+    .maybeSingle() as { data: { id: string } | null };
 
   if (!patient) return { success: false, error: "Dossier patient introuvable" };
 

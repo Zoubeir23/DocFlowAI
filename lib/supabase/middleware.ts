@@ -54,7 +54,7 @@ export async function updateSession(request: NextRequest) {
       .from("users")
       .select("id")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
     if (staffRecord) {
       const url = request.nextUrl.clone();
@@ -77,7 +77,7 @@ export async function updateSession(request: NextRequest) {
       .from("users")
       .select("is_super_admin")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
     if (!userData?.is_super_admin) {
       const url = request.nextUrl.clone();
@@ -93,7 +93,7 @@ export async function updateSession(request: NextRequest) {
       .from("users")
       .select("is_active, role")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
     if (userData && userData.is_active === false) {
       const url = request.nextUrl.clone();

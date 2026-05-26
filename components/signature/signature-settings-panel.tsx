@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
+import { useTranslations, useLocale } from "next-intl";
 import { saveDoctorSignature, deleteDoctorSignature, getDoctorSignature } from "@/actions/doctor-signature";
 import { SignaturePad } from "./signature-pad";
 import { toast } from "sonner";
@@ -8,6 +9,8 @@ import { PenLine, CheckCircle2, Loader2 } from "lucide-react";
 import type { DoctorSignature } from "@/actions/doctor-signature";
 
 export function SignatureSettingsPanel() {
+  const t = useTranslations("signature");
+  const locale = useLocale();
   const [currentSignature, setCurrentSignature] = useState<DoctorSignature | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -30,7 +33,7 @@ export function SignatureSettingsPanel() {
         <div className="card-panel-header">
           <div className="flex items-center gap-3">
             <PenLine className="w-4 h-4 text-primary" />
-            <span className="font-bold text-foreground text-[15px] uppercase tracking-wider">Signature électronique</span>
+            <span className="font-bold text-foreground text-[15px] uppercase tracking-wider">{t("title")}</span>
           </div>
         </div>
         <div className="p-6 flex items-center justify-center h-32">
@@ -44,7 +47,7 @@ export function SignatureSettingsPanel() {
     startTransition(async () => {
       const result = await saveDoctorSignature(dataUrl);
       if (result.success) {
-        toast.success("Signature enregistrée");
+        toast.success(t("toastSaved"));
         setCurrentSignature({
           ...( currentSignature ?? { id: "", user_id: "", clinic_id: "" }),
           signature_data_url: dataUrl,
@@ -52,7 +55,7 @@ export function SignatureSettingsPanel() {
         });
         setEditMode(false);
       } else {
-        toast.error(result.error ?? "Erreur lors de l'enregistrement");
+        toast.error(result.error ?? t("toastSaveError"));
       }
     });
   }
@@ -61,11 +64,11 @@ export function SignatureSettingsPanel() {
     startTransition(async () => {
       const result = await deleteDoctorSignature();
       if (result.success) {
-        toast.success("Signature supprimée");
+        toast.success(t("toastDeleted"));
         setCurrentSignature(null);
         setEditMode(true);
       } else {
-        toast.error(result.error ?? "Erreur lors de la suppression");
+        toast.error(result.error ?? t("toastDeleteError"));
       }
     });
   }
@@ -76,7 +79,7 @@ export function SignatureSettingsPanel() {
         <div className="flex items-center gap-3">
           <PenLine className="w-4 h-4 text-primary" />
           <span className="font-bold text-foreground text-[15px] uppercase tracking-wider">
-            Signature électronique
+            {t("title")}
           </span>
         </div>
         {currentSignature && !editMode && (
@@ -86,31 +89,31 @@ export function SignatureSettingsPanel() {
             className="text-xs font-semibold text-primary hover:underline"
             disabled={isPending}
           >
-            Modifier
+            {t("modify")}
           </button>
         )}
       </div>
 
       <div className="p-6 space-y-4">
         <p className="text-sm text-muted-foreground">
-          Cette signature sera automatiquement apposée sur vos ordonnances et documents médicaux imprimés.
+          {t("description")}
         </p>
 
         {currentSignature && !editMode ? (
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-emerald-600 text-sm font-semibold">
               <CheckCircle2 className="w-4 h-4" />
-              Signature enregistrée
+              {t("signatureOnFile")}
             </div>
             <div className="bg-white border-2 border-border rounded-xl p-4 flex items-center justify-center h-36">
               <img
                 src={currentSignature.signature_data_url}
-                alt="Votre signature"
+                alt={t("yourSignatureAlt")}
                 className="max-h-24 max-w-full object-contain"
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Dernière mise à jour : {new Date(currentSignature.updated_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+              {t("lastUpdated")} {new Date(currentSignature.updated_at).toLocaleDateString(locale, { day: "numeric", month: "long", year: "numeric" })}
             </p>
           </div>
         ) : (

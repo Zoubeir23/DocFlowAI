@@ -32,7 +32,7 @@ async function fetchClinicData(): Promise<{ clinic_id: string; clinic: { slug: s
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
   const { data: userData } = await supabase
-    .from('users').select('clinic_id, clinic:clinics(slug)').eq('id', user.id).single()
+    .from('users').select('clinic_id, clinic:clinics(slug)').eq('id', user.id).maybeSingle()
   return userData as { clinic_id: string; clinic: { slug: string } | null } | null
 }
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -117,6 +118,7 @@ interface PatientProfileStepProps {
 }
 
 export function PatientProfileStep({ defaultValues, onNext }: PatientProfileStepProps) {
+  const t = useTranslations("diagnostics.patientStep");
   const { register, handleSubmit, control, watch, setValue, formState: { errors } } = useForm<PatientProfileInput>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -281,7 +283,7 @@ export function PatientProfileStep({ defaultValues, onNext }: PatientProfileStep
 
       <div className="flex justify-end pt-2">
         <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-medium px-8">
-          Suivant : Symptômes et signes vitaux
+          {t("nextButton")}
         </Button>
       </div>
     </form>

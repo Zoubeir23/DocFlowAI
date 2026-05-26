@@ -30,7 +30,7 @@ async function getOwnerClinicId(): Promise<{ clinicId: string } | null> {
     .from("users")
     .select("clinic_id, role")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   if (!userData) return null;
   if (userData.role !== "owner" && userData.role !== "super_admin") return null;
@@ -95,7 +95,7 @@ export async function createWebhook(input: {
       secret,
     })
     .select("id")
-    .single();
+    .maybeSingle();
 
   if (error) return { success: false, error: "Erreur lors de la création" };
 
@@ -145,7 +145,7 @@ export async function testWebhook(webhookId: string): Promise<ApiResponse<{ stat
     .select("url, secret")
     .eq("id", webhookId)
     .eq("clinic_id", auth.clinicId)
-    .single();
+    .maybeSingle();
 
   if (!hook) return { success: false, error: "Webhook introuvable" };
 

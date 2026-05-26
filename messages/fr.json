@@ -150,7 +150,24 @@
     "noAppointmentsFound": "Aucun rendez-vous trouvé",
     "appointmentsAppearHere": "Les rendez-vous apparaîtront ici une fois réservés via le widget IA",
     "markedAs": "Rendez-vous marqué comme",
-    "failedToUpdate": "Échec de la mise à jour"
+    "failedToUpdate": "Échec de la mise à jour",
+    "create": {
+      "title": "Nouveau rendez-vous",
+      "triggerButton": "Nouveau RDV",
+      "patient": "Patient",
+      "patientPlaceholder": "Sélectionner un patient",
+      "service": "Service",
+      "servicePlaceholder": "Sélectionner un service",
+      "practitioner": "Praticien",
+      "practitionerUnassigned": "Non assigné",
+      "dateTime": "Date et heure",
+      "notesLabel": "Notes",
+      "notesPlaceholder": "Notes internes…",
+      "cancel": "Annuler",
+      "createButton": "Créer",
+      "successToast": "Rendez-vous créé",
+      "errorToast": "Erreur lors de la création"
+    }
   },
   "patients": {
     "title": "Patients",
@@ -189,7 +206,33 @@
     "cancelButton": "Annuler",
     "sinceLabel": "Depuis",
     "viewRecord": "Voir le dossier",
-    "importCsv": "Importer CSV"
+    "importCsv": "Importer CSV",
+    "csv": {
+      "invalidFormat": "Format invalide — seuls les fichiers .csv sont acceptés",
+      "selectFileTitle": "Sélectionner un fichier CSV",
+      "columnsHint": "Colonnes : nom_complet, telephone, email (opt.), notes (opt.)",
+      "chooseFile": "Choisir un fichier",
+      "downloadTemplate": "Télécharger le modèle CSV",
+      "templateLabel": "Modèle",
+      "cancel": "Annuler",
+      "importing": "Import en cours…",
+      "importButton": "Importer {count} patient",
+      "importButtonPlural": "Importer {count} patients",
+      "newLabel": "Nouveau",
+      "updatedLabel": "Mis à jour",
+      "skippedLines": "Lignes ignorées :",
+      "columnName": "Nom complet",
+      "columnPhone": "Téléphone",
+      "columnEmail": "Email",
+      "newImport": "Nouvel import",
+      "close": "Fermer",
+      "success": "Import terminé avec succès.",
+      "noImported": "Aucun patient importé.",
+      "changeFile": "Changer de fichier",
+      "lineError": "Ligne {line}",
+      "networkError": "Erreur réseau lors de l'import",
+      "importError": "Erreur lors de l'import"
+    }
   },
   "services": {
     "title": "Services",
@@ -916,6 +959,83 @@
     "validated": "Validé",
     "rejected": "Rejeté",
     "noResults": "Aucun diagnostic",
-    "searchPlaceholder": "Rechercher un patient, diagnostic..."
+    "searchPlaceholder": "Rechercher un patient, diagnostic...",
+    "validation": {
+      "panelTitle": "Validation médicale requise",
+      "obligatoryTitle": "Validation médicale obligatoire",
+      "obligatoryDesc": "Le médecin doit valider le diagnostic avant toute génération d'ordonnance. La responsabilité de la prescription reste celle du praticien signataire.",
+      "validatorName": "Nom du médecin validateur",
+      "validatorPlaceholder": "Dr. Nom Prénom",
+      "requiredHint": "Requis pour valider",
+      "validating": "Validation...",
+      "validate": "Valider le diagnostic",
+      "reject": "Rejeter",
+      "rejectRequestTests": "Rejeter — demander bilan",
+      "validateAndPrescribe": "Valider le diagnostic et générer l'ordonnance",
+      "rejectionReason": "Motif du rejet",
+      "rejectionReasonPlaceholder": "Expliquez la raison du rejet...",
+      "rejectionReasonDoctorStep": "Motif du rejet (examens manquants, diagnostic non concluant...)...",
+      "sending": "Envoi...",
+      "confirmReject": "Confirmer le rejet",
+      "rejectingLabel": "Rejet...",
+      "cancel": "Annuler",
+      "back": "Retour",
+      "toastValidated": "Diagnostic validé",
+      "toastRejected": "Diagnostic rejeté",
+      "toastError": "Erreur de validation"
+    },
+    "icd": {
+      "candidatesTitle": "Diagnostics candidats — ICD-11",
+      "searchPlaceholder": "Rechercher un diagnostic ICD-11 (ex: diabète, hypertension...)",
+      "addManually": "Ajouter manuellement un code ICD-11",
+      "rerunAnalysis": "Relancer l'analyse ICD-11",
+      "analyzingApi": "Interrogation de l'API OMS ICD-11 en cours...",
+      "analyzing": "Analyse en cours...",
+      "submitForValidation": "Soumettre pour validation médecin"
+    },
+    "prescriptionStep": {
+      "validatedBanner": "Diagnostic validé par le médecin",
+      "addMedication": "Ajouter un médicament",
+      "remove": "Supprimer",
+      "back": "Retour",
+      "generating": "Génération...",
+      "generateAndSave": "Générer et enregistrer l'ordonnance",
+      "allergyWarning": "Allergie détectée — vérifiez ce médicament"
+    },
+    "patientStep": {
+      "nextButton": "Suivant : Symptômes et signes vitaux"
+    }
+  },
+  "signature": {
+    "title": "Signature électronique",
+    "modify": "Modifier",
+    "description": "Cette signature sera automatiquement apposée sur vos ordonnances et documents médicaux imprimés.",
+    "signatureOnFile": "Signature enregistrée",
+    "yourSignatureAlt": "Votre signature",
+    "lastUpdated": "Dernière mise à jour :",
+    "drawHere": "Dessinez votre signature ici",
+    "clear": "Effacer",
+    "save": "Enregistrer la signature",
+    "delete": "Supprimer",
+    "toastSaved": "Signature enregistrée",
+    "toastDeleted": "Signature supprimée",
+    "toastSaveError": "Erreur lors de l'enregistrement",
+    "toastDeleteError": "Erreur lors de la suppression"
+  },
+  "portal": {
+    "cancelAppointment": "Annuler le RDV",
+    "confirm": "Confirmer ?",
+    "yesCancel": "Oui, annuler",
+    "no": "Non",
+    "toastCancelled": "Rendez-vous annulé",
+    "toastCancelError": "Erreur lors de l'annulation"
+  },
+  "websiteBuilder": {
+    "createTitle": "Créer votre site web",
+    "createDesc": "Votre site sera créé avec notre design éditorial. Vous pourrez personnaliser les couleurs, textes et images depuis l'éditeur.",
+    "creating": "Création en cours...",
+    "createButton": "Créer mon site web",
+    "toastSuccess": "Site web créé avec succès !",
+    "toastError": "Impossible de créer le site"
   }
 }

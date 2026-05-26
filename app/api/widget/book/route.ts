@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     .from("clinics")
     .select("id, name, owner_id")
     .eq("slug", clinicSlug)
-    .single() as { data: { id: string; name: string; owner_id: string } | null };
+    .maybeSingle() as { data: { id: string; name: string; owner_id: string } | null };
 
   if (!clinic) {
     return NextResponse.json({ error: "Clinic not found" }, { status: 404 });
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     .eq("id", serviceId)
     .eq("clinic_id", clinic.id)
     .eq("is_active", true)
-    .single() as { data: { id: string; name: string; duration_minutes: number } | null };
+    .maybeSingle() as { data: { id: string; name: string; duration_minutes: number } | null };
 
   if (!service) {
     return NextResponse.json({ error: "Service not found" }, { status: 404 });
@@ -90,8 +90,8 @@ export async function POST(req: NextRequest) {
   const resultData = result as { appointment_id: string; patient_id: string };
 
   const [{ data: ownerUser }, { data: appointmentData }] = await Promise.all([
-    db.from("users").select("email").eq("id", clinic.owner_id).single() as Promise<{ data: { email: string } | null }>,
-    db.from("appointments").select("cancel_token").eq("id", resultData.appointment_id).single() as Promise<{ data: { cancel_token: string } | null }>,
+    db.from("users").select("email").eq("id", clinic.owner_id).maybeSingle() as Promise<{ data: { email: string } | null }>,
+    db.from("appointments").select("cancel_token").eq("id", resultData.appointment_id).maybeSingle() as Promise<{ data: { cancel_token: string } | null }>,
   ]);
 
   await sendNotification({

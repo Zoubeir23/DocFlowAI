@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
     .eq("id", parsed.data.service_id)
     .eq("clinic_id", ctx.clinicId)
     .eq("is_active", true)
-    .single();
+    .maybeSingle();
 
   if (!service) {
     return NextResponse.json({ error: "Service not found" }, { status: 404 });
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
         email: parsed.data.patient_email || null,
       })
       .select("id")
-      .single();
+      .maybeSingle();
 
     if (patientError) {
       return NextResponse.json({ error: "Failed to create patient" }, { status: 500 });
@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
       notes: parsed.data.notes ?? null,
     })
     .select("id, start_at, end_at, status, created_at")
-    .single();
+    .maybeSingle();
 
   if (error) {
     return NextResponse.json({ error: "Failed to create appointment" }, { status: 500 });

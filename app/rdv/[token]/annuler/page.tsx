@@ -53,7 +53,7 @@ async function getAppointmentByToken(token: string) {
       clinics ( name, slug )
     `)
     .eq("cancel_token", token)
-    .single();
+    .maybeSingle();
 
   return { data, error };
 }

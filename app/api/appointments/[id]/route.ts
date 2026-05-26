@@ -17,7 +17,7 @@ async function getAuthenticatedClinicId(db: any): Promise<string | null> {
     .from("users")
     .select("clinic_id")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
   return userData?.clinic_id ?? null;
 }
 

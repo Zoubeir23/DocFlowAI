@@ -47,7 +47,7 @@ export function CsvImportDialog({ open, onOpenChange, onImportComplete }: CsvImp
     if (!file) return;
 
     if (!file.name.endsWith(".csv") && file.type !== "text/csv") {
-      toast.error("Format invalide — seuls les fichiers .csv sont acceptés");
+      toast.error(t("csv.invalidFormat"));
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
@@ -76,7 +76,7 @@ export function CsvImportDialog({ open, onOpenChange, onImportComplete }: CsvImp
 
       if (!response.ok) {
         const data = await response.json();
-        toast.error(data.error ?? "Erreur lors de l'import");
+        toast.error(data.error ?? t("csv.importError"));
         return;
       }
 
@@ -88,7 +88,7 @@ export function CsvImportDialog({ open, onOpenChange, onImportComplete }: CsvImp
         onImportComplete();
       }
     } catch {
-      toast.error("Erreur réseau lors de l'import");
+      toast.error(t("csv.networkError"));
     } finally {
       setIsImporting(false);
     }
@@ -125,8 +125,8 @@ export function CsvImportDialog({ open, onOpenChange, onImportComplete }: CsvImp
                 <Upload className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-medium text-foreground">Sélectionner un fichier CSV</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Colonnes : nom_complet, telephone, email (opt.), notes (opt.)</p>
+                <p className="text-sm font-medium text-foreground">{t("csv.selectFileTitle")}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t("csv.columnsHint")}</p>
               </div>
               <input
                 ref={fileInputRef}
@@ -142,14 +142,14 @@ export function CsvImportDialog({ open, onOpenChange, onImportComplete }: CsvImp
                 onClick={() => fileInputRef.current?.click()}
                 className="rounded-xl"
               >
-                Choisir un fichier
+                {t("csv.chooseFile")}
               </Button>
             </div>
 
             <div className="flex items-center justify-between p-3 bg-muted/30 rounded-xl border border-border">
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Télécharger le modèle CSV</span>
+                <span className="text-sm text-muted-foreground">{t("csv.downloadTemplate")}</span>
               </div>
               <Button
                 type="button"
@@ -159,7 +159,7 @@ export function CsvImportDialog({ open, onOpenChange, onImportComplete }: CsvImp
                 className="rounded-lg gap-1.5 text-xs"
               >
                 <Download className="w-3.5 h-3.5" />
-                Modèle
+                {t("csv.templateLabel")}
               </Button>
             </div>
           </div>
@@ -175,7 +175,7 @@ export function CsvImportDialog({ open, onOpenChange, onImportComplete }: CsvImp
                 )}
               </span>
               <button type="button" onClick={reset} className="text-xs text-muted-foreground hover:text-foreground">
-                Changer de fichier
+                {t("csv.changeFile")}
               </button>
             </div>
 
@@ -193,9 +193,9 @@ export function CsvImportDialog({ open, onOpenChange, onImportComplete }: CsvImp
             {previewRows.length > 0 && (
               <div className="border border-border rounded-xl overflow-hidden">
                 <div className="grid grid-cols-3 gap-0 bg-muted/40 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  <span>Nom complet</span>
-                  <span>Téléphone</span>
-                  <span>Email</span>
+                  <span>{t("csv.columnName")}</span>
+                  <span>{t("csv.columnPhone")}</span>
+                  <span>{t("csv.columnEmail")}</span>
                 </div>
                 <div className="max-h-48 overflow-y-auto divide-y divide-border">
                   {previewRows.slice(0, 50).map((row, i) => (
@@ -216,7 +216,7 @@ export function CsvImportDialog({ open, onOpenChange, onImportComplete }: CsvImp
 
             <div className="flex justify-end gap-2 pt-1">
               <Button type="button" variant="outline" size="sm" onClick={handleClose} className="rounded-xl">
-                Annuler
+                {t("csv.cancel")}
               </Button>
               <Button
                 type="button"
@@ -225,7 +225,7 @@ export function CsvImportDialog({ open, onOpenChange, onImportComplete }: CsvImp
                 disabled={isImporting || previewRows.length === 0}
                 className="rounded-xl"
               >
-                {isImporting ? "Import en cours…" : `Importer ${previewRows.length} patient${previewRows.length > 1 ? "s" : ""}`}
+                {isImporting ? t("csv.importing") : (previewRows.length > 1 ? t("csv.importButtonPlural", { count: previewRows.length }) : t("csv.importButton", { count: previewRows.length }))}
               </Button>
             </div>
           </div>
@@ -236,17 +236,17 @@ export function CsvImportDialog({ open, onOpenChange, onImportComplete }: CsvImp
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
                 <p className="text-2xl font-bold text-emerald-600">{importResult.inserted}</p>
-                <p className="text-xs text-emerald-700 mt-0.5 font-medium">Nouveau{importResult.inserted > 1 ? "x" : ""}</p>
+                <p className="text-xs text-emerald-700 mt-0.5 font-medium">{t("csv.newLabel")}</p>
               </div>
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
                 <p className="text-2xl font-bold text-blue-600">{importResult.updated}</p>
-                <p className="text-xs text-blue-700 mt-0.5 font-medium">Mis à jour</p>
+                <p className="text-xs text-blue-700 mt-0.5 font-medium">{t("csv.updatedLabel")}</p>
               </div>
             </div>
 
             {importResult.errors.length > 0 && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-1 max-h-32 overflow-y-auto">
-                <p className="text-xs font-semibold text-amber-800 mb-1">Lignes ignorées :</p>
+                <p className="text-xs font-semibold text-amber-800 mb-1">{t("csv.skippedLines")}</p>
                 {importResult.errors.map((err, i) => (
                   <p key={i} className="text-xs text-amber-700 flex items-start gap-1.5">
                     <X className="w-3 h-3 mt-0.5 flex-shrink-0" />
@@ -257,20 +257,20 @@ export function CsvImportDialog({ open, onOpenChange, onImportComplete }: CsvImp
             )}
 
             {importResult.inserted === 0 && importResult.updated === 0 ? (
-              <p className="text-sm text-center text-muted-foreground">Aucun patient importé.</p>
+              <p className="text-sm text-center text-muted-foreground">{t("csv.noImported")}</p>
             ) : (
               <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5">
                 <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-                Import terminé avec succès.
+                {t("csv.success")}
               </div>
             )}
 
             <div className="flex justify-end gap-2 pt-1">
               <Button type="button" variant="outline" size="sm" onClick={reset} className="rounded-xl">
-                Nouvel import
+                {t("csv.newImport")}
               </Button>
               <Button type="button" size="sm" onClick={handleClose} className="rounded-xl">
-                Fermer
+                {t("csv.close")}
               </Button>
             </div>
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { Trash2, Check, Pen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -12,6 +13,7 @@ interface SignaturePadProps {
 }
 
 export function SignaturePad({ initialDataUrl, onSave, onDelete, disabled }: SignaturePadProps) {
+  const t = useTranslations("signature");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasStrokes, setHasStrokes] = useState(false);
@@ -136,7 +138,7 @@ export function SignaturePad({ initialDataUrl, onSave, onDelete, disabled }: Sig
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="flex items-center gap-2 text-muted-foreground text-sm">
               <Pen className="w-4 h-4" />
-              <span>Dessinez votre signature ici</span>
+              <span>{t("drawHere")}</span>
             </div>
           </div>
         )}
@@ -152,7 +154,7 @@ export function SignaturePad({ initialDataUrl, onSave, onDelete, disabled }: Sig
           className="flex items-center gap-1.5"
         >
           <Trash2 className="w-3.5 h-3.5" />
-          Effacer
+          {t("clear")}
         </Button>
         <Button
           type="button"
@@ -162,7 +164,7 @@ export function SignaturePad({ initialDataUrl, onSave, onDelete, disabled }: Sig
           className="flex items-center gap-1.5 flex-1 justify-center"
         >
           <Check className="w-3.5 h-3.5" />
-          Enregistrer la signature
+          {t("save")}
         </Button>
         {onDelete && initialDataUrl && (
           <Button
@@ -173,7 +175,7 @@ export function SignaturePad({ initialDataUrl, onSave, onDelete, disabled }: Sig
             disabled={disabled}
             className="text-destructive hover:text-destructive border-destructive/30 hover:border-destructive"
           >
-            Supprimer
+            {t("delete")}
           </Button>
         )}
       </div>

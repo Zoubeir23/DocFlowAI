@@ -171,7 +171,7 @@ async function executeTool(name: string, args: Record<string, any>, clinicId: st
     if (!parsed.success) return `Validation error: ${parsed.error.errors[0].message}`;
 
     const { data: service } = await db
-      .from("services").select("id, name").eq("id", parsed.data.service_id).eq("clinic_id", clinicId).eq("is_active", true).single();
+      .from("services").select("id, name").eq("id", parsed.data.service_id).eq("clinic_id", clinicId).eq("is_active", true).maybeSingle();
     if (!service) return "Error: Service not found or inactive.";
 
     const { data: existingPatient } = await db
@@ -184,7 +184,7 @@ async function executeTool(name: string, args: Record<string, any>, clinicId: st
       const { data: newPatient, error: patientError } = await db
         .from("patients")
         .insert({ clinic_id: clinicId, full_name: parsed.data.patient_name, phone: parsed.data.patient_phone, email: parsed.data.patient_email ?? null })
-        .select("id").single();
+        .select("id").maybeSingle();
       if (patientError) return `Error creating patient: ${patientError.message}`;
       patientId = newPatient.id;
     }
@@ -192,7 +192,7 @@ async function executeTool(name: string, args: Record<string, any>, clinicId: st
     const { data: appointment, error } = await db
       .from("appointments")
       .insert({ clinic_id: clinicId, patient_id: patientId, service_id: parsed.data.service_id, start_at: parsed.data.start_at, end_at: parsed.data.end_at, status: "confirmed", notes: parsed.data.notes ?? null })
-      .select("id, start_at, end_at, status").single();
+      .select("id, start_at, end_at, status").maybeSingle();
 
     if (error) return `Error: ${error.message}`;
     return `Appointment created!\n${JSON.stringify({ ...appointment, patient_name: parsed.data.patient_name, service_name: service.name }, null, 2)}`;

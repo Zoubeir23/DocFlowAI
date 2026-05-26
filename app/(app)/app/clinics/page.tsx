@@ -39,14 +39,14 @@ function usePlan() {
         .from("users")
         .select("clinic_id")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
       if (!userData?.clinic_id) return "free";
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: sub } = await (db as any)
         .from("subscriptions")
         .select("plan")
         .eq("clinic_id", userData.clinic_id)
-        .single();
+        .maybeSingle();
       return (sub?.plan as string) ?? "free";
     },
   });

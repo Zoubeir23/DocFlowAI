@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { createAppointment } from "@/actions/appointments";
 import { toast } from "sonner";
@@ -44,6 +45,7 @@ interface AppointmentCreateModalProps {
 }
 
 export function AppointmentCreateModal({ onCreated }: AppointmentCreateModalProps) {
+  const t = useTranslations("appointments.create");
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -68,7 +70,7 @@ export function AppointmentCreateModal({ onCreated }: AppointmentCreateModalProp
         .from("users")
         .select("clinic_id")
         .eq("id", authData.user.id)
-        .single();
+        .maybeSingle();
       if (!userData) return;
 
       const [patientsResult, servicesResult, practitionersResult] = await Promise.all([
@@ -126,12 +128,12 @@ export function AppointmentCreateModal({ onCreated }: AppointmentCreateModalProp
       });
 
       if (result.success) {
-        toast.success("Rendez-vous créé");
+        toast.success(t("successToast"));
         setOpen(false);
         resetForm();
         onCreated?.();
       } else {
-        toast.error(result.error ?? "Erreur lors de la création");
+        toast.error(result.error ?? t("errorToast"));
       }
     });
   }
@@ -149,24 +151,24 @@ export function AppointmentCreateModal({ onCreated }: AppointmentCreateModalProp
       <DialogTrigger asChild>
         <Button className="flex items-center gap-2">
           <Plus className="w-4 h-4" />
-          Nouveau RDV
+          {t("triggerButton")}
         </Button>
       </DialogTrigger>
 
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Nouveau rendez-vous</DialogTitle>
+          <DialogTitle>{t("title")}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
           {/* Patient */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Patient *
+              {t("patient")} *
             </label>
             <Select value={patientId} onValueChange={setPatientId} required>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Sélectionner un patient" />
+                <SelectValue placeholder={t("patientPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 {patients.map((patient) => (
@@ -182,11 +184,11 @@ export function AppointmentCreateModal({ onCreated }: AppointmentCreateModalProp
           {/* Service */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Service *
+              {t("service")} *
             </label>
             <Select value={serviceId} onValueChange={setServiceId} required>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Sélectionner un service" />
+                <SelectValue placeholder={t("servicePlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 {services.map((service) => (
@@ -203,7 +205,7 @@ export function AppointmentCreateModal({ onCreated }: AppointmentCreateModalProp
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
               <User2 className="w-3.5 h-3.5" />
-              Praticien
+              {t("practitioner")}
             </label>
             <Select
               value={practitionerId || "unassigned"}
@@ -212,10 +214,10 @@ export function AppointmentCreateModal({ onCreated }: AppointmentCreateModalProp
               }
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Non assigné" />
+                <SelectValue placeholder={t("practitionerUnassigned")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="unassigned">Non assigné</SelectItem>
+                <SelectItem value="unassigned">{t("practitionerUnassigned")}</SelectItem>
                 {practitioners.map((practitioner) => (
                   <SelectItem key={practitioner.id} value={practitioner.id}>
                     {practitioner.full_name}
@@ -228,7 +230,7 @@ export function AppointmentCreateModal({ onCreated }: AppointmentCreateModalProp
           {/* Date/heure */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Date et heure *
+              {t("dateTime")} *
             </label>
             <input
               type="datetime-local"
@@ -242,12 +244,12 @@ export function AppointmentCreateModal({ onCreated }: AppointmentCreateModalProp
           {/* Notes */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Notes
+              {t("notesLabel")}
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Notes internes…"
+              placeholder={t("notesPlaceholder")}
               rows={2}
               className="w-full resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
             />
@@ -261,7 +263,7 @@ export function AppointmentCreateModal({ onCreated }: AppointmentCreateModalProp
               className="flex-1"
               disabled={isPending}
             >
-              Annuler
+              {t("cancel")}
             </Button>
             <Button
               type="submit"
@@ -269,7 +271,7 @@ export function AppointmentCreateModal({ onCreated }: AppointmentCreateModalProp
               disabled={isPending || !patientId || !serviceId || !startAt}
             >
               {isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              Créer
+              {t("createButton")}
             </Button>
           </div>
         </form>

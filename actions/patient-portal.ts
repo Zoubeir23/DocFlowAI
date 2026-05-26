@@ -109,7 +109,7 @@ export async function invitePatientToPortal(patientId: string): Promise<{ succes
     .from("clinics")
     .select("name")
     .eq("id", patient.clinic_id)
-    .single() as { data: { name: string } | null };
+    .maybeSingle() as { data: { name: string } | null };
 
   const adminSupabase = await createAdminClient();
   const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
@@ -168,7 +168,7 @@ export async function linkPatientToAuth(): Promise<{ success: boolean; patientId
     .from("patients")
     .select("id")
     .eq("auth_user_id", user.id)
-    .single() as { data: { id: string } | null };
+    .maybeSingle() as { data: { id: string } | null };
 
   if (existing) return { success: true, patientId: existing.id };
 
@@ -179,7 +179,7 @@ export async function linkPatientToAuth(): Promise<{ success: boolean; patientId
     .update({ auth_user_id: user.id })
     .eq("email", user.email)
     .select("id")
-    .single() as { data: { id: string } | null; error: unknown };
+    .maybeSingle() as { data: { id: string } | null; error: unknown };
 
   if (error || !patient) {
     return { success: false, error: "Aucun dossier patient trouvé pour cet email" };
@@ -225,7 +225,7 @@ export async function getPatientPortalData(): Promise<{ patient: PortalPatient; 
     .from("patients")
     .select("id, full_name, phone, email, clinic_id, clinics(name, slug)")
     .eq("auth_user_id", user.id)
-    .single() as { data: PortalPatient | null };
+    .maybeSingle() as { data: PortalPatient | null };
 
   if (!patient) return null;
 
@@ -250,7 +250,7 @@ export async function cancelAppointmentAsPatient(appointmentId: string): Promise
     .from("patients")
     .select("id")
     .eq("auth_user_id", user.id)
-    .single() as { data: { id: string } | null };
+    .maybeSingle() as { data: { id: string } | null };
 
   if (!patient) return { success: false, error: "Patient introuvable" };
 

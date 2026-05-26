@@ -38,7 +38,7 @@ async function getAuthenticatedClinicId(db: any): Promise<string | null> {
     .from("users")
     .select("clinic_id")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
   return userData?.clinic_id ?? null;
 }
 
@@ -342,7 +342,7 @@ export async function GET(
     )
     .eq("id", appointmentId)
     .eq("clinic_id", clinicId)
-    .single();
+    .maybeSingle();
 
   if (error || !data) {
     return new NextResponse("Rendez-vous introuvable", { status: 404 });

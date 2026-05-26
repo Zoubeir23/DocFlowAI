@@ -29,7 +29,7 @@ async function resolveUserContext(): Promise<UserContext | null> {
     .from("users")
     .select("clinic_id, role")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
   const row = data as { clinic_id: string; role: string } | null;
   if (!row?.clinic_id) return null;
   return { clinicId: row.clinic_id, role: row.role };
@@ -69,7 +69,7 @@ export async function createDiagnosticDraft(
       validation_status: "draft",
     })
     .select("id")
-    .single();
+    .maybeSingle();
 
   if (error) return { success: false, error: error.message };
   return { success: true, data: { id: (data as { id: string }).id } };
@@ -254,7 +254,7 @@ export async function getDiagnosticById(
     .select("*")
     .eq("id", id)
     .eq("clinic_id", clinicId)
-    .single();
+    .maybeSingle();
 
   if (error) return null;
   return data as DiagnosticRecord;

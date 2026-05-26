@@ -55,7 +55,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     .from("users")
     .select("clinic_id")
     .eq("id", user.id)
-    .single() as { data: { clinic_id: string } | null };
+    .maybeSingle() as { data: { clinic_id: string } | null };
 
   if (!userData?.clinic_id) {
     return NextResponse.json({ error: "Accès refusé — aucune clinique associée" }, { status: 403 });

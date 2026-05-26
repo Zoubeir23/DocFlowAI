@@ -58,7 +58,7 @@ export function useRealtimeNotifications(
             .from("appointments")
             .select("id, start_at, patients(full_name), services(name)")
             .eq("id", raw.id)
-            .single();
+            .maybeSingle();
 
           if (error || !data) return;
 

@@ -106,7 +106,7 @@ function SidebarAlertBanner({ collapsed }: { collapsed: boolean }) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const { data: userData } = await (supabase as any)
-        .from("users").select("clinic_id").eq("id", user.id).single();
+        .from("users").select("clinic_id").eq("id", user.id).maybeSingle();
       if (!userData) return;
 
       const clinicId = userData.clinic_id;
@@ -116,7 +116,7 @@ function SidebarAlertBanner({ collapsed }: { collapsed: boolean }) {
           .from("subscriptions")
           .select("current_period_end, plan, status, current_period_start")
           .eq("clinic_id", clinicId)
-          .single(),
+          .maybeSingle(),
         (supabase as any)
           .from("appointments")
           .select("id", { count: "exact", head: true })
@@ -278,10 +278,10 @@ export function Sidebar({ clinicName = "My Clinic" }: SidebarProps) {
           collapsed && "md:justify-center md:px-2"
         )}>
           {collapsed ? (
-            <Image src="/logo.png" alt="DocFlow IA" width={32} height={32} className="object-contain dark:brightness-0 dark:invert hidden md:block" />
+            <Image src="/logo.png" alt="DocFlow IA" width={32} height={32} priority className="object-contain dark:brightness-0 dark:invert hidden md:block" style={{ height: "auto" }} />
           ) : (
             <div className="flex flex-col gap-0.5 truncate">
-              <Image src="/logo.png" alt="DocFlow IA" width={110} height={28} className="object-contain dark:brightness-0 dark:invert" />
+              <Image src="/logo.png" alt="DocFlow IA" width={110} height={28} priority className="object-contain dark:brightness-0 dark:invert" style={{ height: "auto" }} />
               <span className="text-[11px] font-bold text-muted-foreground tracking-widest uppercase truncate mt-1 opacity-70">{clinicName}</span>
             </div>
           )}

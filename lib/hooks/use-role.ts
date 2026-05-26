@@ -26,7 +26,7 @@ export function useRole(): RoleState & { isOwner: boolean; isSuperAdmin: boolean
         .from("users")
         .select("role")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
       setState({ role: (data?.role as UserRole) ?? null, loading: false });
     })();

@@ -99,7 +99,7 @@ export async function replyToMessage(
     .from("admin_messages")
     .select("sender_email, sender_name, subject")
     .eq("id", messageId)
-    .single();
+    .maybeSingle();
 
   if (!message) return { success: false, error: "Message introuvable" };
 
