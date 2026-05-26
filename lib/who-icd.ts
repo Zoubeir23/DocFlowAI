@@ -1,64 +1,4 @@
-const TOKEN_URL =
-  "https://icdaccessmanagement.who.int/connect/token";
-const API_BASE = "https://id.who.int/icd";
-
-interface TokenCache {
-  accessToken: string;
-  expiresAt: number;
-}
-
-let tokenCache: TokenCache | null = null;
-
-async function fetchAccessToken(): Promise<string> {
-  if (tokenCache && Date.now() < tokenCache.expiresAt - 30_000) {
-    return tokenCache.accessToken;
-  }
-
-  const clientId = process.env.WHO_ICD_CLIENT_ID;
-  const clientSecret = process.env.WHO_ICD_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret) {
-    throw new Error("WHO_ICD_CLIENT_ID et WHO_ICD_CLIENT_SECRET sont requis");
-  }
-
-  const body = new URLSearchParams({
-    client_id: clientId,
-    client_secret: clientSecret,
-    grant_type: "client_credentials",
-    scope: "icdapi_access",
-  });
-
-  const response = await fetch(TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: body.toString(),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Échec auth WHO ICD: ${response.status}`);
-  }
-
-  const data = (await response.json()) as {
-    access_token: string;
-    expires_in: number;
-  };
-
-  tokenCache = {
-    accessToken: data.access_token,
-    expiresAt: Date.now() + data.expires_in * 1000,
-  };
-
-  return tokenCache.accessToken;
-}
-
-function buildHeaders(token: string, language = "fr"): HeadersInit {
-  return {
-    Authorization: `Bearer ${token}`,
-    "Accept-Language": language,
-    "API-Version": "v2",
-    Accept: "application/json",
-  };
-}
+import { fetchWhoAccessToken, buildWhoApiHeaders, WHO_API_BASE } from "./who-auth";
 
 export interface IcdSearchResult {
   id: string;
@@ -84,7 +24,7 @@ export async function searchDiagnoses(
   options: { language?: string; limit?: number } = {}
 ): Promise<IcdSearchResult[]> {
   const { language = "fr", limit = 20 } = options;
-  const token = await fetchAccessToken();
+  const token = await fetchWhoAccessToken();
 
   const params = new URLSearchParams({
     q: query,
@@ -97,8 +37,8 @@ export async function searchDiagnoses(
   });
 
   const response = await fetch(
-    `${API_BASE}/entity/search?${params.toString()}`,
-    { headers: buildHeaders(token, language) }
+    `${WHO_API_BASE}/entity/search?${params.toString()}`,
+    { headers: buildWhoApiHeaders(token, language) }
   );
 
   if (!response.ok) {
@@ -128,10 +68,10 @@ export async function getDiagnosisById(
   entityId: string,
   language = "fr"
 ): Promise<IcdEntity> {
-  const token = await fetchAccessToken();
+  const token = await fetchWhoAccessToken();
 
-  const response = await fetch(`${API_BASE}/entity/${entityId}`, {
-    headers: buildHeaders(token, language),
+  const response = await fetch(`${WHO_API_BASE}/entity/${entityId}`, {
+    headers: buildWhoApiHeaders(token, language),
   });
 
   if (!response.ok) {
@@ -175,7 +115,7 @@ export async function searchIchiProcedures(
   options: { language?: string; limit?: number } = {}
 ): Promise<IchiSearchResult[]> {
   const { language = "fr", limit = 10 } = options;
-  const token = await fetchAccessToken();
+  const token = await fetchWhoAccessToken();
 
   const params = new URLSearchParams({
     q: query,
@@ -185,8 +125,8 @@ export async function searchIchiProcedures(
   });
 
   const response = await fetch(
-    `${API_BASE}/release/11/2024-01/ichi/entity/search?${params.toString()}`,
-    { headers: buildHeaders(token, language) }
+    `${WHO_API_BASE}/release/11/2024-01/ichi/entity/search?${params.toString()}`,
+    { headers: buildWhoApiHeaders(token, language) }
   );
 
   if (!response.ok) return [];
@@ -220,12 +160,11 @@ export async function getRelatedConditions(
   icdCode: string,
   language = "fr"
 ): Promise<ComorbidityResult[]> {
-  const token = await fetchAccessToken();
+  const token = await fetchWhoAccessToken();
 
-  // Cherche l'entité par code
   const codeResponse = await fetch(
-    `${API_BASE}/release/11/2024-01/mms/codeInfo/${encodeURIComponent(icdCode)}`,
-    { headers: buildHeaders(token, language) }
+    `${WHO_API_BASE}/release/11/2024-01/mms/codeInfo/${encodeURIComponent(icdCode)}`,
+    { headers: buildWhoApiHeaders(token, language) }
   );
 
   if (!codeResponse.ok) return [];
@@ -238,11 +177,10 @@ export async function getRelatedConditions(
   const parentUrl = codeData.parent?.[0];
   if (!parentUrl) return [];
 
-  // Récupère les enfants du parent (conditions sœurs = comorbidités potentielles)
   const parentId = parentUrl.split("/").pop();
   const siblingResponse = await fetch(
-    `${API_BASE}/entity/${parentId}`,
-    { headers: buildHeaders(token, language) }
+    `${WHO_API_BASE}/entity/${parentId}`,
+    { headers: buildWhoApiHeaders(token, language) }
   );
 
   if (!siblingResponse.ok) return [];
@@ -258,8 +196,8 @@ export async function getRelatedConditions(
     childUrls.map(async (url): Promise<ComorbidityResult | null> => {
       try {
         const childId = url.split("/").pop();
-        const childResp = await fetch(`${API_BASE}/entity/${childId}`, {
-          headers: buildHeaders(token, language),
+        const childResp = await fetch(`${WHO_API_BASE}/entity/${childId}`, {
+          headers: buildWhoApiHeaders(token, language),
         });
         if (!childResp.ok) return null;
         const child = (await childResp.json()) as {

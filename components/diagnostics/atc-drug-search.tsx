@@ -14,7 +14,7 @@ export interface AtcDrugOption {
 interface AtcDrugSearchProps {
   value: string;
   atcCode: string;
-  onSelect: (name: string, atcCode: string) => void;
+  onSelect: (name: string, atcCode: string, rxcui: string) => void;
   placeholder?: string;
 }
 
@@ -40,7 +40,7 @@ export function AtcDrugSearch({ value, atcCode, onSelect, placeholder = "Nom com
 
   function handleChange(inputValue: string) {
     setQuery(inputValue);
-    onSelect(inputValue, "");
+    onSelect(inputValue, "", "");
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (inputValue.length < 2) { setOptions([]); setOpen(false); return; }
@@ -62,7 +62,7 @@ export function AtcDrugSearch({ value, atcCode, onSelect, placeholder = "Nom com
 
   function handleSelect(option: AtcDrugOption) {
     setQuery(option.name);
-    onSelect(option.name, option.atcCode ?? "");
+    onSelect(option.name, option.atcCode ?? "", option.rxcui);
     setOpen(false);
   }
 

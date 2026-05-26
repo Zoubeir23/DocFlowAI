@@ -193,6 +193,7 @@ export async function updateDiagnosticPrescription(
       practitioner_name: prescription.practitioner_name,
       practitioner_title: prescription.practitioner_title,
       practitioner_rpps: prescription.practitioner_rpps,
+      icf_codes: prescription.icf_codes ?? [],
     })
     .eq("id", diagnosticId)
     .eq("clinic_id", clinicId);

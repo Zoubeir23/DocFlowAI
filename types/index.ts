@@ -103,6 +103,7 @@ export interface IcdCandidate extends IcdCode {
 
 export interface PrescriptionTreatment {
   drug_name: string;
+  rxcui: string;
   atc_code: string;
   dosage_mg: string;
   frequency: string;
@@ -177,6 +178,7 @@ export interface DiagnosticRecord {
   recommendations: string[];
   follow_up_delay_days: number | null;
   follow_up_tests: string[];
+  icf_codes: IcfCode[];
   practitioner_name: string | null;
   practitioner_title: string | null;
   practitioner_rpps: string | null;
@@ -225,6 +227,34 @@ export interface PrescriptionInput {
   practitioner_name: string;
   practitioner_title: string;
   practitioner_rpps: string;
+  icf_codes?: IcfCode[];
+}
+
+// ── WHO API Types ─────────────────────────────────────────────────────────────
+
+export interface IcfCode {
+  id: string;
+  code: string;
+  title: string;
+  definition?: string;
+}
+
+export interface DrugInteractionPair {
+  drug1Name: string;
+  drug2Name: string;
+  severity: "high" | "moderate" | "low";
+  description: string;
+  source: string;
+}
+
+export interface PharmacovigilanceSignal {
+  drugName: string;
+  rxcui: string;
+  totalReports: number;
+  seriousReports: number;
+  seriousnessRate: number;
+  topReactions: string[];
+  source: "FDA FAERS";
 }
 
 export interface NotificationPayload {
