@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { clinicTemplates } from "@/data/clinic-templates";
 import { Globe, Sparkles, Palette, Type, Layers } from "lucide-react";
 import { toast } from "sonner";
 import { initializeClinicWebsite } from "@/actions/website";
 
 export function TemplatePicker({ onComplete }: { onComplete: (website: any) => void }) {
+  const t = useTranslations("websiteBuilder");
   const [isCreating, setIsCreating] = useState(false);
 
   const template = clinicTemplates[0];
@@ -16,10 +18,10 @@ export function TemplatePicker({ onComplete }: { onComplete: (website: any) => v
       setIsCreating(true);
       const res = await initializeClinicWebsite(template.id);
       if (res.success && res.data) {
-        toast.success("Site web créé avec succès !");
+        toast.success(t("toastSuccess"));
         onComplete(res.data);
       } else {
-        throw new Error(res.error || "Impossible de créer le site");
+        throw new Error(res.error || t("toastError"));
       }
     } catch (error: any) {
       toast.error(error.message);
@@ -36,7 +38,7 @@ export function TemplatePicker({ onComplete }: { onComplete: (website: any) => v
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 text-primary mb-2">
           <Globe className="w-8 h-8" />
         </div>
-        <h1 className="text-3xl font-bold tracking-tight">Créer votre site web</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t("createTitle")}</h1>
         <p className="text-muted-foreground max-w-xl mx-auto text-base">
           Votre site sera créé avec notre design éditorial. Vous pourrez personnaliser les couleurs, textes et images depuis l'éditeur.
         </p>
@@ -113,7 +115,7 @@ export function TemplatePicker({ onComplete }: { onComplete: (website: any) => v
           ) : (
             <Sparkles className="w-5 h-5" />
           )}
-          {isCreating ? "Création en cours..." : "Créer mon site web"}
+          {isCreating ? t("creating") : t("createButton")}
         </button>
       </div>
     </div>

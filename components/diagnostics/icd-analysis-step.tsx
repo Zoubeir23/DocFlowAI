@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { Brain, AlertTriangle, FlaskConical, ChevronUp, ChevronDown, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +23,7 @@ export function IcdAnalysisStep({
   onNext,
   onBack,
 }: IcdAnalysisStepProps) {
+  const t = useTranslations("diagnostics");
   const [manualCodes, setManualCodes] = useState<IcdCode[]>([]);
   const [rankedCandidates, setRankedCandidates] = useState<IcdCandidate[]>([]);
   const [additionalTests, setAdditionalTests] = useState<string[]>([]);
@@ -152,7 +154,7 @@ export function IcdAnalysisStep({
       <section className="space-y-4">
         <div className="flex items-center gap-2">
           <Brain className="w-4 h-4 text-primary" />
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-primary">Diagnostics candidats — ICD-11</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-primary">{t("icd.candidatesTitle")}</h3>
           {isAnalyzing && (
             <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           )}
@@ -160,7 +162,7 @@ export function IcdAnalysisStep({
 
         {isAnalyzing && (
           <div className="text-center py-8 text-muted-foreground text-sm">
-            Interrogation de l'API OMS ICD-11 en cours...
+            {t("icd.analyzingApi")}
           </div>
         )}
 
@@ -227,13 +229,13 @@ export function IcdAnalysisStep({
 
         {/* Manual ICD search */}
         <div className="space-y-2 border-t border-border pt-4">
-          <Label className="text-sm font-medium">Ajouter manuellement un code ICD-11</Label>
+          <Label className="text-sm font-medium">{t("icd.addManually")}</Label>
           <IcdSearchField selectedCodes={manualCodes} onCodesChange={handleManualCodesChange} />
         </div>
 
         <Button type="button" onClick={runAnalysis} disabled={isAnalyzing} variant="outline" className="rounded-xl gap-2 text-sm">
           <Brain className="w-4 h-4" />
-          {isAnalyzing ? "Analyse en cours..." : "Relancer l'analyse ICD-11"}
+          {isAnalyzing ? t("icd.analyzing") : t("icd.rerunAnalysis")}
         </Button>
       </section>
 
@@ -268,7 +270,7 @@ export function IcdAnalysisStep({
       </section>
 
       <div className="flex gap-3 pt-2">
-        <Button type="button" onClick={onBack} variant="outline" className="rounded-xl border-border">Retour</Button>
+        <Button type="button" onClick={onBack} variant="outline" className="rounded-xl border-border">{t("validation.back")}</Button>
         <Button
           type="button"
           onClick={handleSubmit}
@@ -276,7 +278,7 @@ export function IcdAnalysisStep({
           className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-medium flex-1"
         >
           <CheckCircle2 className="w-4 h-4 mr-2" />
-          Soumettre pour validation médecin
+          {t("icd.submitForValidation")}
         </Button>
       </div>
     </div>

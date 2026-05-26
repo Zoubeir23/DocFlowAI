@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -83,6 +84,7 @@ export function PrescriptionBuilderStep({
   onBack,
   isSubmitting,
 }: PrescriptionBuilderStepProps) {
+  const t = useTranslations("diagnostics");
   const [treatments, setTreatments] = useState<PrescriptionTreatment[]>([{ ...EMPTY_TREATMENT }]);
   const [selectedRecommendations, setSelectedRecommendations] = useState<string[]>([]);
   const [customRecommendation, setCustomRecommendation] = useState("");
@@ -187,7 +189,7 @@ export function PrescriptionBuilderStep({
           <span className="text-green-600 text-lg">✓</span>
         </div>
         <div>
-          <p className="text-xs text-green-600 font-semibold">Diagnostic validé par le médecin</p>
+          <p className="text-xs text-green-600 font-semibold">{t("prescriptionStep.validatedBanner")}</p>
           <p className="text-sm font-medium text-green-800">{validatedDiagnosisName}</p>
         </div>
       </div>
@@ -222,7 +224,7 @@ export function PrescriptionBuilderStep({
             <h3 className="text-sm font-semibold uppercase tracking-wide text-primary">Traitements prescrits</h3>
           </div>
           <Button type="button" onClick={addTreatment} variant="outline" size="sm" className="rounded-xl gap-1.5 text-xs">
-            <Plus className="w-3.5 h-3.5" /> Ajouter un médicament
+            <Plus className="w-3.5 h-3.5" /> {t("prescriptionStep.addMedication")}
           </Button>
         </div>
 
@@ -235,7 +237,7 @@ export function PrescriptionBuilderStep({
             {allergyWarnings.has(index) && (
               <div className="flex items-center gap-2 text-destructive text-sm font-medium">
                 <AlertTriangle className="w-4 h-4" />
-                Allergie détectée — vérifiez ce médicament
+                {t("prescriptionStep.allergyWarning")}
               </div>
             )}
 
@@ -314,7 +316,7 @@ export function PrescriptionBuilderStep({
               {treatments.length > 1 && (
                 <button type="button" onClick={() => removeTreatment(index)}
                   className="text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1 text-xs">
-                  <Trash2 className="w-3.5 h-3.5" /> Supprimer
+                  <Trash2 className="w-3.5 h-3.5" /> {t("prescriptionStep.remove")}
                 </button>
               )}
             </div>
@@ -401,10 +403,10 @@ export function PrescriptionBuilderStep({
       </section>
 
       <div className="flex gap-3 pt-2">
-        <Button type="button" onClick={onBack} variant="outline" className="rounded-xl border-border">Retour</Button>
+        <Button type="button" onClick={onBack} variant="outline" className="rounded-xl border-border">{t("prescriptionStep.back")}</Button>
         <Button type="submit" disabled={isSubmitting || allergyWarnings.size > 0}
           className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-medium flex-1">
-          {isSubmitting ? "Génération..." : "Générer et enregistrer l'ordonnance"}
+          {isSubmitting ? t("prescriptionStep.generating") : t("prescriptionStep.generateAndSave")}
         </Button>
       </div>
     </form>

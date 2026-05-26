@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ShieldCheck, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ export function DiagnosticValidationPanel({
   diagnosisCode,
   diagnosisName,
 }: DiagnosticValidationPanelProps) {
+  const t = useTranslations("diagnostics.validation");
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [validatedBy, setValidatedBy] = useState("");
@@ -38,10 +40,10 @@ export function DiagnosticValidationPanel({
         "validated"
       );
       if (result.success) {
-        toast.success("Diagnostic validé");
+        toast.success(t("toastValidated"));
         router.refresh();
       } else {
-        toast.error(result.error ?? "Erreur de validation");
+        toast.error(result.error ?? t("toastError"));
       }
     });
   }
@@ -58,10 +60,10 @@ export function DiagnosticValidationPanel({
         rejectionReason
       );
       if (result.success) {
-        toast.success("Diagnostic rejeté");
+        toast.success(t("toastRejected"));
         router.refresh();
       } else {
-        toast.error(result.error ?? "Erreur");
+        toast.error(result.error ?? t("toastError"));
       }
     });
   }
@@ -70,13 +72,13 @@ export function DiagnosticValidationPanel({
     <div className="border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 rounded-2xl p-6 space-y-4 print:hidden">
       <div className="flex items-center gap-2">
         <ShieldCheck className="w-5 h-5 text-amber-600" />
-        <h3 className="font-semibold text-amber-800 dark:text-amber-300">Validation médicale requise</h3>
+        <h3 className="font-semibold text-amber-800 dark:text-amber-300">{t("panelTitle")}</h3>
       </div>
 
       <div className="space-y-2">
-        <Label className="text-sm font-medium">Nom du médecin validateur <span className="text-destructive">*</span></Label>
+        <Label className="text-sm font-medium">{t("validatorName")} <span className="text-destructive">*</span></Label>
         <Input
-          placeholder="Dr. Nom Prénom"
+          placeholder={t("validatorPlaceholder")}
           value={validatedBy}
           onChange={(e) => setValidatedBy(e.target.value)}
           className="max-w-xs"
@@ -91,7 +93,7 @@ export function DiagnosticValidationPanel({
             className="gap-2 bg-green-600 hover:bg-green-700 text-white"
           >
             <ShieldCheck className="w-4 h-4" />
-            {isPending ? "Validation..." : "Valider le diagnostic"}
+            {isPending ? t("validating") : t("validate")}
           </Button>
           <Button
             variant="outline"
@@ -100,15 +102,15 @@ export function DiagnosticValidationPanel({
             className="gap-2 border-red-300 text-red-600 hover:bg-red-50"
           >
             <XCircle className="w-4 h-4" />
-            Rejeter
+            {t("reject")}
           </Button>
         </div>
       ) : (
         <div className="space-y-3">
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-red-600">Motif du rejet <span className="text-destructive">*</span></Label>
+            <Label className="text-sm font-medium text-red-600">{t("rejectionReason")} <span className="text-destructive">*</span></Label>
             <Textarea
-              placeholder="Expliquez la raison du rejet..."
+              placeholder={t("rejectionReasonPlaceholder")}
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
               rows={3}
@@ -122,10 +124,10 @@ export function DiagnosticValidationPanel({
               className="gap-2 bg-red-600 hover:bg-red-700 text-white"
             >
               <XCircle className="w-4 h-4" />
-              {isPending ? "Rejet..." : "Confirmer le rejet"}
+              {isPending ? t("rejectingLabel") : t("confirmReject")}
             </Button>
             <Button variant="ghost" onClick={() => setShowRejection(false)} disabled={isPending}>
-              Annuler
+              {t("cancel")}
             </Button>
           </div>
         </div>

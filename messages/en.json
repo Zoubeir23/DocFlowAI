@@ -150,7 +150,24 @@
     "noAppointmentsFound": "No appointments found",
     "appointmentsAppearHere": "Appointments will appear here when booked via the AI widget",
     "markedAs": "Appointment marked as",
-    "failedToUpdate": "Failed to update"
+    "failedToUpdate": "Failed to update",
+    "create": {
+      "title": "New appointment",
+      "triggerButton": "New Appointment",
+      "patient": "Patient",
+      "patientPlaceholder": "Select a patient",
+      "service": "Service",
+      "servicePlaceholder": "Select a service",
+      "practitioner": "Practitioner",
+      "practitionerUnassigned": "Unassigned",
+      "dateTime": "Date & Time",
+      "notesLabel": "Notes",
+      "notesPlaceholder": "Internal notes...",
+      "cancel": "Cancel",
+      "createButton": "Create",
+      "successToast": "Appointment created",
+      "errorToast": "Error creating appointment"
+    }
   },
   "patients": {
     "title": "Patients",
@@ -189,7 +206,33 @@
     "cancelButton": "Cancel",
     "sinceLabel": "Since",
     "viewRecord": "View record",
-    "importCsv": "Import CSV"
+    "importCsv": "Import CSV",
+    "csv": {
+      "invalidFormat": "Invalid format — only .csv files are accepted",
+      "selectFileTitle": "Select a CSV file",
+      "columnsHint": "Columns: full_name, phone, email (opt.), notes (opt.)",
+      "chooseFile": "Choose a file",
+      "downloadTemplate": "Download CSV template",
+      "templateLabel": "Template",
+      "cancel": "Cancel",
+      "importing": "Importing...",
+      "importButton": "Import {count} patient",
+      "importButtonPlural": "Import {count} patients",
+      "newLabel": "New",
+      "updatedLabel": "Updated",
+      "skippedLines": "Skipped lines:",
+      "columnName": "Full name",
+      "columnPhone": "Phone",
+      "columnEmail": "Email",
+      "newImport": "New import",
+      "close": "Close",
+      "success": "Import completed successfully.",
+      "noImported": "No patients imported.",
+      "changeFile": "Change file",
+      "lineError": "Line {line}",
+      "networkError": "Network error during import",
+      "importError": "Error during import"
+    }
   },
   "services": {
     "title": "Services",
@@ -916,6 +959,83 @@
     "validated": "Validated",
     "rejected": "Rejected",
     "noResults": "No diagnostics",
-    "searchPlaceholder": "Search patient, diagnosis..."
+    "searchPlaceholder": "Search patient, diagnosis...",
+    "validation": {
+      "panelTitle": "Medical validation required",
+      "obligatoryTitle": "Mandatory medical validation",
+      "obligatoryDesc": "The doctor must validate the diagnosis before any prescription can be generated. Responsibility for prescriptions rests with the signing practitioner.",
+      "validatorName": "Validating doctor",
+      "validatorPlaceholder": "Dr. First Last",
+      "requiredHint": "Required to validate",
+      "validating": "Validating...",
+      "validate": "Validate diagnosis",
+      "reject": "Reject",
+      "rejectRequestTests": "Reject — request additional tests",
+      "validateAndPrescribe": "Validate diagnosis and generate prescription",
+      "rejectionReason": "Reason for rejection",
+      "rejectionReasonPlaceholder": "Explain the reason for rejection...",
+      "rejectionReasonDoctorStep": "Reason for rejection (missing tests, inconclusive diagnosis...)...",
+      "sending": "Sending...",
+      "confirmReject": "Confirm rejection",
+      "rejectingLabel": "Rejecting...",
+      "cancel": "Cancel",
+      "back": "Back",
+      "toastValidated": "Diagnosis validated",
+      "toastRejected": "Diagnosis rejected",
+      "toastError": "Validation error"
+    },
+    "icd": {
+      "candidatesTitle": "Candidate diagnoses — ICD-11",
+      "searchPlaceholder": "Search for an ICD-11 diagnosis (e.g. diabetes, hypertension...)",
+      "addManually": "Add ICD-11 code manually",
+      "rerunAnalysis": "Rerun ICD-11 analysis",
+      "analyzingApi": "Querying WHO ICD-11 API...",
+      "analyzing": "Analyzing...",
+      "submitForValidation": "Submit for doctor validation"
+    },
+    "prescriptionStep": {
+      "validatedBanner": "Diagnosis validated by doctor",
+      "addMedication": "Add medication",
+      "remove": "Remove",
+      "back": "Back",
+      "generating": "Generating...",
+      "generateAndSave": "Generate and save prescription",
+      "allergyWarning": "Allergy detected — verify this medication"
+    },
+    "patientStep": {
+      "nextButton": "Next: Symptoms and vital signs"
+    }
+  },
+  "signature": {
+    "title": "Electronic signature",
+    "modify": "Edit",
+    "description": "This signature will be automatically applied to your prescriptions and printed medical documents.",
+    "signatureOnFile": "Signature on file",
+    "yourSignatureAlt": "Your signature",
+    "lastUpdated": "Last updated:",
+    "drawHere": "Draw your signature here",
+    "clear": "Clear",
+    "save": "Save signature",
+    "delete": "Delete",
+    "toastSaved": "Signature saved",
+    "toastDeleted": "Signature deleted",
+    "toastSaveError": "Error saving signature",
+    "toastDeleteError": "Error deleting signature"
+  },
+  "portal": {
+    "cancelAppointment": "Cancel appointment",
+    "confirm": "Confirm?",
+    "yesCancel": "Yes, cancel",
+    "no": "No",
+    "toastCancelled": "Appointment cancelled",
+    "toastCancelError": "Error cancelling appointment"
+  },
+  "websiteBuilder": {
+    "createTitle": "Create your website",
+    "createDesc": "Your site will be created with our editorial design. You can customize colors, text and images from the editor.",
+    "creating": "Creating...",
+    "createButton": "Create my website",
+    "toastSuccess": "Website created successfully!",
+    "toastError": "Unable to create the site"
   }
 }
