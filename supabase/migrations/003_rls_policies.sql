@@ -76,8 +76,10 @@ CREATE POLICY "appointments_preconsultation_patient" ON appointments FOR UPDATE
 
 -- ── Politiques : ai_conversations ────────────────────────────────────────────
 CREATE POLICY "ai_conversations_select_staff" ON ai_conversations FOR SELECT USING (clinic_id = get_user_clinic_id());
-CREATE POLICY "ai_conversations_insert_any"   ON ai_conversations FOR INSERT WITH CHECK (true);
-CREATE POLICY "ai_conversations_update_any"   ON ai_conversations FOR UPDATE USING (true);
+CREATE POLICY "ai_conversations_insert_widget" ON ai_conversations FOR INSERT
+  WITH CHECK (clinic_id IN (SELECT id FROM clinics WHERE is_active = true));
+CREATE POLICY "ai_conversations_update_own_session" ON ai_conversations FOR UPDATE
+  USING (clinic_id IN (SELECT id FROM clinics WHERE is_active = true));
 
 -- ── Politiques : clinic_settings ─────────────────────────────────────────────
 CREATE POLICY "clinic_settings_select_all"   ON clinic_settings FOR SELECT USING (true);
@@ -95,7 +97,8 @@ CREATE POLICY "clinic_websites_select_published" ON clinic_websites FOR SELECT T
 
 -- ── Politiques : staff_invitations ────────────────────────────────────────────
 CREATE POLICY "staff_invitations_manage_owner" ON staff_invitations FOR ALL   USING (clinic_id = get_user_clinic_id() AND get_user_role() = 'owner');
-CREATE POLICY "staff_invitations_select_any"   ON staff_invitations FOR SELECT USING (true);
+CREATE POLICY "staff_invitations_select_own_clinic" ON staff_invitations FOR SELECT
+  USING (clinic_id = get_user_clinic_id());
 
 -- ── Politiques : user_clinic_access ──────────────────────────────────────────
 CREATE POLICY "user_clinic_access_select_own" ON user_clinic_access FOR SELECT USING (user_id = auth.uid());

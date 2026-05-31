@@ -69,6 +69,16 @@ function formatPrice(price: number): string {
   }).format(price);
 }
 
+function escapeHtml(value: string | null | undefined): string {
+  if (!value) return "";
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
 function buildReceiptHtml(appointment: ReceiptAppointment): string {
   const { patient, service, clinic } = appointment;
   const emissionDate = formatDate(new Date().toISOString());
@@ -255,7 +265,7 @@ function buildReceiptHtml(appointment: ReceiptAppointment): string {
 
     <div class="receipt-header">
       <div class="receipt-brand">DocFlow IA</div>
-      <div class="receipt-clinic-name">${clinic.name}</div>
+      <div class="receipt-clinic-name">${escapeHtml(clinic.name)}</div>
       <div class="receipt-title">Reçu de consultation</div>
     </div>
 
@@ -265,17 +275,17 @@ function buildReceiptHtml(appointment: ReceiptAppointment): string {
         <div class="receipt-section-title">Informations patient</div>
         <div class="receipt-row">
           <span class="receipt-row-label">Nom complet</span>
-          <span class="receipt-row-value">${patient.full_name}</span>
+          <span class="receipt-row-value">${escapeHtml(patient.full_name)}</span>
         </div>
         ${patient.phone ? `
         <div class="receipt-row">
           <span class="receipt-row-label">Téléphone</span>
-          <span class="receipt-row-value">${patient.phone}</span>
+          <span class="receipt-row-value">${escapeHtml(patient.phone)}</span>
         </div>` : ""}
         ${patient.email ? `
         <div class="receipt-row">
           <span class="receipt-row-label">Email</span>
-          <span class="receipt-row-value">${patient.email}</span>
+          <span class="receipt-row-value">${escapeHtml(patient.email)}</span>
         </div>` : ""}
       </div>
 
@@ -283,7 +293,7 @@ function buildReceiptHtml(appointment: ReceiptAppointment): string {
         <div class="receipt-section-title">Détails de la consultation</div>
         <div class="receipt-row">
           <span class="receipt-row-label">Prestation</span>
-          <span class="receipt-row-value">${service.name}</span>
+          <span class="receipt-row-value">${escapeHtml(service.name)}</span>
         </div>
         <div class="receipt-row">
           <span class="receipt-row-label">Date</span>
@@ -308,7 +318,7 @@ function buildReceiptHtml(appointment: ReceiptAppointment): string {
       ${appointment.notes ? `
       <div class="receipt-section">
         <div class="receipt-section-title">Notes</div>
-        <div class="receipt-notes">${appointment.notes}</div>
+        <div class="receipt-notes">${escapeHtml(appointment.notes)}</div>
       </div>` : ""}
 
     </div>
