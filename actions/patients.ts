@@ -57,16 +57,26 @@ export async function getPatients(
 
 export async function getPatient(patientId: string) {
   const db = await getDB();
-  const { data } = await db.from("patients").select("*").eq("id", patientId).maybeSingle();
+  const clinicId = await getAuthenticatedClinicId(db);
+  if (!clinicId) return null;
+  const { data } = await db
+    .from("patients")
+    .select("*")
+    .eq("id", patientId)
+    .eq("clinic_id", clinicId)
+    .maybeSingle();
   return data as Patient | null;
 }
 
 export async function getPatientAppointments(patientId: string) {
   const db = await getDB();
+  const clinicId = await getAuthenticatedClinicId(db);
+  if (!clinicId) return [];
   const { data } = await db
     .from("appointments")
     .select("*, service:services(*)")
     .eq("patient_id", patientId)
+    .eq("clinic_id", clinicId)
     .order("start_at", { ascending: false });
   return data || [];
 }

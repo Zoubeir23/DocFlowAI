@@ -48,3 +48,4 @@ cache/
 coverage/
 typechain-types/
 feature.md
+.env.production

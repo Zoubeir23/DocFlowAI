@@ -10,10 +10,10 @@ export async function requireSuperAdmin(): Promise<{ userId: string } | null> {
 
   const { data: userData } = await db
     .from("users")
-    .select("role")
+    .select("role, is_super_admin")
     .eq("id", user.id)
     .maybeSingle();
 
-  if (!userData || userData.role !== "super_admin") return null;
+  if (!userData || userData.role !== "super_admin" || !userData.is_super_admin) return null;
   return { userId: user.id };
 }

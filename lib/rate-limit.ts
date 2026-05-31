@@ -22,7 +22,12 @@ function inMemoryCheck(key: string, limit: number, windowSeconds: number): boole
 function buildRedisClient(): Redis | null {
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!url || !token) return null;
+  if (!url || !token) {
+    if (process.env.NODE_ENV === "production") {
+      console.error("[RateLimit] UPSTASH_REDIS_REST_URL et UPSTASH_REDIS_REST_TOKEN sont requis en production");
+    }
+    return null;
+  }
   return new Redis({ url, token });
 }
 
