@@ -26,11 +26,13 @@ const appSecurityHeaders = [
     value: [
       "default-src 'self'",
       "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com",
       "font-src 'self' data: https://fonts.gstatic.com",
       // Allow images from Supabase storage, Google user avatars, and common CDNs
       "img-src 'self' data: blob: https://*.supabase.co https://polygonscan.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com https:",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://polygon-rpc.com https://rpc.ankr.com",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://polygon-rpc.com https://rpc.ankr.com https://*.sentry.io",
+      // Web workers for Next.js/Sentry
+      "worker-src 'self' blob:",
       // Allow 'self' so the website-builder can preview the widget in an iframe
       "frame-src 'self'",
       "object-src 'none'",
@@ -54,10 +56,11 @@ const widgetHeaders = [
     value: [
       "default-src 'self'",
       "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob: https://*.supabase.co https:",
-      "connect-src 'self' https://*.supabase.co https://api.anthropic.com",
+      "connect-src 'self' https://*.supabase.co https://api.anthropic.com https://*.sentry.io",
+      "worker-src 'self' blob:",
       // Allow embedding from any origin
       "frame-ancestors *",
       "object-src 'none'",
