@@ -5,16 +5,23 @@ import {
   buildPatientConfirmationHtml,
 } from "./templates/patient-confirmation";
 import {
+  buildPatientReminderSubject,
+  buildPatientReminderHtml,
+} from "./templates/patient-reminder";
+import {
   buildDoctorNotificationSubject,
   buildDoctorNotificationHtml,
 } from "./templates/doctor-notification";
 
 let resendClient: Resend | null = null;
 
-function getResendClient(): Resend {
+function getResendClient(): Resend | null {
   if (!resendClient) {
     const apiKey = process.env.RESEND_API_KEY;
-    if (!apiKey) throw new Error("RESEND_API_KEY is not configured");
+    if (!apiKey) {
+      console.warn("[Resend] RESEND_API_KEY is not configured. Email will be skipped.");
+      return null;
+    }
     resendClient = new Resend(apiKey);
   }
   return resendClient;
@@ -31,23 +38,33 @@ export async function sendConfirmationEmail(
   const locale = payload.locale ?? "fr";
   const results: EmailResult[] = [];
 
+  if (!resend) return [{ success: false, channel: "email", error: "Resend not configured" }];
+
   if (payload.patientEmail) {
+    const isReminder = payload.type === "appointment_reminder";
     try {
       const { data, error } = await resend.emails.send({
         from: FROM_ADDRESS,
         to: DEV_OVERRIDE || payload.patientEmail,
-        subject: buildPatientConfirmationSubject(
-          payload.serviceName,
-          payload.clinicName,
-          locale
-        ),
-        html: buildPatientConfirmationHtml({
-          patientName: payload.patientName,
-          clinicName: payload.clinicName,
-          serviceName: payload.serviceName,
-          startAt: payload.startAt,
-          locale,
-        }),
+        subject: isReminder
+          ? buildPatientReminderSubject(payload.serviceName, payload.clinicName, locale)
+          : buildPatientConfirmationSubject(payload.serviceName, payload.clinicName, locale),
+        html: isReminder
+          ? buildPatientReminderHtml({
+              patientName: payload.patientName,
+              clinicName: payload.clinicName,
+              serviceName: payload.serviceName,
+              startAt: payload.startAt,
+              locale,
+            })
+          : buildPatientConfirmationHtml({
+              patientName: payload.patientName,
+              clinicName: payload.clinicName,
+              serviceName: payload.serviceName,
+              startAt: payload.startAt,
+              locale,
+              cancelToken: payload.cancelToken,
+            }),
       });
 
       if (error) {

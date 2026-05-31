@@ -1,6 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { widgetCorsResponse, withWidgetCors } from "@/lib/cors";
+import { checkWidgetChatRateLimit } from "@/lib/rate-limit";
+
+export async function OPTIONS() {
+  return widgetCorsResponse();
+}
 import { createAdminClient } from "@/lib/supabase/server";
 import { buildSystemPrompt } from "@/lib/ai/prompts";
 import { generateAIResponse } from "@/lib/ai/router";
@@ -17,26 +23,9 @@ const requestSchema = z.object({
   locale: z.enum(["fr", "en"]).optional().default("fr"),
 });
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const windowMs = 60 * 1000;
-  const maxRequests = 30;
-
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + windowMs });
-    return true;
-  }
-  if (entry.count >= maxRequests) return false;
-  entry.count++;
-  return true;
-}
-
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for") || "unknown";
-  if (!checkRateLimit(ip)) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
+  if (!(await checkWidgetChatRateLimit(ip))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
@@ -60,14 +49,14 @@ export async function POST(req: NextRequest) {
     .from("clinics")
     .select("id, name, timezone")
     .eq("slug", clinicSlug)
-    .single() as { data: { id: string; name: string; timezone: string } | null };
+    .maybeSingle() as { data: { id: string; name: string; timezone: string } | null };
 
   if (!clinic) {
     return NextResponse.json({ error: "Clinic not found" }, { status: 404 });
   }
 
   const [settingsRes, servicesRes, availabilityRes, blockedRes] = await Promise.all([
-    db.from("clinic_settings").select("*").eq("clinic_id", clinic.id).single(),
+    db.from("clinic_settings").select("*").eq("clinic_id", clinic.id).maybeSingle(),
     db.from("services").select("*").eq("clinic_id", clinic.id).eq("is_active", true),
     db.from("availability_rules").select("*").eq("clinic_id", clinic.id),
     db.from("blocked_dates").select("*").eq("clinic_id", clinic.id).gte("date", new Date().toISOString().split("T")[0]),
@@ -116,7 +105,7 @@ export async function POST(req: NextRequest) {
       .select("*")
       .eq("id", conversationId)
       .eq("clinic_id", clinic.id)
-      .single();
+      .maybeSingle();
     if (data) {
       conversation = { id: data.id, messages: data.messages as unknown[] };
     }
@@ -131,7 +120,7 @@ export async function POST(req: NextRequest) {
         messages: [],
       })
       .select()
-      .single();
+      .maybeSingle();
     if (data) {
       conversation = { id: data.id, messages: [] };
     }
@@ -165,83 +154,81 @@ export async function POST(req: NextRequest) {
     locale,
   });
 
-  const { text, action } = await generateAIResponse(allMessages, systemPrompt);
+  try {
+    const { text, action } = await generateAIResponse(allMessages, systemPrompt);
 
-  let bookingResult: { success: boolean; appointmentId?: string; patientId?: string; error?: string } | null = null;
+    let bookingResult: { success: boolean; appointmentId?: string; patientId?: string; error?: string } | null = null;
 
-  if (action && action.intent === "create_booking" && action.data) {
-    const data = action.data as Record<string, string>;
-    console.log("[booking] action data:", data);
+    if (action && action.intent === "create_booking" && action.data) {
+      const data = action.data as Record<string, string>;
+      // M6 fix: never log patient PII — log intent only
+      console.log("[booking] create_booking action received");
 
-    if (data.patientName && data.patientPhone && data.startAt && data.endAt) {
-      const service = (services as any[]).find(
-        (s) =>
-          s.id === data.serviceId ||
-          s.name.toLowerCase() === (data.serviceName || "").toLowerCase()
-      );
+      if (data.patientName && data.patientPhone && data.startAt && data.endAt) {
+        const service = (services as any[]).find(
+          (s) =>
+            s.id === data.serviceId ||
+            s.name.toLowerCase() === (data.serviceName || "").toLowerCase()
+        );
 
-      console.log("[booking] matched service:", service?.id, service?.name);
-
-      if (service) {
-        const { data: result, error } = await db.rpc("create_booking_from_widget", {
-          p_clinic_id: clinic.id,
-          p_patient_name: data.patientName,
-          p_patient_phone: data.patientPhone,
-          p_patient_email: data.patientEmail || null,
-          p_service_id: service.id,
-          p_start_at: data.startAt,
-          p_end_at: data.endAt,
-          p_notes: null,
-        });
-
-        console.log("[booking] rpc result:", result, "error:", error);
-
-        if (!error && result) {
-          const resultData = result as { appointment_id: string; patient_id: string };
-          bookingResult = {
-            success: true,
-            appointmentId: resultData.appointment_id,
-            patientId: resultData.patient_id,
-          };
-
-          await sendNotification({
-            type: "appointment_confirmation",
-            appointmentId: resultData.appointment_id,
-            patientName: data.patientName,
-            patientPhone: data.patientPhone,
-            patientEmail: data.patientEmail || undefined,
-            clinicName: clinic.name,
-            serviceName: service.name,
-            startAt: data.startAt,
+        if (service) {
+          const { data: result, error } = await db.rpc("create_booking_from_widget", {
+            p_clinic_id: clinic.id,
+            p_patient_name: data.patientName,
+            p_patient_phone: data.patientPhone,
+            p_patient_email: data.patientEmail || null,
+            p_service_id: service.id,
+            p_start_at: data.startAt,
+            p_end_at: data.endAt,
+            p_notes: null,
           });
+
+          if (!error && result) {
+            const resultData = result as { appointment_id: string; patient_id: string };
+            bookingResult = {
+              success: true,
+              appointmentId: resultData.appointment_id,
+              patientId: resultData.patient_id,
+            };
+
+            await sendNotification({
+              type: "appointment_confirmation",
+              appointmentId: resultData.appointment_id,
+              patientName: data.patientName,
+              patientPhone: data.patientPhone,
+              patientEmail: data.patientEmail || undefined,
+              clinicName: clinic.name,
+              serviceName: service.name,
+              startAt: data.startAt,
+            });
+          } else {
+            bookingResult = { success: false, error: error?.message || "Booking failed" };
+          }
         } else {
-          bookingResult = { success: false, error: error?.message || "Booking failed" };
+          bookingResult = { success: false, error: "Service not found" };
         }
-      } else {
-        console.log("[booking] no service matched. serviceId:", data.serviceId, "serviceName:", data.serviceName);
-        console.log("[booking] available services:", (services as any[]).map((s) => ({ id: s.id, name: s.name })));
-        bookingResult = { success: false, error: "Service not found" };
       }
-    } else {
-      console.log("[booking] missing required fields:", { patientName: data.patientName, patientPhone: data.patientPhone, startAt: data.startAt, endAt: data.endAt });
     }
+
+    const updatedMessages: AIMessage[] = [
+      ...historyMessages,
+      { role: "user", content: message },
+      { role: "assistant", content: text },
+    ];
+
+    await db
+      .from("ai_conversations")
+      .update({ messages: updatedMessages })
+      .eq("id", conversation.id);
+
+    return withWidgetCors(NextResponse.json({
+      message: text,
+      conversationId: conversation.id,
+      action,
+      bookingResult,
+    }));
+  } catch (error: any) {
+    console.error("[WidgetChat] Error in chat route:", error);
+    return withWidgetCors(NextResponse.json({ error: "Internal error" }, { status: 500 }));
   }
-
-  const updatedMessages: AIMessage[] = [
-    ...historyMessages,
-    { role: "user", content: message },
-    { role: "assistant", content: text },
-  ];
-
-  await db
-    .from("ai_conversations")
-    .update({ messages: updatedMessages })
-    .eq("id", conversation.id);
-
-  return NextResponse.json({
-    message: text,
-    conversationId: conversation.id,
-    action,
-    bookingResult,
-  });
 }

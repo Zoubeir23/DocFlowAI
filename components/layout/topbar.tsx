@@ -1,6 +1,7 @@
 "use client";
 
-import { Bell, Search, ChevronDown, Settings, CreditCard, LogOut } from "lucide-react";
+import { Search, ChevronDown, Settings2, CreditCard, LogOut, Menu } from "lucide-react";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -15,6 +16,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { LanguageSwitcher } from "./language-switcher";
+import { ThemeSwitcher } from "@/components/theme-switcher";
+import { useSidebarStore } from "@/lib/store/sidebar-store";
 
 interface TopbarProps {
   title: string;
@@ -26,6 +29,7 @@ export function Topbar({ title, userName = "Doctor", userEmail }: TopbarProps) {
   const t = useTranslations("topbar");
   const router = useRouter();
   const supabase = createClient();
+  const { toggleMobile } = useSidebarStore();
 
   const initials = userName
     .split(" ")
@@ -40,74 +44,88 @@ export function Topbar({ title, userName = "Doctor", userEmail }: TopbarProps) {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-100 px-6 py-3.5">
+    <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border px-4 md:px-6 py-3">
       <div className="flex items-center justify-between gap-4">
-        {/* Title */}
+        
+        {/* Left side: Hamburger (Mobile) + Title */}
         <div className="flex items-center gap-3">
-          <div className="w-1 h-6 rounded-full gradient-brand" />
-          <h1 className="text-lg font-bold text-slate-800 tracking-tight">{title}</h1>
+          <button 
+            onClick={toggleMobile}
+            className="md:hidden p-2 -ml-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-xl transition-all"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+          
+          <div className="flex items-center gap-3">
+            <div className="hidden md:block w-1.5 h-6 rounded-full bg-primary" />
+            <h1 className="text-lg md:text-xl font-bold text-foreground tracking-tight">{title}</h1>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Right side controls */}
+        <div className="flex items-center gap-2 md:gap-4">
           {/* Search */}
-          <div className="relative hidden md:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+          <div className="relative hidden lg:block">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder={t("searchPlaceholder")}
-              className="pl-9 w-64 h-9 bg-slate-50 border-slate-200 text-sm rounded-xl focus:ring-teal-500 focus:border-teal-400 placeholder:text-slate-400"
+              className="pl-9 w-72 h-10 bg-muted/30 border-border text-sm font-medium rounded-xl focus:ring-primary focus:border-primary placeholder:text-muted-foreground shadow-sm transition-all hover:bg-muted/50 focus:bg-background"
             />
           </div>
 
-          {/* Language switcher */}
-          <LanguageSwitcher />
+          <div className="hidden md:block">
+            <LanguageSwitcher />
+          </div>
 
-          {/* Notification bell */}
-          <button className="relative p-2 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-all duration-200">
-            <Bell className="w-4.5 h-4.5" style={{ width: 18, height: 18 }} />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-500 rounded-full border-2 border-white" />
-          </button>
+          {/* Theme switcher */}
+          <div className="flex items-center">
+            <ThemeSwitcher />
+          </div>
+
+          {/* Notifications */}
+          <NotificationBell />
 
           {/* User menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2.5 pl-2 pr-3 py-1.5 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-all duration-200 focus:outline-none group">
-                <Avatar className="h-8 w-8 ring-2 ring-teal-100">
-                  <AvatarFallback className="gradient-brand text-white text-xs font-bold">
+              <button className="flex items-center gap-3 pl-2 pr-2 md:pr-3 py-1.5 rounded-xl hover:bg-accent/50 border border-transparent transition-all duration-200 focus:outline-none group">
+                <Avatar className="h-9 w-9 ring-2 ring-primary/20 shadow-sm transition-all group-hover:ring-primary/40">
+                  <AvatarFallback className="bg-gradient-to-br from-primary to-primary/60 text-white text-xs font-bold">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden md:block text-left">
-                  <div className="text-sm font-semibold text-slate-700 leading-tight">{userName}</div>
+                  <div className="text-sm font-bold text-foreground leading-tight">{userName}</div>
                   {userEmail && (
-                    <div className="text-[11px] text-slate-400 truncate max-w-[140px]">{userEmail}</div>
+                    <div className="text-xs text-muted-foreground font-medium truncate max-w-[150px]">{userEmail}</div>
                   )}
                 </div>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden md:block group-hover:text-teal-500 transition-colors" />
+                <ChevronDown className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors ml-1" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52 rounded-xl border-slate-100 shadow-lg shadow-slate-200/50 p-1">
-              <DropdownMenuLabel className="text-xs text-slate-500 font-normal px-2 py-1.5">{t("myAccount")}</DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-slate-100" />
+            <DropdownMenuContent align="end" className="w-56 rounded-xl border-border shadow-xl p-1.5 font-medium">
+              <DropdownMenuLabel className="text-xs text-muted-foreground font-bold px-2 py-2 tracking-wider uppercase">{t("myAccount")}</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-border" />
               <DropdownMenuItem
                 onClick={() => router.push("/app/settings")}
-                className="rounded-lg text-sm text-slate-600 hover:text-teal-700 hover:bg-teal-50 cursor-pointer"
+                className="rounded-lg text-sm text-foreground hover:bg-accent hover:text-primary cursor-pointer py-2 px-3 transition-colors"
               >
-                <Settings className="w-4 h-4 mr-2 text-slate-400" />
+                <Settings2 className="w-4 h-4 mr-3" />
                 {t("settings")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => router.push("/app/billing")}
-                className="rounded-lg text-sm text-slate-600 hover:text-teal-700 hover:bg-teal-50 cursor-pointer"
+                className="rounded-lg text-sm text-foreground hover:bg-accent hover:text-primary cursor-pointer py-2 px-3 transition-colors"
               >
-                <CreditCard className="w-4 h-4 mr-2 text-slate-400" />
+                <CreditCard className="w-4 h-4 mr-3" />
                 {t("billing")}
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-slate-100" />
+              <DropdownMenuSeparator className="bg-border" />
               <DropdownMenuItem
                 onClick={handleSignOut}
-                className="rounded-lg text-sm text-red-500 hover:text-red-600 hover:bg-red-50 cursor-pointer"
+                className="rounded-lg text-sm text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer py-2 px-3 transition-colors"
               >
-                <LogOut className="w-4 h-4 mr-2" />
+                <LogOut className="w-4 h-4 mr-3" />
                 {t("signOut")}
               </DropdownMenuItem>
             </DropdownMenuContent>

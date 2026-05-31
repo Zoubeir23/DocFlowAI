@@ -1,81 +1,66 @@
 "use client";
 
-import { useState, useEffect, useCallback, useTransition } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useEffect, useTransition } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import { ethers } from "ethers";
 import { createStripeCheckoutSession, type StripePlan } from "@/actions/stripe-checkout";
+import { getClinicQuotaUsage, type QuotaUsage } from "@/actions/quota";
+import { CryptoPaymentModal, type CryptoPlan } from "@/components/billing/crypto-payment-modal";
+import { EnterpriseContactModal } from "@/components/billing/enterprise-contact-modal";
+import { QuotaBar } from "@/components/billing/quota-bar";
 import {
-  CheckCircle, Zap, Building2, ArrowRight, Copy, Check,
-  ExternalLink, AlertCircle, X, Wallet, ShieldCheck,
-  Loader2, RefreshCw, AlertTriangle, CreditCard,
+  CheckCircle, Zap, Building2, ArrowRight,
+  ExternalLink, AlertCircle, Wallet,
+  Loader2, AlertTriangle, CreditCard,
+  Users, Calendar, Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { format, parseISO } from "date-fns";
-
-// ── Crypto config ─────────────────────────────────────────────────────────────
-const RECIPIENT = process.env.NEXT_PUBLIC_CRYPTO_WALLET_ADDRESS!;
-const USDC_CONTRACT = process.env.NEXT_PUBLIC_CRYPTO_USDC_CONTRACT!;
-const REQUIRED_CHAIN_ID = Number(process.env.NEXT_PUBLIC_CRYPTO_CHAIN_ID || 137);
-const USDC_DECIMALS = 6;
-
-const ERC20_ABI = [
-  "function transfer(address to, uint256 amount) returns (bool)",
-  "function balanceOf(address owner) view returns (uint256)",
-  "function decimals() view returns (uint8)",
-  "function symbol() view returns (string)",
-];
-
-const POLYGON_PARAMS = {
-  chainId: "0x89",
-  chainName: "Polygon Mainnet",
-  nativeCurrency: { name: "MATIC", symbol: "MATIC", decimals: 18 },
-  rpcUrls: ["https://polygon-rpc.com/"],
-  blockExplorerUrls: ["https://polygonscan.com/"],
-};
+import { format, parseISO, differenceInDays, isPast } from "date-fns";
+import { useTranslations } from "next-intl";
 
 // ── Plans ─────────────────────────────────────────────────────────────────────
 const PLANS = [
   {
-    name: "Free",
+    nameKey: "plans.free",
     priceEur: 0,
     priceUsdc: 0,
-    features: ["50 rendez-vous/mois", "Assistant IA de réservation", "Calendrier basique", "1 compte staff"],
+    featureKeys: ["features.50appointments", "features.aiBooking", "features.basicCalendar", "features.1staff"],
     plan: "free" as const,
   },
   {
-    name: "Starter",
+    nameKey: "plans.starter",
     priceEur: Number(process.env.NEXT_PUBLIC_PLAN_STARTER_PRICE_EUR || 45),
     priceUsdc: Number(process.env.NEXT_PUBLIC_PLAN_STARTER_PRICE || 49),
-    features: ["200 rendez-vous/mois", "Toutes les fonctions Free", "Calendrier complet", "CRM patients", "3 comptes staff"],
+    featureKeys: ["features.200appointments", "features.allFreeFeatures", "features.fullCalendar", "features.patientCRM", "features.3staff"],
     plan: "starter" as StripePlan,
   },
   {
-    name: "Professional",
+    nameKey: "plans.professional",
     priceEur: Number(process.env.NEXT_PUBLIC_PLAN_PROFESSIONAL_PRICE_EUR || 89),
     priceUsdc: Number(process.env.NEXT_PUBLIC_PLAN_PROFESSIONAL_PRICE || 99),
-    features: ["Rendez-vous illimités", "Toutes les fonctions Starter", "Analyses avancées", "IA personnalisée", "10 comptes staff", "Support prioritaire"],
+    featureKeys: ["features.unlimitedAppointments", "features.allStarterFeatures", "features.advancedAnalytics", "features.customAI", "features.10staff", "features.prioritySupport"],
     plan: "professional" as StripePlan,
     popular: true,
   },
   {
-    name: "Enterprise",
+    nameKey: "plans.enterprise",
     priceEur: Number(process.env.NEXT_PUBLIC_PLAN_ENTERPRISE_PRICE_EUR || 269),
     priceUsdc: Number(process.env.NEXT_PUBLIC_PLAN_ENTERPRISE_PRICE || 299),
-    features: ["Plusieurs cliniques", "Toutes les fonctions Pro", "Intégrations sur mesure", "Responsable de compte dédié"],
+    featureKeys: ["features.multipleClinics", "features.allProFeatures", "features.customIntegrations", "features.dedicatedManager"],
     plan: "enterprise" as StripePlan,
   },
 ];
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Data fetchers ─────────────────────────────────────────────────────────────
 async function fetchSubscription() {
-  const supabase = createClient() as ReturnType<typeof createClient>;
-  const { data: { user } } = await supabase.auth.getUser();
+  const supabase = createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
+  const { data: { user } } = await db.auth.getUser();
   if (!user) return null;
-  const { data: userData } = await (supabase as unknown as { from: (t: string) => { select: (s: string) => { eq: (c: string, v: string) => { single: () => Promise<{ data: { clinic_id: string } | null }> } } } }).from("users").select("clinic_id").eq("id", user.id).single();
+  const { data: userData } = await db.from("users").select("clinic_id").eq("id", user.id).maybeSingle();
   if (!userData) return null;
-  const { data } = await (supabase as unknown as { from: (t: string) => { select: (s: string) => { eq: (c: string, v: string) => { single: () => Promise<{ data: unknown }> } } } }).from("subscriptions").select("*").eq("clinic_id", userData.clinic_id).single();
+  const { data } = await db.from("subscriptions").select("*").eq("clinic_id", userData.clinic_id).maybeSingle();
   return data as {
     plan: string;
     status: string;
@@ -84,315 +69,32 @@ async function fetchSubscription() {
   } | null;
 }
 
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <button
-      onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-      className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
-    >
-      {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
-      {copied ? "Copié !" : "Copier"}
-    </button>
-  );
-}
-
-// ── Crypto Payment Modal (unchanged logic) ────────────────────────────────────
-type TxStep = "idle" | "connecting" | "switching" | "approving" | "sending" | "success" | "error";
-
-interface CryptoPaymentModalProps {
-  plan: typeof PLANS[0];
-  onClose: () => void;
-}
-
-function CryptoPaymentModal({ plan, onClose }: CryptoPaymentModalProps) {
-  const [step, setStep] = useState<TxStep>("idle");
-  const [error, setError] = useState("");
-  const [txHash, setTxHash] = useState("");
-  const [walletAddress, setWalletAddress] = useState("");
-  const [usdcBalance, setUsdcBalance] = useState<string | null>(null);
-  const [chainId, setChainId] = useState<number | null>(null);
-
-  const isCorrectChain = chainId === REQUIRED_CHAIN_ID;
-
-  const getProvider = () => {
-    if (typeof window === "undefined" || !(window as unknown as { ethereum?: unknown }).ethereum) return null;
-    return new ethers.BrowserProvider((window as unknown as { ethereum: ethers.Eip1193Provider }).ethereum);
-  };
-
-  const fetchWalletInfo = useCallback(async (address: string, provider: ethers.BrowserProvider) => {
-    try {
-      const network = await provider.getNetwork();
-      setChainId(Number(network.chainId));
-      if (Number(network.chainId) === REQUIRED_CHAIN_ID) {
-        const usdc = new ethers.Contract(USDC_CONTRACT, ERC20_ABI, provider);
-        const bal = await usdc.balanceOf(address);
-        setUsdcBalance(ethers.formatUnits(bal, USDC_DECIMALS));
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  const connectWallet = async () => {
-    const provider = getProvider();
-    if (!provider) {
-      setError("MetaMask introuvable. Veuillez l'installer depuis metamask.io");
-      return;
-    }
-    setStep("connecting");
-    setError("");
-    try {
-      const eth = (window as unknown as { ethereum: { request: (p: { method: string }) => Promise<string[]> } }).ethereum;
-      const accounts = await eth.request({ method: "eth_requestAccounts" });
-      const address = accounts[0];
-      setWalletAddress(address);
-      await fetchWalletInfo(address, provider);
-      setStep("idle");
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : "Connexion refusée";
-      setError(message);
-      setStep("error");
-    }
-  };
-
-  const switchToPolygon = async () => {
-    setStep("switching");
-    setError("");
-    const eth = (window as unknown as { ethereum: { request: (p: { method: string; params?: unknown[] }) => Promise<void> } }).ethereum;
-    try {
-      await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: POLYGON_PARAMS.chainId }] });
-    } catch (e: unknown) {
-      const code = (e as { code?: number }).code;
-      if (code === 4902) {
-        try {
-          await eth.request({ method: "wallet_addEthereumChain", params: [POLYGON_PARAMS] });
-        } catch (addErr: unknown) {
-          const message = addErr instanceof Error ? addErr.message : "Impossible d'ajouter le réseau Polygon";
-          setError(message);
-          setStep("error");
-          return;
-        }
-      } else {
-        const message = e instanceof Error ? e.message : "Échec du changement de réseau";
-        setError(message);
-        setStep("error");
-        return;
-      }
-    }
-    const provider = getProvider()!;
-    await fetchWalletInfo(walletAddress, provider);
-    setStep("idle");
-  };
-
-  const sendPayment = async () => {
-    const provider = getProvider();
-    if (!provider || !walletAddress) return;
-    setStep("approving");
-    setError("");
-    try {
-      const signer = await provider.getSigner();
-      const usdc = new ethers.Contract(USDC_CONTRACT, ERC20_ABI, signer);
-      const amount = ethers.parseUnits(plan.priceUsdc.toString(), USDC_DECIMALS);
-      setStep("sending");
-      const tx = await usdc.transfer(RECIPIENT, amount);
-      const receipt = await tx.wait();
-      setTxHash(receipt.hash);
-      setStep("success");
-    } catch (e: unknown) {
-      const rawMessage = (e as { reason?: string; message?: string })?.reason ?? (e instanceof Error ? e.message : "Transaction échouée");
-      setError(rawMessage.length > 120 ? rawMessage.slice(0, 120) + "..." : rawMessage);
-      setStep("error");
-    }
-  };
-
-  const isLoading = ["connecting", "switching", "approving", "sending"].includes(step);
-  const hasInsufficientBalance = usdcBalance !== null && Number(usdcBalance) < plan.priceUsdc;
-
-  const stepLabel: Record<TxStep, string> = {
-    idle: "",
-    connecting: "Connexion du portefeuille...",
-    switching: "Changement vers Polygon...",
-    approving: "En attente d'approbation dans MetaMask...",
-    sending: "Envoi de la transaction...",
-    success: "",
-    error: "",
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
-              <Wallet className="w-5 h-5 text-purple-600" />
-            </div>
-            <div>
-              <h3 className="font-bold text-gray-900">Plan {plan.name} — Crypto</h3>
-              <p className="text-sm text-gray-500">{plan.priceUsdc} USDC / mois</p>
-            </div>
-          </div>
-          <button onClick={onClose} disabled={isLoading} className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-40">
-            <X className="w-4 h-4 text-gray-500" />
-          </button>
-        </div>
-
-        <div className="p-5 space-y-4">
-          {step === "success" ? (
-            <div className="text-center space-y-4 py-4">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                <CheckCircle className="w-9 h-9 text-green-500" />
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-900 text-lg">Paiement envoyé !</h3>
-                <p className="text-gray-500 text-sm mt-1">Votre plan {plan.name} sera activé sous quelques minutes après confirmation on-chain.</p>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 text-left space-y-1">
-                <p className="text-xs text-gray-400">Hash de transaction</p>
-                <p className="text-xs font-mono text-gray-700 break-all">{txHash}</p>
-                <a href={`https://polygonscan.com/tx/${txHash}`} target="_blank" rel="noopener noreferrer"
-                  className="text-xs text-blue-600 flex items-center gap-1 hover:underline">
-                  <ExternalLink className="w-3 h-3" /> Voir sur Polygonscan
-                </a>
-              </div>
-              <Button className="w-full" onClick={onClose}>Fermer</Button>
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center justify-between p-3 bg-purple-50 rounded-xl border border-purple-100">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">P</span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-purple-900">Réseau Polygon · USDC</p>
-                    <p className="text-xs text-purple-500">Chain ID : {REQUIRED_CHAIN_ID}</p>
-                  </div>
-                </div>
-                {walletAddress && (
-                  <div className={`text-xs px-2 py-1 rounded-full font-medium ${isCorrectChain ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                    {isCorrectChain ? "✓ Connecté" : "Mauvais réseau"}
-                  </div>
-                )}
-              </div>
-
-              <div className="text-center py-3 bg-gray-50 rounded-xl border border-gray-100">
-                <p className="text-xs text-gray-400 mb-0.5">Montant à payer</p>
-                <p className="text-4xl font-bold text-gray-900">{plan.priceUsdc} <span className="text-lg text-gray-400">USDC</span></p>
-                <p className="text-xs text-gray-400 mt-0.5">≈ {plan.priceEur}€ · mensuel</p>
-              </div>
-
-              {walletAddress ? (
-                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-gray-400">Portefeuille connecté</p>
-                    <CopyButton text={walletAddress} />
-                  </div>
-                  <p className="text-sm font-mono text-gray-700">{walletAddress.slice(0, 8)}...{walletAddress.slice(-6)}</p>
-                  {usdcBalance !== null && (
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-gray-400">Solde USDC</p>
-                      <p className={`text-sm font-semibold ${hasInsufficientBalance ? "text-red-500" : "text-green-600"}`}>
-                        {Number(usdcBalance).toFixed(2)} USDC
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="p-3 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-center">
-                  <p className="text-sm text-gray-500">Aucun portefeuille connecté</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Cliquez ci-dessous pour connecter MetaMask</p>
-                </div>
-              )}
-
-              {isLoading && (
-                <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
-                  <Loader2 className="w-4 h-4 animate-spin text-blue-600 flex-shrink-0" />
-                  <p className="text-sm text-blue-700">{stepLabel[step]}</p>
-                </div>
-              )}
-
-              {step === "error" && error && (
-                <div className="flex items-start gap-2 p-3 bg-red-50 rounded-xl border border-red-100">
-                  <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-red-600">{error}</p>
-                </div>
-              )}
-
-              {hasInsufficientBalance && isCorrectChain && (
-                <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-xl border border-amber-100">
-                  <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-amber-700">
-                    Solde USDC insuffisant. Vous avez besoin de {plan.priceUsdc} USDC mais votre solde est {Number(usdcBalance).toFixed(2)} USDC.
-                    Obtenez des USDC sur Polygon via <a href="https://app.uniswap.org" target="_blank" rel="noopener noreferrer" className="underline font-medium">Uniswap</a>.
-                  </p>
-                </div>
-              )}
-
-              <div className="space-y-2 pt-1">
-                {!walletAddress ? (
-                  <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white h-11" onClick={connectWallet} disabled={isLoading}>
-                    <Wallet className="w-4 h-4 mr-2" />Connecter MetaMask
-                  </Button>
-                ) : !isCorrectChain ? (
-                  <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white h-11" onClick={switchToPolygon} disabled={isLoading}>
-                    <RefreshCw className="w-4 h-4 mr-2" />Passer sur le réseau Polygon
-                  </Button>
-                ) : (
-                  <Button
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white h-11"
-                    onClick={sendPayment}
-                    disabled={isLoading || hasInsufficientBalance}
-                  >
-                    {isLoading
-                      ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      : <ShieldCheck className="w-4 h-4 mr-2" />}
-                    {isLoading ? stepLabel[step] : `Payer ${plan.priceUsdc} USDC`}
-                  </Button>
-                )}
-                <Button variant="outline" className="w-full" onClick={onClose} disabled={isLoading}>
-                  Annuler
-                </Button>
-              </div>
-
-              <div className="pt-1 border-t border-gray-100">
-                <p className="text-xs text-gray-400 mb-1">Envoi vers</p>
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-mono text-gray-600">{RECIPIENT.slice(0, 10)}...{RECIPIENT.slice(-8)}</p>
-                  <div className="flex items-center gap-2">
-                    <CopyButton text={RECIPIENT} />
-                    <a href={`https://polygonscan.com/address/${RECIPIENT}`} target="_blank" rel="noopener noreferrer"
-                      className="text-xs text-blue-600 flex items-center gap-0.5 hover:underline">
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Main Page ─────────────────────────────────────────────────────────────────
+// ── Page ──────────────────────────────────────────────────────────────────────
 export default function BillingPage() {
-  const [selectedCryptoPlan, setSelectedCryptoPlan] = useState<typeof PLANS[0] | null>(null);
+  const t = useTranslations("billing");
+  const [selectedCryptoPlan, setSelectedCryptoPlan] = useState<CryptoPlan | null>(null);
+  const [showEnterpriseModal, setShowEnterpriseModal] = useState(false);
   const [hasMetaMask, setHasMetaMask] = useState(false);
   const [stripeLoadingPlan, setStripeLoadingPlan] = useState<string | null>(null);
   const [stripeError, setStripeError] = useState<string | null>(null);
+  const [stripeStatus, setStripeStatus] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const searchParams = useSearchParams();
+
+  const REQUIRED_CHAIN_ID = Number(process.env.NEXT_PUBLIC_CRYPTO_CHAIN_ID || 137);
+  const RECIPIENT = process.env.NEXT_PUBLIC_CRYPTO_WALLET_ADDRESS!;
 
   useEffect(() => {
     setHasMetaMask(typeof window !== "undefined" && !!(window as unknown as { ethereum?: unknown }).ethereum);
+    const params = new URLSearchParams(window.location.search);
+    setStripeStatus(params.get("stripe"));
   }, []);
 
-  const stripeStatus = searchParams.get("stripe");
+  const { data: subscription, isSuccess: subscriptionLoaded } = useQuery({ queryKey: ["subscription"], queryFn: fetchSubscription });
+  const { data: quotaUsage } = useQuery<QuotaUsage | null>({ queryKey: ["quotaUsage"], queryFn: getClinicQuotaUsage });
 
-  const { data: subscription } = useQuery({ queryKey: ["subscription"], queryFn: fetchSubscription });
+  const effectivePlan = subscriptionLoaded
+    ? (subscription?.plan ?? "free")
+    : null;
 
   const handleStripeCheckout = (plan: StripePlan) => {
     setStripeError(null);
@@ -411,106 +113,191 @@ export default function BillingPage() {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-5xl">
+    <div className="page-container max-w-5xl">
 
       {/* Header */}
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-xl gradient-brand flex items-center justify-center">
-          <Wallet className="w-4 h-4 text-white" />
+      <div className="section-header">
+        <div className="icon-container">
+          <Wallet className="w-5 h-5 text-primary" strokeWidth={1.8} />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Facturation & Abonnement</h2>
-          <p className="text-slate-500 text-sm">Payez par carte bancaire (Stripe) ou en crypto (USDC sur Polygon)</p>
+          <h2 className="section-title">{t("title")}</h2>
+          <p className="section-subtitle">{t("subtitle")}</p>
         </div>
       </div>
 
-      {/* Stripe success / cancel banners */}
+      {/* Stripe status banners */}
       {stripeStatus === "success" && (
-        <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-100 rounded-2xl">
-          <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+        <div className="flex items-center gap-3 p-4 status-confirmed rounded-xl">
+          <CheckCircle className="w-5 h-5 flex-shrink-0" />
           <div>
-            <p className="text-sm font-bold text-green-800">Paiement Stripe réussi !</p>
-            <p className="text-xs text-green-600 mt-0.5">Votre abonnement sera activé sous quelques secondes.</p>
+            <p className="text-sm font-medium">{t("stripeSuccess")}</p>
+            <p className="text-xs opacity-80 mt-0.5">{t("stripeSuccessDesc")}</p>
           </div>
         </div>
       )}
       {stripeStatus === "cancelled" && (
-        <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-100 rounded-2xl">
-          <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0" />
-          <p className="text-sm text-amber-800">Paiement annulé. Vous pouvez réessayer à tout moment.</p>
+        <div className="flex items-center gap-3 p-4 status-no_show rounded-xl">
+          <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+          <p className="text-sm">{t("stripeCancelled")}</p>
         </div>
       )}
       {stripeError && (
-        <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-100 rounded-2xl">
-          <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-red-700">{stripeError}</p>
+        <div className="flex items-start gap-3 p-4 status-cancelled rounded-xl">
+          <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          <p className="text-sm font-medium">{stripeError}</p>
         </div>
       )}
 
-      {/* Current subscription */}
-      {subscription && (
-        <div className="glass-card rounded-2xl p-5 border-l-4 border-teal-500">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 gradient-brand rounded-xl flex items-center justify-center shadow-md shadow-teal-200/50">
-                {subscription.payment_provider === "stripe"
-                  ? <CreditCard className="w-6 h-6 text-white" />
-                  : <Wallet className="w-6 h-6 text-white" />
-                }
-              </div>
-              <div>
-                <h3 className="font-bold text-slate-800 capitalize">Plan {subscription.plan}</h3>
-                <p className="text-sm text-slate-500">
-                  Renouvellement le {format(parseISO(subscription.current_period_end), "d MMMM yyyy")}
-                  {" · "}
-                  <span className="capitalize">{subscription.payment_provider === "stripe" ? "Stripe" : "Crypto"}</span>
+      {/* Current subscription + quota */}
+      {subscription && (() => {
+        const expiry = parseISO(subscription.current_period_end);
+        const isExpired = isPast(expiry);
+        const daysLeft = differenceInDays(expiry, new Date());
+        const isExpiringSoon = !isExpired && daysLeft <= 7;
+        const isFree = subscription.plan === "free";
+
+        return (
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            {!isFree && (isExpired || isExpiringSoon) && (
+              <div className={`flex items-center gap-3 px-5 py-3 border-b ${
+                isExpired
+                  ? "bg-red-500/10 border-red-500/30 text-red-500"
+                  : "bg-amber-500/8 border-amber-500/20 text-amber-700 dark:text-amber-400"
+              }`}>
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                <p className="text-sm font-semibold flex-1">
+                  {isExpired
+                    ? t("subscriptionExpired")
+                    : daysLeft === 0
+                      ? t("subscriptionExpiresToday")
+                      : t("subscriptionExpiresSoon", { days: daysLeft, plural: daysLeft > 1 ? "s" : "" })}
                 </p>
+                <span className="text-xs font-medium opacity-70 whitespace-nowrap">
+                  {format(expiry, "d MMM yyyy")}
+                </span>
+              </div>
+            )}
+
+            <div className="p-5 flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/5 rounded-xl flex items-center justify-center">
+                  {subscription.payment_provider === "stripe"
+                    ? <CreditCard className="w-6 h-6 text-primary" />
+                    : <Wallet className="w-6 h-6 text-primary" />
+                  }
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground capitalize">Plan {subscription.plan}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {isFree
+                      ? t("freePlanDesc")
+                      : isExpired
+                        ? <span className="text-red-500 font-medium">{t("expiredDate", { date: format(expiry, "d MMMM yyyy") })}</span>
+                        : <>{t("renewsOn")} {format(expiry, "d MMMM yyyy")} · <span className="capitalize">{subscription.payment_provider === "stripe" ? "Stripe" : "Crypto"}</span></>
+                    }
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {!isFree && !isExpired && (
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${
+                    isExpiringSoon
+                      ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400"
+                      : "bg-primary/8 border-primary/20 text-primary"
+                  }`}>
+                    {t("daysRemaining", { days: daysLeft })}
+                  </span>
+                )}
+                <span className={`text-xs font-semibold px-3 py-1.5 rounded-lg border capitalize ${
+                  isExpired ? "status-cancelled" : subscription.status === "active" ? "status-confirmed" : "status-cancelled"
+                }`}>
+                  {isExpired ? t("expired") : subscription.status}
+                </span>
               </div>
             </div>
-            <span className={`text-xs font-bold px-3 py-1.5 rounded-full border capitalize ${subscription.status === "active" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-red-50 text-red-600 border-red-100"}`}>
-              {subscription.status}
-            </span>
-          </div>
-        </div>
-      )}
 
-      {/* MetaMask warning (only shown as info, not blocking) */}
+            {quotaUsage && (() => {
+              const apptFull = quotaUsage.appointments.limit !== null && quotaUsage.appointments.current >= quotaUsage.appointments.limit;
+              const staffFull = quotaUsage.staff.limit !== null && quotaUsage.staff.current >= quotaUsage.staff.limit;
+              const apptWarn = quotaUsage.appointments.limit !== null && !apptFull && (quotaUsage.appointments.current / quotaUsage.appointments.limit) >= 0.8;
+              return (
+                <div className="border-t border-border">
+                  {(apptFull || staffFull) && (
+                    <div className="px-5 pt-4">
+                      <div className="flex items-start gap-2.5 p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
+                        <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-red-500" />
+                        <div>
+                          <p className="text-sm font-bold text-red-500">{t("limitReachedTitle")}</p>
+                          <p className="text-xs mt-0.5 text-red-400">
+                            {apptFull && t("apptLimitReachedDesc")}
+                            {staffFull && t("staffLimitReachedDesc")}
+                            {t("upgradeToContinue")}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {apptWarn && !apptFull && (
+                    <div className="px-5 pt-4">
+                      <div className="flex items-center gap-2.5 p-3 bg-amber-500/8 border border-amber-500/20 rounded-xl text-amber-700 dark:text-amber-400">
+                        <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                        <p className="text-xs font-semibold">
+                          {t("apptLimitApproachingDesc", { current: quotaUsage.appointments.current, limit: quotaUsage.appointments.limit ?? "∞" })}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  <div className="px-5 py-4 bg-muted/20 space-y-3">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("usageThisMonth")}</p>
+                    <QuotaBar current={quotaUsage.appointments.current} limit={quotaUsage.appointments.limit} label={t("appointmentsLabel")} icon={Calendar} />
+                    <QuotaBar current={quotaUsage.staff.current} limit={quotaUsage.staff.limit} label={t("staffAccountsLabel")} icon={Users} />
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        );
+      })()}
+
+      {/* MetaMask info */}
       {!hasMetaMask && (
-        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-100 rounded-2xl">
-          <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 p-4 bg-muted rounded-xl border border-border">
+          <AlertTriangle className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-bold text-amber-800">MetaMask non détecté</p>
-            <p className="text-xs text-amber-600 mt-0.5">
-              Installez l&apos;extension MetaMask pour payer en crypto.{" "}
-              <a href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer" className="underline font-semibold">
-                Télécharger MetaMask →
+            <p className="text-sm font-medium text-foreground">{t("metamaskNotDetected")}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {t("metamaskInstall")}{" "}
+              <a href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer" className="underline font-medium">
+                {t("metamaskDownload")}
               </a>
-              {" "}Vous pouvez toujours payer par carte Stripe.
+              {" "}{t("canStillPayStripe")}
             </p>
           </div>
         </div>
       )}
 
-      {/* Payment method explanation */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-100 rounded-2xl">
-          <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0">
-            <CreditCard className="w-5 h-5 text-white" />
+      {/* Payment method info */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:border-primary/20 transition-colors">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center flex-shrink-0">
+            <CreditCard className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <p className="text-sm font-bold text-blue-900">Stripe — Carte bancaire</p>
-            <p className="text-xs text-blue-600 mt-0.5">Visa, Mastercard, SEPA · Prix en Euros · Facturation mensuelle automatique</p>
+            <p className="text-sm font-semibold text-foreground">{t("payWithStripe")}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{t("stripeCardDesc")}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 p-4 bg-violet-50 border border-violet-100 rounded-2xl">
-          <div className="w-9 h-9 rounded-xl bg-violet-600 flex items-center justify-center flex-shrink-0">
-            <span className="text-white text-xs font-bold">P</span>
+        <div className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:border-primary/20 transition-colors">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-violet-500/5 flex items-center justify-center flex-shrink-0">
+            <span className="text-violet-600 text-xs font-bold">P</span>
           </div>
           <div>
-            <p className="text-sm font-bold text-violet-900">Crypto — USDC sur Polygon</p>
-            <p className="text-xs text-violet-500 mt-0.5">Rapide · Faibles frais · Chain ID : {REQUIRED_CHAIN_ID} ·{" "}
-              <a href={`https://polygonscan.com/address/${RECIPIENT}`} target="_blank" rel="noopener noreferrer" className="underline font-semibold">
-                Voir le wallet
+            <p className="text-sm font-semibold text-foreground">{t("payWithCrypto")}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {t("cryptoFastLowFees")} · Chain ID: {REQUIRED_CHAIN_ID} ·{" "}
+              <a href={`https://polygonscan.com/address/${RECIPIENT}`} target="_blank" rel="noopener noreferrer" className="underline font-medium text-primary hover:text-primary/80">
+                <ExternalLink className="w-3 h-3 inline mr-0.5" />{t("viewWallet")}
               </a>
             </p>
           </div>
@@ -518,102 +305,144 @@ export default function BillingPage() {
       </div>
 
       {/* Plans grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         {PLANS.map((plan) => {
-          const isCurrentPlan = subscription?.plan === plan.plan;
+          const isCurrentPlan = effectivePlan === plan.plan;
           const isStripeLoading = stripeLoadingPlan === plan.plan;
 
           return (
             <div
               key={plan.plan}
-              className={`glass-card rounded-2xl flex flex-col relative hover-lift transition-all
-                ${plan.popular ? "ring-2 ring-violet-400 shadow-lg shadow-violet-100" : ""}
-                ${isCurrentPlan ? "ring-2 ring-teal-400" : ""}`}
+              className={`relative flex flex-col overflow-hidden rounded-xl border transition-all duration-300 hover:shadow-lg hover:-translate-y-1
+                ${plan.popular
+                  ? "border-primary/50 bg-gradient-to-b from-primary/[0.06] to-background shadow-lg shadow-primary/10"
+                  : "border-border bg-background hover:border-primary/20"
+                }
+                ${isCurrentPlan && plan.popular ? "ring-2 ring-emerald-500/40" : isCurrentPlan ? "ring-2 ring-emerald-500/30" : ""}`}
             >
+              {/* "Le plus populaire" strip */}
               {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-                  <span className="bg-violet-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">Le plus populaire</span>
-                </div>
-              )}
-              {isCurrentPlan && (
-                <div className="absolute -top-3 right-3 z-10">
-                  <span className="bg-teal-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">Actuel</span>
+                <div className="bg-gradient-to-r from-primary to-primary/80 px-4 py-1.5 flex items-center justify-center gap-1.5">
+                  <Zap className="w-3 h-3 text-white fill-white" />
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-white">
+                    {t("mostPopular")}
+                  </span>
                 </div>
               )}
 
-              <div className="p-5 flex flex-col flex-1">
-                <h4 className="font-bold text-slate-800 mb-1">{plan.name}</h4>
+              {/* "Plan actuel" badge */}
+              <div className={`flex items-center px-5 min-h-[36px] ${plan.popular ? "pt-3 pb-0" : "pt-5 pb-0"}`}>
+                {isCurrentPlan ? (
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-2.5 py-1 rounded-full">
+                    <CheckCircle className="w-3 h-3 fill-emerald-500/20" />
+                    {t("currentPlanBadge")}
+                  </span>
+                ) : <span />}
+              </div>
 
-                {/* Price display */}
-                <div className="mb-4">
+              <div className="p-5 pt-3 flex flex-col flex-1">
+                <h4 className="text-lg font-semibold text-foreground tracking-tight">{t(plan.nameKey)}</h4>
+
+                <div className="mt-3 mb-5">
                   {plan.priceEur === 0 ? (
-                    <span className="text-3xl font-bold text-slate-800 stat-number">Gratuit</span>
+                    <div>
+                      <span className="text-4xl font-bold text-foreground tracking-tight">{t("free")}</span>
+                      <p className="text-xs text-muted-foreground mt-1">{t("startFree")}</p>
+                    </div>
                   ) : (
                     <div>
-                      <div>
-                        <span className="text-3xl font-bold text-slate-800 stat-number">{plan.priceEur}€</span>
-                        <span className="text-slate-400 text-sm ml-1">/mois</span>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-4xl font-bold text-foreground tracking-tight">{plan.priceEur}€</span>
+                        <span className="text-muted-foreground text-sm font-medium">{t("perMonth")}</span>
                       </div>
-                      <p className="text-xs text-slate-400 mt-0.5">{plan.priceUsdc} USDC en crypto</p>
+                      <p className="text-xs text-muted-foreground mt-1">{plan.priceUsdc} USDC crypto</p>
                     </div>
                   )}
                 </div>
 
-                <ul className="space-y-2 mb-5 flex-1">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2 text-sm text-slate-600">
-                      <CheckCircle className="w-4 h-4 text-teal-500 flex-shrink-0 mt-0.5" />{feature}
+                <div className="h-px bg-border mb-5" />
+
+                <ul className="space-y-3 mb-6 flex-1">
+                  {plan.featureKeys.map((featureKey) => (
+                    <li key={featureKey} className="flex items-start gap-2.5 text-sm text-foreground/80">
+                      <CheckCircle className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                      <span>{t(featureKey)}</span>
                     </li>
                   ))}
                 </ul>
 
                 {/* CTA buttons */}
-                {plan.priceEur === 0 ? (
-                  <Button variant="outline" className="w-full rounded-xl border-slate-200 font-semibold" disabled={isCurrentPlan}>
-                    {isCurrentPlan ? "Plan actuel" : "Commencer gratuitement"}
-                  </Button>
-                ) : isCurrentPlan ? (
-                  <Button
-                    className="w-full rounded-xl font-semibold bg-slate-100 text-slate-400 cursor-default hover:bg-slate-100 shadow-none border-none"
-                    disabled
-                  >
-                    Plan actuel
-                  </Button>
-                ) : (
-                  <div className="space-y-2">
-                    {/* Stripe button */}
+                <div className="space-y-2.5 mt-auto">
+                  {plan.priceEur === 0 ? (
+                    // Free plan — disabled if already on free or on a paid plan
+                    (() => {
+                      const isOnPaidPlan = !!effectivePlan && effectivePlan !== "free";
+                      const isDisabled = isCurrentPlan || isOnPaidPlan;
+                      return (
+                        <Button
+                          className={`w-full h-11 rounded-xl font-semibold text-sm transition-all duration-200 ${
+                            isDisabled
+                              ? "bg-muted text-muted-foreground cursor-default hover:bg-muted border border-border shadow-none overflow-hidden"
+                              : "bg-gradient-to-r from-primary/90 to-primary text-white hover:from-primary hover:to-primary/90 shadow-sm shadow-primary/20 hover:shadow-md hover:shadow-primary/30 border-none"
+                          }`}
+                          disabled={isDisabled}
+                        >
+                          {isCurrentPlan ? (
+                            t("currentPlanBadge")
+                          ) : isOnPaidPlan ? (
+                            <><CheckCircle className="w-3.5 h-3.5 mr-1.5 text-emerald-500 flex-shrink-0" /><span className="truncate text-xs">Inclus dans votre plan</span></>
+                          ) : (
+                            <>
+                              <Sparkles className="w-4 h-4 mr-2" />
+                              {t("startFree")}
+                              <ArrowRight className="w-4 h-4 ml-auto" />
+                            </>
+                          )}
+                        </Button>
+                      );
+                    })()
+                  ) : isCurrentPlan ? (
+                    // Paid plan — currently active
                     <Button
-                      className={`w-full rounded-xl font-semibold border-none shadow-md ${
-                        plan.popular
-                          ? "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200/50"
-                          : "bg-blue-500 hover:bg-blue-600 text-white shadow-blue-100/50"
-                      }`}
-                      onClick={() => handleStripeCheckout(plan.plan as StripePlan)}
-                      disabled={isPending && isStripeLoading}
+                      className="w-full h-11 rounded-xl font-semibold text-sm bg-muted text-muted-foreground cursor-default hover:bg-muted border-none shadow-none"
+                      disabled
                     >
-                      {isPending && isStripeLoading
-                        ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        : <CreditCard className="w-4 h-4 mr-1.5" />
-                      }
-                      {isPending && isStripeLoading ? "Redirection..." : `Stripe — ${plan.priceEur}€`}
-                      {!(isPending && isStripeLoading) && <ArrowRight className="w-4 h-4 ml-1.5" />}
+                      {t("currentPlanBadge")}
                     </Button>
+                  ) : (
+                    // Paid plan — not active, show upgrade buttons
+                    <>
+                      <Button
+                        className={`w-full h-11 rounded-xl font-semibold text-sm shadow-sm transition-all duration-200 ${
+                          plan.popular
+                            ? "bg-primary text-white hover:bg-primary/90 shadow-primary/20 hover:shadow-md hover:shadow-primary/30"
+                            : "bg-card text-foreground border border-border hover:bg-muted"
+                        }`}
+                        onClick={() => handleStripeCheckout(plan.plan as StripePlan)}
+                        disabled={isPending && isStripeLoading}
+                      >
+                        {isPending && isStripeLoading
+                          ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          : <CreditCard className="w-4 h-4 mr-2" />
+                        }
+                        {isPending && isStripeLoading ? t("redirecting") : `Stripe — ${plan.priceEur}€`}
+                        {!(isPending && isStripeLoading) && <ArrowRight className="w-4 h-4 ml-auto" />}
+                      </Button>
 
-                    {/* Crypto button */}
-                    <Button
-                      variant="outline"
-                      className={`w-full rounded-xl font-semibold border-violet-200 text-violet-700 hover:bg-violet-50 hover:border-violet-300 ${
-                        !hasMetaMask ? "opacity-50" : ""
-                      }`}
-                      onClick={() => setSelectedCryptoPlan(plan)}
-                      disabled={!hasMetaMask}
-                      title={!hasMetaMask ? "MetaMask requis pour payer en crypto" : undefined}
-                    >
-                      <Wallet className="w-4 h-4 mr-1.5" />
-                      Crypto — {plan.priceUsdc} USDC
-                    </Button>
-                  </div>
-                )}
+                      <Button
+                        variant="outline"
+                        className={`w-full h-10 rounded-xl font-medium text-sm border-border text-muted-foreground hover:text-primary hover:border-primary/40 hover:bg-primary/[0.03] transition-all duration-200 ${
+                          !hasMetaMask ? "opacity-40 cursor-not-allowed" : ""
+                        }`}
+                        onClick={() => setSelectedCryptoPlan(plan)}
+                        disabled={!hasMetaMask}
+                      >
+                        <Wallet className="w-4 h-4 mr-2" />
+                        Crypto — {plan.priceUsdc} USDC
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           );
@@ -621,23 +450,31 @@ export default function BillingPage() {
       </div>
 
       {/* Enterprise CTA */}
-      <div className="glass-card rounded-2xl p-6">
-        <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-xl gradient-brand flex items-center justify-center flex-shrink-0 shadow-md shadow-teal-200/50">
-            <Zap className="w-5 h-5 text-white" />
+      <div className="rounded-xl border border-border bg-card p-6">
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
+            <Building2 className="w-6 h-6 text-primary" />
           </div>
-          <div>
-            <h4 className="font-bold text-slate-800">Besoin d&apos;un plan sur mesure ?</h4>
-            <p className="text-sm text-slate-500 mt-1">Pour les grands cabinets ou groupes hospitaliers — contactez-nous pour une offre personnalisée.</p>
-            <Button variant="outline" size="sm" className="mt-3 rounded-xl border-slate-200 font-semibold text-slate-600 hover:bg-teal-50 hover:border-teal-200 hover:text-teal-700">
-              <Building2 className="w-4 h-4 mr-2" />Contacter l&apos;équipe Enterprise
-            </Button>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-semibold text-foreground">{t("customPlan")}</h4>
+            <p className="text-sm text-muted-foreground mt-0.5">{t("customPlanDescription")}</p>
           </div>
+          <Button
+            variant="outline"
+            onClick={() => setShowEnterpriseModal(true)}
+            className="rounded-xl border-primary/30 font-semibold text-primary hover:bg-primary hover:text-white transition-all duration-200 px-6"
+          >
+            <Building2 className="w-4 h-4 mr-2" />{t("contactEnterprise")}
+          </Button>
         </div>
       </div>
 
       {selectedCryptoPlan && (
         <CryptoPaymentModal plan={selectedCryptoPlan} onClose={() => setSelectedCryptoPlan(null)} />
+      )}
+
+      {showEnterpriseModal && (
+        <EnterpriseContactModal onClose={() => setShowEnterpriseModal(false)} />
       )}
     </div>
   );

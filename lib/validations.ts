@@ -54,6 +54,7 @@ export const appointmentSchema = z.object({
   notes: z.string().optional().nullable(),
   status: z.enum(["booked", "confirmed", "completed", "cancelled", "no_show"]).default("booked"),
   source: z.enum(["widget", "manual"]).default("manual"),
+  practitioner_id: z.string().uuid().optional().nullable(),
 });
 
 export const patientSchema = z.object({

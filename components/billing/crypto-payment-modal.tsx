@@ -1,0 +1,325 @@
+"use client";
+
+import { useState, useCallback } from "react";
+import { ethers } from "ethers";
+import {
+  Wallet, X, CheckCircle, ExternalLink, AlertCircle,
+  Loader2, RefreshCw, ShieldCheck, AlertTriangle,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CopyButton } from "@/components/billing/copy-button";
+import { useTranslations } from "next-intl";
+
+const RECIPIENT = process.env.NEXT_PUBLIC_CRYPTO_WALLET_ADDRESS!;
+const USDC_CONTRACT = process.env.NEXT_PUBLIC_CRYPTO_USDC_CONTRACT!;
+const REQUIRED_CHAIN_ID = Number(process.env.NEXT_PUBLIC_CRYPTO_CHAIN_ID || 137);
+const USDC_DECIMALS = 6;
+
+const ERC20_ABI = [
+  "function transfer(address to, uint256 amount) returns (bool)",
+  "function balanceOf(address owner) view returns (uint256)",
+  "function decimals() view returns (uint8)",
+  "function symbol() view returns (string)",
+];
+
+const POLYGON_PARAMS = {
+  chainId: "0x89",
+  chainName: "Polygon Mainnet",
+  nativeCurrency: { name: "MATIC", symbol: "MATIC", decimals: 18 },
+  rpcUrls: ["https://polygon-rpc.com/"],
+  blockExplorerUrls: ["https://polygonscan.com/"],
+};
+
+type TxStep = "idle" | "connecting" | "switching" | "approving" | "sending" | "success" | "error";
+
+export interface CryptoPlan {
+  nameKey: string;
+  priceEur: number;
+  priceUsdc: number;
+  plan: string;
+}
+
+interface CryptoPaymentModalProps {
+  plan: CryptoPlan;
+  onClose: () => void;
+}
+
+export function CryptoPaymentModal({ plan, onClose }: CryptoPaymentModalProps) {
+  const t = useTranslations("billing");
+  const [step, setStep] = useState<TxStep>("idle");
+  const [error, setError] = useState("");
+  const [txHash, setTxHash] = useState("");
+  const [walletAddress, setWalletAddress] = useState("");
+  const [usdcBalance, setUsdcBalance] = useState<string | null>(null);
+  const [chainId, setChainId] = useState<number | null>(null);
+
+  const isCorrectChain = chainId === REQUIRED_CHAIN_ID;
+  const isLoading = ["connecting", "switching", "approving", "sending"].includes(step);
+  const hasInsufficientBalance = usdcBalance !== null && Number(usdcBalance) < plan.priceUsdc;
+
+  const getProvider = () => {
+    if (typeof window === "undefined" || !(window as unknown as { ethereum?: unknown }).ethereum) return null;
+    return new ethers.BrowserProvider((window as unknown as { ethereum: ethers.Eip1193Provider }).ethereum);
+  };
+
+  const fetchWalletInfo = useCallback(async (address: string, provider: ethers.BrowserProvider) => {
+    try {
+      const network = await provider.getNetwork();
+      setChainId(Number(network.chainId));
+      if (Number(network.chainId) === REQUIRED_CHAIN_ID) {
+        const usdc = new ethers.Contract(USDC_CONTRACT, ERC20_ABI, provider);
+        const bal = await usdc.balanceOf(address);
+        setUsdcBalance(ethers.formatUnits(bal, USDC_DECIMALS));
+      }
+    } catch {
+      // ignore network errors
+    }
+  }, []);
+
+  const connectWallet = async () => {
+    const provider = getProvider();
+    if (!provider) {
+      setError("MetaMask not found. Please install it from metamask.io");
+      return;
+    }
+    setStep("connecting");
+    setError("");
+    try {
+      const eth = (window as unknown as { ethereum: { request: (p: { method: string }) => Promise<string[]> } }).ethereum;
+      const accounts = await eth.request({ method: "eth_requestAccounts" });
+      const address = accounts[0];
+      setWalletAddress(address);
+      await fetchWalletInfo(address, provider);
+      setStep("idle");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Connection refused");
+      setStep("error");
+    }
+  };
+
+  const switchToPolygon = async () => {
+    setStep("switching");
+    setError("");
+    const eth = (window as unknown as { ethereum: { request: (p: { method: string; params?: unknown[] }) => Promise<void> } }).ethereum;
+    try {
+      await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: POLYGON_PARAMS.chainId }] });
+    } catch (e: unknown) {
+      const code = (e as { code?: number }).code;
+      if (code === 4902) {
+        try {
+          await eth.request({ method: "wallet_addEthereumChain", params: [POLYGON_PARAMS] });
+        } catch (addErr: unknown) {
+          setError(addErr instanceof Error ? addErr.message : "Could not add Polygon network");
+          setStep("error");
+          return;
+        }
+      } else {
+        setError(e instanceof Error ? e.message : "Network switch failed");
+        setStep("error");
+        return;
+      }
+    }
+    const provider = getProvider()!;
+    await fetchWalletInfo(walletAddress, provider);
+    setStep("idle");
+  };
+
+  const sendPayment = async () => {
+    const provider = getProvider();
+    if (!provider || !walletAddress) return;
+    setStep("approving");
+    setError("");
+    try {
+      const signer = await provider.getSigner();
+      const usdc = new ethers.Contract(USDC_CONTRACT, ERC20_ABI, signer);
+      const amount = ethers.parseUnits(plan.priceUsdc.toString(), USDC_DECIMALS);
+      setStep("sending");
+      const tx = await usdc.transfer(RECIPIENT, amount);
+      const receipt = await tx.wait();
+      const hash = receipt.hash;
+      setTxHash(hash);
+
+      const verifyRes = await fetch("/api/webhooks/crypto", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ txHash: hash, plan: plan.plan }),
+      });
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok || !verifyData.success) {
+        throw new Error(verifyData.error || "Vérification échouée. Contactez le support avec votre txHash.");
+      }
+
+      setStep("success");
+    } catch (e: unknown) {
+      const rawMessage = (e as { reason?: string; message?: string })?.reason ?? (e instanceof Error ? e.message : "Transaction failed");
+      setError(rawMessage.length > 120 ? rawMessage.slice(0, 120) + "..." : rawMessage);
+      setStep("error");
+    }
+  };
+
+  const stepLabel: Record<TxStep, string> = {
+    idle: "",
+    connecting: t("connectingWallet"),
+    switching: t("switchingToPolygon"),
+    approving: t("waitingApproval"),
+    sending: t("sendingTx"),
+    success: "",
+    error: "",
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+      <div className="bg-background rounded-xl shadow-none w-full max-w-md">
+        <div className="flex items-center justify-between p-5 border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+              <Wallet className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-medium text-foreground">{t(plan.nameKey)} — Crypto</h3>
+              <p className="text-sm text-muted-foreground">{plan.priceUsdc} USDC/mo</p>
+            </div>
+          </div>
+          <button onClick={onClose} disabled={isLoading} className="p-2 hover:bg-muted rounded-xl transition-colors disabled:opacity-40">
+            <X className="w-4 h-4 text-muted-foreground" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {step === "success" ? (
+            <div className="text-center space-y-4 py-4">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                <CheckCircle className="w-9 h-9 text-green-500" />
+              </div>
+              <div>
+                <h3 className="font-medium text-foreground text-lg">{t("paymentSent")}</h3>
+                <p className="text-muted-foreground text-sm mt-1">{t("paymentSentDesc", { plan: t(plan.nameKey) })}</p>
+              </div>
+              <div className="p-3 bg-muted/50 rounded-xl border border-border text-left space-y-1">
+                <p className="text-xs text-muted-foreground">{t("txHash")}</p>
+                <p className="text-xs font-mono text-foreground break-all">{txHash}</p>
+                <a href={`https://polygonscan.com/tx/${txHash}`} target="_blank" rel="noopener noreferrer"
+                  className="text-xs text-primary flex items-center gap-1 hover:underline">
+                  <ExternalLink className="w-3 h-3" /> {t("viewOnPolygonscan")}
+                </a>
+              </div>
+              <Button className="w-full" onClick={onClose}>{t("close")}</Button>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between p-3 bg-muted rounded-xl border border-border">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                    <span className="text-foreground text-xs font-medium">P</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{t("polygonNetwork")}</p>
+                    <p className="text-xs text-muted-foreground">Chain ID: {REQUIRED_CHAIN_ID}</p>
+                  </div>
+                </div>
+                {walletAddress && (
+                  <div className={`text-xs px-2 py-1 rounded-full font-medium ${isCorrectChain ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                    {isCorrectChain ? `✓ ${t("connected")}` : t("wrongNetwork")}
+                  </div>
+                )}
+              </div>
+
+              <div className="text-center py-3 bg-muted/50 rounded-xl border border-border">
+                <p className="text-xs text-muted-foreground mb-0.5">{t("amountToPay")}</p>
+                <p className="text-4xl font-medium text-foreground">{plan.priceUsdc} <span className="text-lg text-muted-foreground">USDC</span></p>
+                <p className="text-xs text-muted-foreground mt-0.5">≈ {plan.priceEur}€ · {t("monthly")}</p>
+              </div>
+
+              {walletAddress ? (
+                <div className="p-3 bg-muted/50 rounded-xl border border-border space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">{t("connectedWallet")}</p>
+                    <CopyButton text={walletAddress} />
+                  </div>
+                  <p className="text-sm font-mono text-foreground">{walletAddress.slice(0, 8)}...{walletAddress.slice(-6)}</p>
+                  {usdcBalance !== null && (
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground">{t("usdcBalance")}</p>
+                      <p className={`text-sm font-medium ${hasInsufficientBalance ? "text-destructive" : "text-primary"}`}>
+                        {Number(usdcBalance).toFixed(2)} USDC
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="p-3 bg-muted/50 rounded-xl border border-dashed border-border text-center">
+                  <p className="text-sm text-muted-foreground">{t("noWalletConnected")}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t("clickToConnect")}</p>
+                </div>
+              )}
+
+              {isLoading && (
+                <div className="flex items-center gap-3 p-3 bg-muted rounded-xl border border-border">
+                  <Loader2 className="w-4 h-4 animate-spin text-primary flex-shrink-0" />
+                  <p className="text-sm text-primary">{stepLabel[step]}</p>
+                </div>
+              )}
+
+              {step === "error" && error && (
+                <div className="flex items-start gap-2 p-3 bg-red-500/10 rounded-xl border border-red-500/30">
+                  <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-red-500">{error}</p>
+                </div>
+              )}
+
+              {hasInsufficientBalance && isCorrectChain && (
+                <div className="flex items-start gap-2 p-3 bg-muted rounded-xl border border-border">
+                  <AlertTriangle className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-muted-foreground">
+                    {t("insufficientBalance", { needed: plan.priceUsdc.toString(), balance: Number(usdcBalance).toFixed(2) })}
+                    {" "}{t("getUsdc")} <a href="https://app.uniswap.org" target="_blank" rel="noopener noreferrer" className="underline font-medium">Uniswap</a>.
+                  </p>
+                </div>
+              )}
+
+              <div className="space-y-2 pt-1">
+                {!walletAddress ? (
+                  <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-11" onClick={connectWallet} disabled={isLoading}>
+                    <Wallet className="w-4 h-4 mr-2" />{t("connectMetaMask")}
+                  </Button>
+                ) : !isCorrectChain ? (
+                  <Button className="w-full bg-orange-500 hover:bg-orange-600 h-11" onClick={switchToPolygon} disabled={isLoading}>
+                    <RefreshCw className="w-4 h-4 mr-2" />{t("switchToPolygon")}
+                  </Button>
+                ) : (
+                  <Button
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-11"
+                    onClick={sendPayment}
+                    disabled={isLoading || hasInsufficientBalance}
+                  >
+                    {isLoading
+                      ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      : <ShieldCheck className="w-4 h-4 mr-2" />}
+                    {isLoading ? stepLabel[step] : `Pay ${plan.priceUsdc} USDC`}
+                  </Button>
+                )}
+                <Button variant="outline" className="w-full" onClick={onClose} disabled={isLoading}>
+                  {t("cancel")}
+                </Button>
+              </div>
+
+              <div className="pt-1 border-t border-border">
+                <p className="text-xs text-muted-foreground mb-1">{t("sendingTo")}</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-mono text-muted-foreground">{RECIPIENT.slice(0, 10)}...{RECIPIENT.slice(-8)}</p>
+                  <div className="flex items-center gap-2">
+                    <CopyButton text={RECIPIENT} />
+                    <a href={`https://polygonscan.com/address/${RECIPIENT}`} target="_blank" rel="noopener noreferrer"
+                      className="text-xs text-primary flex items-center gap-0.5 hover:underline">
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

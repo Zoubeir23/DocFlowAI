@@ -3,18 +3,30 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendNotification } from "@/lib/notifications";
+import { checkAppointmentQuota } from "@/lib/subscription/quota";
+import { widgetCorsResponse, withWidgetCors } from "@/lib/cors";
+import { checkWidgetBookRateLimit } from "@/lib/rate-limit";
+
+export async function OPTIONS() {
+  return widgetCorsResponse();
+}
 
 const bookingSchema = z.object({
   clinicSlug: z.string(),
   serviceId: z.string().uuid(),
   startAt: z.string(),
   endAt: z.string(),
-  patientName: z.string().min(1),
-  patientPhone: z.string().min(1),
-  patientEmail: z.string().optional(),
+  patientName: z.string().min(1).max(200),
+  patientPhone: z.string().min(1).max(30),
+  patientEmail: z.string().email().optional().or(z.literal("")),
 });
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
+  if (!(await checkWidgetBookRateLimit(ip))) {
+    return NextResponse.json({ error: "Trop de requêtes. Réessayez dans une minute." }, { status: 429 });
+  }
+
   let body: unknown;
   try {
     body = await req.json();
@@ -35,7 +47,7 @@ export async function POST(req: NextRequest) {
     .from("clinics")
     .select("id, name, owner_id")
     .eq("slug", clinicSlug)
-    .single() as { data: { id: string; name: string; owner_id: string } | null };
+    .maybeSingle() as { data: { id: string; name: string; owner_id: string } | null };
 
   if (!clinic) {
     return NextResponse.json({ error: "Clinic not found" }, { status: 404 });
@@ -47,10 +59,15 @@ export async function POST(req: NextRequest) {
     .eq("id", serviceId)
     .eq("clinic_id", clinic.id)
     .eq("is_active", true)
-    .single() as { data: { id: string; name: string; duration_minutes: number } | null };
+    .maybeSingle() as { data: { id: string; name: string; duration_minutes: number } | null };
 
   if (!service) {
     return NextResponse.json({ error: "Service not found" }, { status: 404 });
+  }
+
+  const quota = await checkAppointmentQuota(clinic.id, db);
+  if (!quota.allowed) {
+    return NextResponse.json({ error: quota.reason ?? "Quota de rendez-vous atteint." }, { status: 429 });
   }
 
   const { data: result, error } = await db.rpc("create_booking_from_widget", {
@@ -65,22 +82,22 @@ export async function POST(req: NextRequest) {
   });
 
   if (error) {
+    // H3 fix: never expose raw DB error messages to clients
     console.error("[book] rpc error:", error);
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ error: "Erreur lors de la réservation. Veuillez réessayer." }, { status: 400 });
   }
 
   const resultData = result as { appointment_id: string; patient_id: string };
 
-  // Fetch the clinic owner's email dynamically
-  const { data: ownerUser } = await db
-    .from("users")
-    .select("email")
-    .eq("id", clinic.owner_id)
-    .single() as { data: { email: string } | null };
+  const [{ data: ownerUser }, { data: appointmentData }] = await Promise.all([
+    db.from("users").select("email").eq("id", clinic.owner_id).maybeSingle() as Promise<{ data: { email: string } | null }>,
+    db.from("appointments").select("cancel_token").eq("id", resultData.appointment_id).maybeSingle() as Promise<{ data: { cancel_token: string } | null }>,
+  ]);
 
   await sendNotification({
     type: "appointment_confirmation",
     appointmentId: resultData.appointment_id,
+    cancelToken: appointmentData?.cancel_token,
     patientName,
     patientPhone,
     patientEmail: patientEmail || undefined,
@@ -90,9 +107,9 @@ export async function POST(req: NextRequest) {
     doctorEmail: ownerUser?.email || undefined,
   });
 
-  return NextResponse.json({
+  return withWidgetCors(NextResponse.json({
     success: true,
     appointmentId: resultData.appointment_id,
     patientId: resultData.patient_id,
-  });
+  }));
 }

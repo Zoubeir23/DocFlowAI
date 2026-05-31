@@ -47,3 +47,4 @@ artifacts/
 cache/
 coverage/
 typechain-types/
+feature.md

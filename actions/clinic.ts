@@ -34,7 +34,7 @@ export async function createOnboarding(
       owner_id: user.id,
     })
     .select()
-    .single();
+    .maybeSingle();
 
   if (clinicError) {
     if (clinicError.code === "23505") {
@@ -103,7 +103,7 @@ export async function getCurrentClinic() {
     .from("users")
     .select("clinic_id, role")
     .eq("id", authData.user.id)
-    .single();
+    .maybeSingle();
 
   if (!userData) return null;
 
@@ -111,7 +111,7 @@ export async function getCurrentClinic() {
     .from("clinics")
     .select("*")
     .eq("id", userData.clinic_id)
-    .single();
+    .maybeSingle();
 
   return clinic ? { ...(clinic as Clinic), userRole: userData.role } : null;
 }
@@ -121,6 +121,20 @@ export async function updateClinic(
   updates: { name?: string; timezone?: string; logo_url?: string }
 ): Promise<ApiResponse> {
   const db = await getDB();
+  // C1 fix: auth guard + ownership check before update
+  const { data: authData } = await db.auth.getUser();
+  if (!authData.user) return { success: false, error: "Not authenticated" };
+
+  const { data: userData } = await db
+    .from("users")
+    .select("clinic_id")
+    .eq("id", authData.user.id)
+    .maybeSingle();
+
+  if (!userData || userData.clinic_id !== clinicId) {
+    return { success: false, error: "Unauthorized" };
+  }
+
   const { error } = await db.from("clinics").update(updates).eq("id", clinicId);
   if (error) return { success: false, error: error.message };
   return { success: true };

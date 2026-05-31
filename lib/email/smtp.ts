@@ -5,21 +5,24 @@ import {
   buildPatientConfirmationHtml,
 } from "./templates/patient-confirmation";
 import {
+  buildPatientReminderSubject,
+  buildPatientReminderHtml,
+} from "./templates/patient-reminder";
+import {
   buildDoctorNotificationSubject,
   buildDoctorNotificationHtml,
 } from "./templates/doctor-notification";
 
 let transporterInstance: nodemailer.Transporter | null = null;
 
-function getSmtpTransporter(): nodemailer.Transporter {
+function getSmtpTransporter(): nodemailer.Transporter | null {
   if (!transporterInstance) {
     const googleUser = process.env.SMTP_GOOGLE_EMAIL;
     const googleAppPassword = process.env.GOOGLE_APP_PASSWORD;
 
     if (!googleUser || !googleAppPassword) {
-      throw new Error(
-        "SMTP_GOOGLE_EMAIL and GOOGLE_APP_PASSWORD must be configured"
-      );
+      console.warn("[SMTP] SMTP_GOOGLE_EMAIL or GOOGLE_APP_PASSWORD not configured. Email skipped.");
+      return null;
     }
 
     transporterInstance = nodemailer.createTransport({
@@ -45,23 +48,33 @@ export async function sendConfirmationEmail(
   const locale = payload.locale ?? "fr";
   const results: EmailResult[] = [];
 
+  if (!transporter) return [{ success: false, channel: "email", error: "SMTP not configured" }];
+
   if (payload.patientEmail) {
+    const isReminder = payload.type === "appointment_reminder";
     try {
       const info = await transporter.sendMail({
         from: FROM_ADDRESS,
         to: payload.patientEmail,
-        subject: buildPatientConfirmationSubject(
-          payload.serviceName,
-          payload.clinicName,
-          locale
-        ),
-        html: buildPatientConfirmationHtml({
-          patientName: payload.patientName,
-          clinicName: payload.clinicName,
-          serviceName: payload.serviceName,
-          startAt: payload.startAt,
-          locale,
-        }),
+        subject: isReminder
+          ? buildPatientReminderSubject(payload.serviceName, payload.clinicName, locale)
+          : buildPatientConfirmationSubject(payload.serviceName, payload.clinicName, locale),
+        html: isReminder
+          ? buildPatientReminderHtml({
+              patientName: payload.patientName,
+              clinicName: payload.clinicName,
+              serviceName: payload.serviceName,
+              startAt: payload.startAt,
+              locale,
+            })
+          : buildPatientConfirmationHtml({
+              patientName: payload.patientName,
+              clinicName: payload.clinicName,
+              serviceName: payload.serviceName,
+              startAt: payload.startAt,
+              locale,
+              cancelToken: payload.cancelToken,
+            }),
       });
 
       results.push({

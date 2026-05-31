@@ -12,11 +12,10 @@ import {
   Shield,
   Save,
   Key,
-  CheckCircle,
-  Calendar,
+  CheckCircle2,
+  CalendarDays,
   TrendingUp,
-  UserCircle,
-  Activity,
+  UserCircle2,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -24,6 +23,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { format, parseISO } from 'date-fns'
+import { useTranslations } from 'next-intl'
 
 const TIMEZONES = [
   'America/New_York',
@@ -34,6 +34,15 @@ const TIMEZONES = [
   'Europe/London',
   'Europe/Paris',
   'Europe/Berlin',
+  'Africa/Abidjan',
+  'Africa/Algiers',
+  'Africa/Cairo',
+  'Africa/Casablanca',
+  'Africa/Dakar',
+  'Africa/Johannesburg',
+  'Africa/Lagos',
+  'Africa/Nairobi',
+  'Indian/Mauritius',
   'Asia/Tokyo',
   'Asia/Singapore',
   'Asia/Dubai',
@@ -55,13 +64,13 @@ async function fetchProfileData() {
         'id, full_name, email, role, clinic_id, created_at, clinic:clinics(id, name, slug, timezone, created_at)'
       )
       .eq('id', user.id)
-      .single(),
+      .maybeSingle(),
     supabase
       .from('appointments')
       .select('id, status, created_at')
       .eq(
         'clinic_id',
-        (await supabase.from('users').select('clinic_id').eq('id', user.id).single()).data
+        (await supabase.from('users').select('clinic_id').eq('id', user.id).maybeSingle()).data
           ?.clinic_id
       ),
   ])
@@ -80,6 +89,7 @@ async function fetchProfileData() {
 }
 
 export default function ProfilePage() {
+  const t = useTranslations('profile')
   const queryClient = useQueryClient()
   const [fullName, setFullName] = useState('')
   const [clinicName, setClinicName] = useState('')
@@ -112,23 +122,23 @@ export default function ProfilePage() {
       if (clinicUpdate.error) throw new Error(clinicUpdate.error.message)
     },
     onSuccess: () => {
-      toast.success('Profile updated')
+      toast.success(t('profileUpdated'))
       queryClient.invalidateQueries({ queryKey: ['profile'] })
     },
-    onError: (err: Error) => toast.error(err.message || 'Failed to update'),
+    onError: (err: Error) => toast.error(err.message || t('failedToUpdate')),
   })
 
   const handlePasswordChange = async () => {
     if (!newPassword || !confirmPassword) {
-      toast.error('Fill in all password fields')
+      toast.error(t('fillAllFields'))
       return
     }
     if (newPassword !== confirmPassword) {
-      toast.error('Passwords do not match')
+      toast.error(t('passwordsDoNotMatch'))
       return
     }
     if (newPassword.length < 8) {
-      toast.error('Password must be at least 8 characters')
+      toast.error(t('passwordMinLength'))
       return
     }
     setPasswordLoading(true)
@@ -136,11 +146,11 @@ export default function ProfilePage() {
       const supabase = createClient() as any
       const { error } = await supabase.auth.updateUser({ password: newPassword })
       if (error) throw new Error(error.message)
-      toast.success('Password updated')
+      toast.success(t('passwordUpdated'))
       setNewPassword('')
       setConfirmPassword('')
     } catch (err: any) {
-      toast.error(err.message || 'Failed to update password')
+      toast.error(err.message || t('failedToUpdatePassword'))
     } finally {
       setPasswordLoading(false)
     }
@@ -148,11 +158,11 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-4 max-w-4xl">
+      <div className="page-container">
         <Skeleton className="h-8 w-48 rounded-xl" />
-        <Skeleton className="h-40 w-full rounded-2xl" />
-        <Skeleton className="h-32 w-full rounded-2xl" />
-        <Skeleton className="h-64 w-full rounded-2xl" />
+        <Skeleton className="h-40 w-full rounded-xl" />
+        <Skeleton className="h-32 w-full rounded-xl" />
+        <Skeleton className="h-64 w-full rounded-xl" />
       </div>
     )
   }
@@ -168,62 +178,57 @@ export default function ProfilePage() {
     .toUpperCase()
     .slice(0, 2)
 
-  const roleConfig: Record<string, { label: string; color: string }> = {
-    owner: { label: 'Owner', color: 'bg-teal-50 text-teal-700 border border-teal-100' },
-    receptionist: {
-      label: 'Receptionist',
-      color: 'bg-violet-50 text-violet-700 border border-violet-100',
-    },
-    assistant: { label: 'Assistant', color: 'bg-cyan-50 text-cyan-700 border border-cyan-100' },
+  const roleConfig: Record<string, { label: string; className: string }> = {
+    owner: { label: t('roles.owner'), className: 'status-booked' },
+    receptionist: { label: t('roles.receptionist'), className: 'status-confirmed' },
+    assistant: { label: t('roles.assistant'), className: 'status-completed' },
   }
   const role = roleConfig[userData?.role] || {
     label: userData?.role || 'owner',
-    color: 'bg-slate-50 text-slate-600 border border-slate-200',
+    className: 'status-completed',
   }
 
   return (
-    <div className="p-6 space-y-5 max-w-[1400px]">
+    <div className="page-container">
       {/* Header */}
-      <div className="flex items-center gap-2 mb-2">
-        <div className="w-8 h-8 rounded-xl gradient-brand flex items-center justify-center">
-          <UserCircle className="w-4 h-4 text-white" />
+      <div className="section-header">
+        <div className="icon-container">
+          <UserCircle2 className="w-5 h-5 text-primary" strokeWidth={1.8} />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">My Profile</h2>
+          <h2 className="section-title">{t('title')}</h2>
         </div>
       </div>
 
       {/* Hero card */}
-      <div className="glass-card rounded-2xl overflow-hidden">
-        <div className="gradient-brand px-6 py-5">
+      <div className="glass-card overflow-hidden">
+        <div className="border-b border-border bg-muted/30 px-6 py-5">
           <div className="flex items-center gap-5 flex-wrap">
             <div className="relative flex-shrink-0">
-              <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+              <div className="w-16 h-16 rounded-xl gradient-brand flex items-center justify-center text-white text-2xl font-bold">
                 {initials}
               </div>
-              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-400 rounded-full border-2 border-white flex items-center justify-center">
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-card flex items-center justify-center">
                 <div className="w-1.5 h-1.5 bg-white rounded-full" />
               </div>
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 flex-wrap">
-                <h3 className="text-xl font-bold text-white">{userData?.full_name || 'Doctor'}</h3>
-                <span
-                  className={`text-xs font-semibold px-2.5 py-1 rounded-full bg-white/20 text-white border border-white/30`}
-                >
+                <h3 className="text-xl font-semibold text-foreground">{userData?.full_name || 'Doctor'}</h3>
+                <span className={`text-xs font-semibold px-2.5 py-1 rounded-lg ${role.className}`}>
                   {role.label}
                 </span>
               </div>
-              <p className="text-teal-100/80 text-sm mt-1 flex items-center gap-1.5">
+              <p className="text-muted-foreground text-sm mt-1 flex items-center gap-1.5">
                 <Mail className="w-3.5 h-3.5" /> {userData?.email}
               </p>
-              <p className="text-teal-100/80 text-sm mt-0.5 flex items-center gap-1.5">
+              <p className="text-muted-foreground text-sm mt-0.5 flex items-center gap-1.5">
                 <Building2 className="w-3.5 h-3.5" /> {clinic?.name}
               </p>
             </div>
             <div className="text-right flex-shrink-0">
-              <p className="text-xs text-teal-200/60">Member since</p>
-              <p className="text-sm font-bold text-white">
+              <p className="text-xs text-muted-foreground">{t('memberSince')}</p>
+              <p className="text-sm font-semibold text-foreground">
                 {userData?.created_at ? format(parseISO(userData.created_at), 'MMM yyyy') : '—'}
               </p>
             </div>
@@ -231,37 +236,34 @@ export default function ProfilePage() {
         </div>
 
         {/* Stats row */}
-        <div className="grid grid-cols-3 divide-x divide-slate-100 bg-white">
+        <div className="grid grid-cols-3 divide-x divide-border bg-card">
           {[
             {
-              label: 'Total Appointments',
+              label: t('totalAppointments'),
               value: stats?.totalAppts ?? 0,
-              icon: Calendar,
-              color: 'text-teal-600',
+              icon: CalendarDays,
+              color: 'text-primary',
             },
             {
-              label: 'Completed',
+              label: t('completed'),
               value: stats?.completedAppts ?? 0,
-              icon: CheckCircle,
-              color: 'text-emerald-600',
+              icon: CheckCircle2,
+              color: 'text-primary',
             },
             {
-              label: 'This Month',
+              label: t('thisMonth'),
               value: stats?.thisMonthAppts ?? 0,
               icon: TrendingUp,
-              color: 'text-violet-600',
+              color: 'text-primary',
             },
           ].map((stat) => (
             <div key={stat.label} className="flex items-center gap-3 p-5">
-              <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center flex-shrink-0">
-                <stat.icon
-                  className={`w-4.5 h-4.5 ${stat.color}`}
-                  style={{ width: 18, height: 18 }}
-                />
+              <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center flex-shrink-0">
+                <stat.icon className={`w-[18px] h-[18px] ${stat.color}`} strokeWidth={1.8} />
               </div>
               <div>
-                <p className="stat-number text-xl font-bold text-slate-800">{stat.value}</p>
-                <p className="text-xs text-slate-400">{stat.label}</p>
+                <p className="text-xl font-semibold text-foreground">{stat.value}</p>
+                <p className="text-xs text-muted-foreground">{stat.label}</p>
               </div>
             </div>
           ))}
@@ -269,24 +271,24 @@ export default function ProfilePage() {
       </div>
 
       {/* Personal information */}
-      <div className="glass-card rounded-2xl overflow-hidden">
-        <div className="flex items-center gap-2.5 px-6 py-4 border-b border-slate-100">
-          <div className="w-7 h-7 rounded-lg bg-teal-50 flex items-center justify-center">
-            <User className="w-3.5 h-3.5 text-teal-600" />
+      <div className="glass-card overflow-hidden">
+        <div className="flex items-center gap-2.5 px-6 py-4 border-b border-border">
+          <div className="icon-container-sm">
+            <User className="w-4 h-4 text-primary" />
           </div>
           <div>
-            <h3 className="font-bold text-slate-800 text-sm">Personal Information</h3>
-            <p className="text-xs text-slate-400">Update your name and clinic details</p>
+            <h3 className="font-semibold text-foreground text-sm">{t('personalInfo')}</h3>
+            <p className="text-xs text-muted-foreground">{t('personalInfoDesc')}</p>
           </div>
         </div>
         <div className="p-6 space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-sm font-semibold text-slate-700">Full Name</Label>
+              <Label className="text-sm font-medium text-foreground">{t('fullName')}</Label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  className="pl-9 rounded-xl border-slate-200 focus:ring-teal-500 focus:border-teal-400"
+                  className="pl-9 rounded-xl border-border focus:ring-primary focus:border-primary"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Dr. John Smith"
@@ -294,23 +296,23 @@ export default function ProfilePage() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm font-semibold text-slate-700">Email Address</Label>
+              <Label className="text-sm font-medium text-foreground">{t('email')}</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  className="pl-9 rounded-xl border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed"
+                  className="pl-9 rounded-xl border-border bg-muted/30 text-muted-foreground cursor-not-allowed"
                   value={userData?.email || ''}
                   disabled
                 />
               </div>
-              <p className="text-xs text-slate-400">Email cannot be changed here</p>
+              <p className="text-xs text-muted-foreground">{t('emailCannotChange')}</p>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm font-semibold text-slate-700">Clinic Name</Label>
+              <Label className="text-sm font-medium text-foreground">{t('clinicName')}</Label>
               <div className="relative">
-                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  className="pl-9 rounded-xl border-slate-200 focus:ring-teal-500 focus:border-teal-400"
+                  className="pl-9 rounded-xl border-border focus:ring-primary focus:border-primary"
                   value={clinicName}
                   onChange={(e) => setClinicName(e.target.value)}
                   placeholder="CityCare Clinic"
@@ -318,11 +320,11 @@ export default function ProfilePage() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm font-semibold text-slate-700">Timezone</Label>
+              <Label className="text-sm font-medium text-foreground">{t('timezone')}</Label>
               <div className="relative">
-                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
                 <select
-                  className="w-full pl-9 h-10 pr-3 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-400 text-slate-700"
+                  className="w-full pl-9 h-10 pr-3 text-sm border border-border rounded-xl bg-card focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-foreground"
                   value={timezone}
                   onChange={(e) => setTimezone(e.target.value)}
                 >
@@ -336,25 +338,25 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-border">
             <div className="space-y-1.5">
-              <Label className="text-sm font-semibold text-slate-700">Booking Widget Slug</Label>
+              <Label className="text-sm font-medium text-foreground">{t('widgetSlug')}</Label>
               <div className="relative">
-                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  className="pl-9 rounded-xl border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed font-mono text-xs"
+                  className="pl-9 rounded-xl border-border bg-muted/30 text-muted-foreground cursor-not-allowed font-mono text-xs"
                   value={clinic?.slug || ''}
                   disabled
                 />
               </div>
-              <p className="text-xs text-slate-400">Change slug in AI Settings</p>
+              <p className="text-xs text-muted-foreground">{t('changeSlugInAI')}</p>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm font-semibold text-slate-700">Account Role</Label>
+              <Label className="text-sm font-medium text-foreground">{t('accountRole')}</Label>
               <div className="relative">
-                <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  className="pl-9 rounded-xl border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed capitalize"
+                  className="pl-9 rounded-xl border-border bg-muted/30 text-muted-foreground cursor-not-allowed capitalize"
                   value={userData?.role || 'owner'}
                   disabled
                 />
@@ -366,46 +368,46 @@ export default function ProfilePage() {
             <Button
               onClick={() => saveMutation.mutate()}
               disabled={saveMutation.isPending}
-              className="rounded-xl gradient-brand text-white border-none shadow-md shadow-teal-200/40 font-semibold px-6"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-medium px-6"
             >
               <Save className="w-4 h-4 mr-2" />
-              {saveMutation.isPending ? 'Saving...' : 'Save Changes'}
+              {saveMutation.isPending ? t('saving') : t('saveChanges')}
             </Button>
           </div>
         </div>
       </div>
 
       {/* Account details */}
-      <div className="glass-card rounded-2xl overflow-hidden">
-        <div className="flex items-center gap-2.5 px-6 py-4 border-b border-slate-100">
-          <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center">
-            <Shield className="w-3.5 h-3.5 text-slate-500" />
+      <div className="glass-card overflow-hidden">
+        <div className="flex items-center gap-2.5 px-6 py-4 border-b border-border">
+          <div className="icon-container-sm">
+            <Shield className="w-4 h-4 text-primary" />
           </div>
           <div>
-            <h3 className="font-bold text-slate-800 text-sm">Account Details</h3>
-            <p className="text-xs text-slate-400">Read-only account identifiers</p>
+            <h3 className="font-semibold text-foreground text-sm">{t('accountDetails')}</h3>
+            <p className="text-xs text-muted-foreground">{t('accountDetailsDesc')}</p>
           </div>
         </div>
-        <div className="divide-y divide-slate-50 px-6">
+        <div className="divide-y divide-border px-6">
           {[
-            { label: 'User ID', value: userData?.id, mono: true },
-            { label: 'Clinic ID', value: data?.userData?.clinic_id, mono: true },
-            { label: 'Account Role', value: userData?.role, capitalize: true },
+            { label: t('userId'), value: userData?.id, mono: true },
+            { label: t('clinicId'), value: data?.userData?.clinic_id, mono: true },
+            { label: t('accountRole'), value: userData?.role, capitalize: true },
             {
-              label: 'Member Since',
+              label: t('memberSince'),
               value: userData?.created_at
                 ? format(parseISO(userData.created_at), 'MMMM d, yyyy')
                 : '—',
             },
             {
-              label: 'Clinic Created',
+              label: t('clinicCreated'),
               value: clinic?.created_at ? format(parseISO(clinic.created_at), 'MMMM d, yyyy') : '—',
             },
           ].map((item) => (
-            <div key={item.label} className="flex items-center justify-between py-3">
-              <span className="text-sm text-slate-500">{item.label}</span>
+            <div key={item.label} className="flex items-center justify-between py-3.5">
+              <span className="text-sm text-muted-foreground">{item.label}</span>
               <span
-                className={`text-sm font-medium text-slate-700 truncate max-w-[260px] ${item.mono ? 'font-mono text-xs text-slate-500 bg-slate-50 px-2 py-0.5 rounded-lg' : ''} ${item.capitalize ? 'capitalize' : ''}`}
+                className={`text-sm font-medium text-foreground truncate max-w-[260px] ${item.mono ? 'font-mono text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-lg' : ''} ${item.capitalize ? 'capitalize' : ''}`}
               >
                 {item.value || '—'}
               </span>
@@ -415,45 +417,45 @@ export default function ProfilePage() {
       </div>
 
       {/* Change password */}
-      <div className="glass-card rounded-2xl overflow-hidden">
-        <div className="flex items-center gap-2.5 px-6 py-4 border-b border-slate-100">
-          <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center">
-            <Key className="w-3.5 h-3.5 text-amber-500" />
+      <div className="glass-card overflow-hidden">
+        <div className="flex items-center gap-2.5 px-6 py-4 border-b border-border">
+          <div className="icon-container-sm" style={{ background: 'hsl(38, 60%, 92%)', borderColor: 'hsl(38, 50%, 85%)' }}>
+            <Key className="w-4 h-4" style={{ color: 'hsl(38, 70%, 50%)' }} />
           </div>
           <div>
-            <h3 className="font-bold text-slate-800 text-sm">Change Password</h3>
-            <p className="text-xs text-slate-400">Update your login password</p>
+            <h3 className="font-semibold text-foreground text-sm">{t('changePassword')}</h3>
+            <p className="text-xs text-muted-foreground">{t('changePasswordDesc')}</p>
           </div>
         </div>
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-sm font-semibold text-slate-700">New Password</Label>
+              <Label className="text-sm font-medium text-foreground">{t('newPassword')}</Label>
               <Input
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Min. 8 characters"
-                className="rounded-xl border-slate-200 focus:ring-teal-500 focus:border-teal-400"
+                placeholder={t('minChars')}
+                className="rounded-xl border-border focus:ring-primary focus:border-primary"
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm font-semibold text-slate-700">Confirm Password</Label>
+              <Label className="text-sm font-medium text-foreground">{t('confirmPassword')}</Label>
               <Input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Repeat new password"
-                className="rounded-xl border-slate-200 focus:ring-teal-500 focus:border-teal-400"
+                placeholder={t('repeatPassword')}
+                className="rounded-xl border-border focus:ring-primary focus:border-primary"
               />
             </div>
           </div>
           {newPassword && confirmPassword && newPassword !== confirmPassword && (
-            <p className="text-xs text-red-500 font-medium">Passwords do not match</p>
+            <p className="text-xs text-destructive font-medium">{t('passwordsDoNotMatch')}</p>
           )}
           {newPassword && newPassword.length < 8 && (
-            <p className="text-xs text-amber-500 font-medium">
-              Password must be at least 8 characters
+            <p className="text-xs text-muted-foreground font-medium">
+              {t('passwordMinLength')}
             </p>
           )}
           <div className="flex justify-end">
@@ -461,10 +463,10 @@ export default function ProfilePage() {
               onClick={handlePasswordChange}
               disabled={passwordLoading || !newPassword || !confirmPassword}
               variant="outline"
-              className="rounded-xl border-slate-200 text-slate-700 hover:bg-teal-50 hover:border-teal-200 hover:text-teal-700 px-6 font-semibold"
+              className="rounded-xl border-border text-foreground hover:bg-accent px-6 font-medium"
             >
               <Key className="w-4 h-4 mr-2" />
-              {passwordLoading ? 'Updating...' : 'Update Password'}
+              {passwordLoading ? t('updating') : t('updatePassword')}
             </Button>
           </div>
         </div>

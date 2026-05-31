@@ -36,9 +36,9 @@ export async function createService(
     .from("services")
     .insert({ ...validated.data, clinic_id: clinicId })
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error) return { success: false, error: error.message };
+  if (error || !service) return { success: false, error: error?.message ?? "Service creation failed" };
   return { success: true, data: { id: service.id } };
 }
 

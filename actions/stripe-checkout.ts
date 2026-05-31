@@ -30,17 +30,17 @@ export async function createStripeCheckoutSession(
     .from("users")
     .select("clinic_id, email, full_name")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   if (userError || !userData) {
     return { checkoutUrl: null, error: "Données utilisateur introuvables" };
   }
 
   const priceId = STRIPE_PLAN_PRICE_IDS[plan];
-  if (!priceId) {
+  if (!priceId || priceId.startsWith("price_...") || priceId === "price_") {
     return {
       checkoutUrl: null,
-      error: `STRIPE_PRICE_ID_${plan.toUpperCase()} n'est pas configuré dans les variables d'environnement`,
+      error: "Le paiement en ligne n'est pas encore disponible. Contactez-nous pour souscrire à un abonnement.",
     };
   }
 

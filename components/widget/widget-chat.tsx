@@ -3,15 +3,17 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
   MessageCircle, X, Bot, User, Loader2, Calendar,
-  CheckCircle, Minimize2, Send, ChevronLeft, ChevronRight,
+  CheckCircle, Send, ChevronLeft, ChevronRight,
   Clock, Phone, Mail, UserCircle2, Stethoscope, ArrowLeft,
+  Sparkles, ChevronDown
 } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth,
   eachDayOfInterval, isSameDay, isBefore, startOfDay, getDay } from "date-fns";
+import { fr, enUS } from "date-fns/locale";
 import { v4 as uuidv4 } from "uuid";
 import { generatePatientTempId } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
-// patientTempId kept for chat mode conversation tracking
+import { useTranslations } from "next-intl";
 
 interface Service {
   id: string;
@@ -44,14 +46,22 @@ interface WidgetChatProps {
 
 type Step = "home" | "service" | "calendar" | "slots" | "details" | "confirm" | "success" | "chat";
 
+function hexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace("#", "");
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return `rgba(37,99,235,${alpha})`;
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 export function WidgetChat({
   clinicSlug, clinicName, widgetColor, welcomeMessage, services,
 }: WidgetChatProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
   const [step, setStep] = useState<Step>("home");
 
-  // Booking state
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
@@ -64,7 +74,6 @@ export function WidgetChat({
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState("");
 
-  // Chat state
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
@@ -76,6 +85,8 @@ export function WidgetChat({
     const raw = match?.[1];
     return raw === "fr" || raw === "en" ? raw : "fr";
   });
+  const dfLocale = widgetLocale === "fr" ? fr : enUS;
+  const t = useTranslations("widgetChat");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
 
@@ -85,10 +96,19 @@ export function WidgetChat({
 
   const openWidget = useCallback(() => {
     setIsOpen(true);
-    setIsMinimized(false);
   }, []);
 
-  // Fetch slots when date is selected
+  // Écouter les messages postMessage depuis la page parente (boutons CTA des templates)
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === "open") {
+        setIsOpen(true);
+      }
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
+
   useEffect(() => {
     if (!selectedDate || !selectedService) return;
     const dateStr = format(selectedDate, "yyyy-MM-dd");
@@ -116,12 +136,11 @@ export function WidgetChat({
 
   const confirmBooking = async () => {
     if (!patientName.trim() || !patientPhone.trim()) {
-      setBookingError("Name and phone number are required.");
+      setBookingError(t("nameReq"));
       return;
     }
     setBookingError("");
     setBookingLoading(true);
-
     try {
       const res = await fetch("/api/widget/book", {
         method: "POST",
@@ -140,10 +159,10 @@ export function WidgetChat({
       if (data.success) {
         setStep("success");
       } else {
-        setBookingError(data.error || "Booking failed. Please try again.");
+        setBookingError(data.error || t("bookFailed"));
       }
     } catch {
-      setBookingError("Something went wrong. Please try again.");
+      setBookingError(t("error"));
     } finally {
       setBookingLoading(false);
     }
@@ -163,548 +182,812 @@ export function WidgetChat({
         body: JSON.stringify({ message: trimmed, conversationId, patientTempId, clinicSlug, locale: widgetLocale }),
       });
       const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || "Server error");
       if (data.conversationId) setConversationId(data.conversationId);
       setMessages((p) => [...p, {
         id: uuidv4(), role: "assistant", content: data.message,
         timestamp: new Date(), bookingSuccess: data.bookingResult?.success,
       }]);
     } catch {
-      setMessages((p) => [...p, { id: uuidv4(), role: "assistant", content: "Sorry, something went wrong.", timestamp: new Date() }]);
+      setMessages((p) => [...p, { id: uuidv4(), role: "assistant", content: t("error"), timestamp: new Date() }]);
     } finally {
       setChatLoading(false);
     }
   };
 
-  // Calendar helpers
   const monthStart = startOfMonth(calendarMonth);
   const monthEnd = endOfMonth(calendarMonth);
   const calendarDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
   const startPadding = getDay(monthStart);
   const today = startOfDay(new Date());
-
   const isDayAvailable = (day: Date) => !isBefore(day, today);
 
-  const colorStyle = { backgroundColor: widgetColor };
-  const colorText = { color: widgetColor };
-  const colorBorder = { borderColor: widgetColor };
+  const pa = (a: number) => hexToRgba(widgetColor, a);
+  const clinicInitial = (clinicName || "M").charAt(0).toUpperCase();
 
   return (
     <>
-      {/* Launcher button */}
+      <style>{`
+        @keyframes wg-float {
+          0%,100% { transform: translateY(0); }
+          50% { transform: translateY(-5px); }
+        }
+        @keyframes wg-ping-slow {
+          75%,100% { transform: scale(1.8); opacity: 0; }
+        }
+        @keyframes wg-in {
+          from { opacity:0; transform:scale(0.92) translateY(12px); }
+          to   { opacity:1; transform:scale(1) translateY(0); }
+        }
+        @keyframes wg-slide-up {
+          from { opacity:0; transform:translateY(8px); }
+          to   { opacity:1; transform:translateY(0); }
+        }
+        @keyframes wg-shimmer {
+          0% { transform: translateX(-100%) skewX(-12deg); }
+          100% { transform: translateX(200%) skewX(-12deg); }
+        }
+        @keyframes wg-orb-1 {
+          0%,100% { transform: translate(0,0) scale(1); }
+          50% { transform: translate(10px,-8px) scale(1.1); }
+        }
+        @keyframes wg-orb-2 {
+          0%,100% { transform: translate(0,0) scale(1); }
+          50% { transform: translate(-8px,6px) scale(0.95); }
+        }
+        .wg-float { animation: wg-float 4s ease-in-out infinite; }
+        .wg-ping  { animation: wg-ping-slow 2s cubic-bezier(0,0,0.2,1) infinite; }
+        .wg-in    { animation: wg-in 0.4s cubic-bezier(0.16,1,0.3,1) both; }
+        .wg-slide { animation: wg-slide-up 0.3s ease both; }
+        .wg-slide-1 { animation: wg-slide-up 0.3s 0.05s ease both; opacity:0; }
+        .wg-slide-2 { animation: wg-slide-up 0.3s 0.1s ease both; opacity:0; }
+        .wg-slide-3 { animation: wg-slide-up 0.3s 0.15s ease both; opacity:0; }
+        .wg-orb-1 { animation: wg-orb-1 6s ease-in-out infinite; }
+        .wg-orb-2 { animation: wg-orb-2 8s ease-in-out infinite; }
+
+        .wg-input:focus-within {
+          border-color: ${widgetColor}55;
+          box-shadow: 0 0 0 3px ${pa(0.1)};
+        }
+        .wg-btn-primary {
+          position: relative;
+          overflow: hidden;
+        }
+        .wg-btn-primary::after {
+          content: '';
+          position: absolute;
+          top: 0; left: 0;
+          width: 40%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+          transform: translateX(-100%) skewX(-12deg);
+        }
+        .wg-btn-primary:hover::after {
+          animation: wg-shimmer 0.7s ease forwards;
+        }
+        .wg-btn-primary:hover {
+          box-shadow: 0 14px 36px -4px ${pa(0.6)};
+          transform: translateY(-1px);
+        }
+        .wg-btn-primary:active { transform: scale(0.98); }
+
+        .wg-service-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 28px rgba(0,0,0,0.08);
+        }
+        .wg-slot-btn:hover:not([data-selected="true"]) {
+          border-color: ${widgetColor}55;
+          color: ${widgetColor};
+        }
+        .wg-action-secondary:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; }
+      `}</style>
+
+      {/* ── LAUNCHER ── */}
       {!isOpen && (
         <button
           onClick={openWidget}
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-full px-5 py-3.5 text-white font-medium shadow-2xl hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95"
-          style={colorStyle}
+          className="fixed bottom-5 right-5 z-[9999] wg-float group"
+          aria-label="Ouvrir l'assistant"
         >
-          <MessageCircle className="w-6 h-6" />
-          <span>Book Appointment</span>
+          <div className="relative">
+            <div
+              className="wg-ping absolute inset-0 rounded-full opacity-30"
+              style={{ backgroundColor: widgetColor }}
+            />
+            <div
+              className="relative flex items-center gap-3 rounded-full px-5 py-3.5 text-white transition-all duration-300 group-hover:gap-3.5 group-hover:px-6"
+              style={{
+                background: `linear-gradient(140deg, ${widgetColor} 0%, ${hexToRgba(widgetColor, 0.85)} 100%)`,
+                boxShadow: `0 8px 28px -4px ${pa(0.55)}, inset 0 1px 0 rgba(255,255,255,0.2)`,
+              }}
+            >
+              <MessageCircle className="w-5 h-5 flex-shrink-0 transition-transform duration-300 group-hover:scale-110" />
+              <span className="font-semibold text-[13px] tracking-wide whitespace-nowrap">
+                {t("bookAppointment")}
+              </span>
+            </div>
+          </div>
         </button>
       )}
 
-      {/* Widget panel */}
+      {/* ── WIDGET PANEL ── */}
       {isOpen && (
         <div
-          className={`fixed bottom-6 right-6 z-50 flex flex-col bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden transition-all duration-300 ${isMinimized ? "h-14" : "h-[620px]"}`}
-          style={{ width: "390px", maxWidth: "calc(100vw - 48px)" }}
+          className="fixed bottom-4 right-4 z-[9999] flex flex-col bg-[#F8F7F5] overflow-hidden wg-in"
+          style={{
+            width: "390px",
+            maxWidth: "calc(100vw - 24px)",
+            height: "640px",
+            maxHeight: "calc(100vh - 32px)",
+            borderRadius: "24px",
+            boxShadow: "0 32px 80px -12px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.06)",
+          }}
         >
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 text-white flex-shrink-0" style={colorStyle}>
-            <div className="flex items-center gap-3">
-              {step !== "home" && step !== "chat" && (
-                <button onClick={() => {
-                  if (step === "service") setStep("home");
-                  else if (step === "calendar") setStep("service");
-                  else if (step === "slots") setStep("calendar");
-                  else if (step === "details") setStep("slots");
-                  else if (step === "confirm") setStep("details");
-                }} className="p-1 hover:bg-white/20 rounded-lg transition-colors mr-1">
-                  <ArrowLeft className="w-4 h-4" />
-                </button>
-              )}
-              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                <Bot className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="font-semibold text-sm">{clinicName}</p>
-                <div className="flex items-center gap-1">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-300 animate-pulse" />
-                  <p className="text-xs text-white/80">AI Assistant Online</p>
+
+          {/* ── HEADER ── */}
+          <div
+            className="relative overflow-hidden flex-shrink-0"
+            style={{
+              background: `linear-gradient(135deg, #0D1117 0%, #1a1f2e 60%, ${hexToRgba(widgetColor, 0.25)} 100%)`,
+            }}
+          >
+            {/* Colour accent top strip */}
+            <div
+              className="absolute top-0 left-0 right-0 h-[2px]"
+              style={{ background: `linear-gradient(90deg, ${widgetColor}, ${pa(0.3)})` }}
+            />
+
+            {/* Subtle dot pattern */}
+            <div
+              className="absolute inset-0 opacity-[0.04]"
+              style={{
+                backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)",
+                backgroundSize: "24px 24px",
+              }}
+            />
+
+            <div className="relative z-10 flex items-center justify-between px-5 py-4">
+              <div className="flex items-center gap-3">
+                {step !== "home" && step !== "chat" && (
+                  <button
+                    onClick={() => {
+                      if (step === "service") setStep("home");
+                      else if (step === "calendar") setStep("service");
+                      else if (step === "slots") setStep("calendar");
+                      else if (step === "details") setStep("slots");
+                      else if (step === "confirm") setStep("details");
+                    }}
+                    className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                  >
+                    <ArrowLeft className="w-4 h-4 text-white" />
+                  </button>
+                )}
+                <div
+                  className="w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-base text-white shadow-lg border border-white/10"
+                  style={{ background: `linear-gradient(135deg, ${widgetColor}, ${pa(0.7)})` }}
+                >
+                  {step === "home" ? (
+                    <span className="font-cormorant font-bold text-lg">{clinicInitial}</span>
+                  ) : (
+                    <Bot className="w-5 h-5" />
+                  )}
+                </div>
+                <div>
+                  <p className="font-cormorant font-bold text-white text-[17px] leading-tight tracking-tight">
+                    {clinicName}
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <div className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
+                    </div>
+                    <span className="text-[10px] font-semibold text-white/60 uppercase tracking-[0.12em]">
+                      {t("aiOnline")}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <button onClick={() => setIsMinimized(!isMinimized)} className="p-1.5 hover:bg-white/20 rounded-lg transition-colors">
-                <Minimize2 className="w-4 h-4" />
-              </button>
-              <button onClick={() => { setIsOpen(false); reset(); }} className="p-1.5 hover:bg-white/20 rounded-lg transition-colors">
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-0.5">
+                <button
+                  onClick={() => setIsOpen(false)}
+                  title="Réduire"
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white/60 hover:text-white"
+                >
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => { setIsOpen(false); reset(); }}
+                  title="Fermer"
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/15 transition-colors text-white/60 hover:text-red-400"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
 
-          {!isMinimized && (
-            <div className="flex-1 overflow-y-auto">
-
-              {/* ── HOME ── */}
-              {step === "home" && (
-                <div className="p-5 space-y-4">
-                  <div className="text-center pt-2 pb-1">
-                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 text-white" style={colorStyle}>
-                      <Bot className="w-8 h-8" />
-                    </div>
-                    <h3 className="font-bold text-gray-900 text-lg">{clinicName}</h3>
-                    <p className="text-gray-500 text-sm mt-1">{welcomeMessage}</p>
-                  </div>
-
-                  <div className="space-y-3 pt-2">
-                    <button
-                      onClick={() => setStep("service")}
-                      className="w-full flex items-center gap-4 p-4 rounded-xl border-2 hover:shadow-md transition-all text-left group"
-                      style={colorBorder}
-                    >
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white flex-shrink-0" style={colorStyle}>
-                        <Calendar className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-900 text-sm">Book an Appointment</p>
-                        <p className="text-xs text-gray-500 mt-0.5">Choose a service, date & time</p>
-                      </div>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setStep("chat");
-                        if (messages.length === 0) {
-                          setMessages([{ id: uuidv4(), role: "assistant", content: welcomeMessage, timestamp: new Date() }]);
-                        }
-                        setTimeout(() => chatInputRef.current?.focus(), 100);
+          {/* ── BOOKING PROGRESS ── */}
+          {["service","calendar","slots","details","confirm"].includes(step) && (
+            <div className="flex items-center justify-center gap-1.5 px-5 py-2.5 bg-[#F8F7F5] border-b border-black/[0.04]">
+              {(["service","calendar","slots","details","confirm"] as Step[]).map((s, i) => {
+                const steps: Step[] = ["service","calendar","slots","details","confirm"];
+                const currentIdx = steps.indexOf(step);
+                const isDone = i < currentIdx;
+                const isCurrent = i === currentIdx;
+                return (
+                  <div key={s} className="flex items-center gap-1.5">
+                    <div
+                      className="h-1.5 rounded-full transition-all duration-300"
+                      style={{
+                        width: isCurrent ? "20px" : "6px",
+                        backgroundColor: isCurrent ? widgetColor : isDone ? `${widgetColor}55` : "rgba(0,0,0,0.1)",
                       }}
-                      className="w-full flex items-center gap-4 p-4 rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all text-left"
-                    >
-                      <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
-                        <MessageCircle className="w-5 h-5 text-gray-600" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-900 text-sm">Chat with AI Assistant</p>
-                        <p className="text-xs text-gray-500 mt-0.5">Ask questions or get help</p>
-                      </div>
-                    </button>
+                    />
                   </div>
+                );
+              })}
+            </div>
+          )}
 
-                  <p className="text-center text-xs text-gray-400 pt-2">Powered by MedBook AI</p>
+          {/* ── BODY ── */}
+          <div className="flex-1 overflow-y-auto">
+
+            {/* HOME */}
+            {step === "home" && (
+              <div className="p-4 flex flex-col gap-3.5">
+                {/* Welcome card — aurora gradient */}
+                <div
+                  className="rounded-3xl p-5 relative overflow-hidden wg-slide"
+                  style={{
+                    background: `linear-gradient(145deg, #0D1117 0%, #161b28 55%, ${hexToRgba(widgetColor, 0.35)} 100%)`,
+                    minHeight: "168px",
+                  }}
+                >
+                  {/* Animated orbs */}
+                  <div
+                    className="wg-orb-1 absolute -top-8 -right-8 w-36 h-36 rounded-full opacity-30 blur-3xl pointer-events-none"
+                    style={{ backgroundColor: widgetColor }}
+                  />
+                  <div
+                    className="wg-orb-2 absolute bottom-0 left-4 w-24 h-24 rounded-full opacity-20 blur-2xl pointer-events-none"
+                    style={{ backgroundColor: hexToRgba(widgetColor, 0.6) }}
+                  />
+                  {/* Dot grid */}
+                  <div
+                    className="absolute inset-0 opacity-[0.05] pointer-events-none"
+                    style={{
+                      backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)",
+                      backgroundSize: "20px 20px",
+                    }}
+                  />
+
+                  <div className="relative z-10">
+                    {/* Icon with glow ring */}
+                    <div className="relative inline-flex mb-3.5">
+                      <div
+                        className="absolute inset-0 rounded-2xl blur-md opacity-60"
+                        style={{ backgroundColor: widgetColor }}
+                      />
+                      <div
+                        className="relative w-13 h-13 w-[52px] h-[52px] rounded-2xl flex items-center justify-center shadow-lg border border-white/10"
+                        style={{ background: `linear-gradient(135deg, ${widgetColor} 0%, ${hexToRgba(widgetColor, 0.7)} 100%)` }}
+                      >
+                        <Bot className="w-6 h-6 text-white" />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-cormorant font-bold text-white text-xl leading-tight">
+                        {clinicName}
+                      </h3>
+                      {/* Online badge */}
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/25">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        En ligne
+                      </span>
+                    </div>
+                    <p className="text-white/55 text-[13px] leading-relaxed max-w-[240px]">
+                      {welcomeMessage}
+                    </p>
+                  </div>
                 </div>
-              )}
 
-              {/* ── SERVICE PICKER ── */}
-              {step === "service" && (
-                <div className="p-5 space-y-4">
-                  <div>
-                    <h3 className="font-bold text-gray-900">Select a Service</h3>
-                    <p className="text-sm text-gray-500 mt-0.5">Choose what you need help with</p>
-                  </div>
-                  <div className="space-y-2">
-                    {services.map((service) => (
+                {/* Actions */}
+                <div className="space-y-2.5">
+                  {/* Primary action */}
+                  <button
+                    onClick={() => setStep("service")}
+                    className="w-full text-white rounded-2xl p-4 text-left transition-all duration-200 wg-btn-primary wg-slide-1 flex items-center gap-3.5"
+                    style={{
+                      background: `linear-gradient(135deg, ${widgetColor} 0%, ${hexToRgba(widgetColor, 0.82)} 100%)`,
+                      boxShadow: `0 8px 28px -4px ${pa(0.5)}, inset 0 1px 0 rgba(255,255,255,0.15)`,
+                    }}
+                  >
+                    <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center flex-shrink-0 backdrop-blur-sm border border-white/10">
+                      <Calendar className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-[14px] leading-tight">{t("bookAction")}</p>
+                      <p className="text-white/65 text-[12px] mt-0.5">{t("chooseService")}</p>
+                    </div>
+                    <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
+                      <ChevronRight className="w-3.5 h-3.5 text-white/70" />
+                    </div>
+                  </button>
+
+                  {/* Secondary action */}
+                  <button
+                    onClick={() => {
+                      setStep("chat");
+                      if (messages.length === 0) {
+                        setMessages([{ id: uuidv4(), role: "assistant", content: welcomeMessage, timestamp: new Date() }]);
+                      }
+                      setTimeout(() => chatInputRef.current?.focus(), 100);
+                    }}
+                    className="wg-action-secondary w-full bg-white rounded-2xl p-4 text-left transition-all duration-200 wg-slide-2 flex items-center gap-3.5 group"
+                    style={{
+                      boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+                      border: "1px solid rgba(0,0,0,0.06)",
+                    }}
+                  >
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-105"
+                      style={{ backgroundColor: pa(0.08) }}
+                    >
+                      <MessageCircle className="w-5 h-5" style={{ color: widgetColor }} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-[#1C1C27] text-[14px] leading-tight">{t("chatAction")}</p>
+                      <p className="text-[#1C1C27]/45 text-[12px] mt-0.5">{t("askQuestions")}</p>
+                    </div>
+                    <div className="w-7 h-7 rounded-full bg-[#F0EEF2] flex items-center justify-center flex-shrink-0 group-hover:bg-gray-200 transition-colors">
+                      <ChevronRight className="w-3.5 h-3.5 text-[#1C1C27]/40" />
+                    </div>
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-center gap-1.5 pb-1 wg-slide-3">
+                  <Sparkles className="w-3 h-3 text-[#1C1C27]/20" />
+                  <p className="text-[10px] font-semibold tracking-[0.14em] text-[#1C1C27]/25 uppercase">{t("poweredBy")}</p>
+                </div>
+              </div>
+            )}
+
+            {/* SERVICE PICKER */}
+            {step === "service" && (
+              <div className="p-5 space-y-4">
+                <div className="wg-slide">
+                  <h3 className="font-cormorant font-bold text-2xl text-[#1C1C27]">{t("selectService")}</h3>
+                  <p className="text-sm text-[#1C1C27]/45 mt-0.5">{t("chooseHelp")}</p>
+                </div>
+                <div className="space-y-2.5">
+                  {services.map((service, i) => {
+                    const emojiRegex = /^(\p{Emoji_Presentation}|\p{Extended_Pictographic})\s*(.*)$/u;
+                    const match = service.name.match(emojiRegex);
+                    const emoji = match ? match[1] : null;
+                    const displayName = match ? match[2] : service.name;
+
+                    return (
                       <button
                         key={service.id}
                         onClick={() => { setSelectedService(service); setStep("calendar"); }}
-                        className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left hover:shadow-sm ${selectedService?.id === service.id ? "border-current bg-blue-50" : "border-gray-100 hover:border-gray-200"}`}
-                        style={selectedService?.id === service.id ? colorBorder : {}}
+                        className="wg-service-card w-full bg-white rounded-2xl p-4 flex items-center gap-4 text-left transition-all"
+                        style={{
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                          border: `1px solid ${selectedService?.id === service.id ? pa(0.35) : "rgba(0,0,0,0.05)"}`,
+                          animationDelay: `${i * 0.04}s`,
+                        }}
                       >
-                        <div className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center flex-shrink-0">
-                          <Stethoscope className="w-5 h-5 text-gray-500" />
+                        <div
+                          className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                          style={{ backgroundColor: pa(0.08) }}
+                        >
+                          {emoji ?? <Stethoscope className="w-5 h-5" style={{ color: widgetColor }} />}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-900 text-sm">{service.name}</p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-xs text-gray-500 flex items-center gap-1">
+                          <p className="font-semibold text-[#1C1C27] text-[14px] truncate">{displayName}</p>
+                          <div className="flex items-center gap-2.5 mt-0.5">
+                            <span className="text-[12px] text-[#1C1C27]/40 flex items-center gap-1">
                               <Clock className="w-3 h-3" />{service.duration_minutes} min
                             </span>
-                            {service.price && (
-                              <span className="text-xs font-medium" style={colorText}>${service.price}</span>
+                            {service.price != null && (
+                              <>
+                                <span className="w-1 h-1 rounded-full bg-[#1C1C27]/20" />
+                                <span className="text-[12px] font-bold" style={{ color: widgetColor }}>{service.price} €</span>
+                              </>
                             )}
                           </div>
                         </div>
+                        <ChevronRight className="w-4 h-4 text-[#1C1C27]/20 flex-shrink-0" />
                       </button>
-                    ))}
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* CALENDAR */}
+            {step === "calendar" && (
+              <div className="p-5 space-y-4">
+                <div className="wg-slide">
+                  <h3 className="font-cormorant font-bold text-2xl text-[#1C1C27]">{t("chooseDate")}</h3>
+                  <div
+                    className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[12px] font-semibold"
+                    style={{ backgroundColor: pa(0.1), color: widgetColor }}
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    {selectedService?.name}
                   </div>
                 </div>
-              )}
 
-              {/* ── CALENDAR ── */}
-              {step === "calendar" && (
-                <div className="p-5 space-y-4">
-                  <div>
-                    <h3 className="font-bold text-gray-900">Choose a Date</h3>
-                    <p className="text-sm text-gray-500 mt-0.5">{selectedService?.name}</p>
+                <div className="bg-white rounded-2xl overflow-hidden p-3" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.05)" }}>
+                  <div className="flex items-center justify-between px-1 py-2">
+                    <button
+                      onClick={() => setCalendarMonth(subMonths(calendarMonth, 1))}
+                      disabled={isBefore(endOfMonth(subMonths(calendarMonth, 1)), today)}
+                      className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-50 disabled:opacity-30 transition-colors"
+                    >
+                      <ChevronLeft className="w-4 h-4 text-[#1C1C27]/60" />
+                    </button>
+                    <span className="font-bold text-[#1C1C27] text-[14px] capitalize tracking-wide">
+                      {format(calendarMonth, "MMMM yyyy", { locale: dfLocale })}
+                    </span>
+                    <button
+                      onClick={() => setCalendarMonth(addMonths(calendarMonth, 1))}
+                      className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-50 transition-colors"
+                    >
+                      <ChevronRight className="w-4 h-4 text-[#1C1C27]/60" />
+                    </button>
                   </div>
 
-                  <div className="rounded-xl border border-gray-100 overflow-hidden">
-                    {/* Month nav */}
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                      <button
-                        onClick={() => setCalendarMonth(subMonths(calendarMonth, 1))}
-                        disabled={isBefore(endOfMonth(subMonths(calendarMonth, 1)), today)}
-                        className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <ChevronLeft className="w-4 h-4 text-gray-600" />
-                      </button>
-                      <span className="font-semibold text-gray-900 text-sm">
-                        {format(calendarMonth, "MMMM yyyy")}
-                      </span>
-                      <button
-                        onClick={() => setCalendarMonth(addMonths(calendarMonth, 1))}
-                        className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
-                      >
-                        <ChevronRight className="w-4 h-4 text-gray-600" />
-                      </button>
-                    </div>
+                  <div className="grid grid-cols-7 mb-1">
+                    {(widgetLocale === "fr" ? ["Di","Lu","Ma","Me","Je","Ve","Sa"] : ["Su","Mo","Tu","We","Th","Fr","Sa"]).map((d) => (
+                      <div key={d} className="py-1.5 text-center text-[10px] font-bold tracking-widest text-[#1C1C27]/30 uppercase">{d}</div>
+                    ))}
+                  </div>
 
-                    {/* Day names */}
-                    <div className="grid grid-cols-7 border-b border-gray-100">
-                      {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
-                        <div key={d} className="py-2 text-center text-xs font-medium text-gray-400">{d}</div>
-                      ))}
-                    </div>
-
-                    {/* Days grid */}
-                    <div className="grid grid-cols-7 p-2 gap-1">
-                      {Array.from({ length: startPadding }).map((_, i) => (
-                        <div key={`pad-${i}`} />
-                      ))}
-                      {calendarDays.map((day) => {
-                        const available = isDayAvailable(day);
-                        const isSelected = selectedDate && isSameDay(day, selectedDate);
-                        const isToday = isSameDay(day, today);
-                        return (
+                  <div className="grid grid-cols-7 gap-0.5">
+                    {Array.from({ length: startPadding }).map((_, i) => <div key={`p-${i}`} />)}
+                    {calendarDays.map((day) => {
+                      const available = isDayAvailable(day);
+                      const isSelected = selectedDate && isSameDay(day, selectedDate);
+                      const isToday = isSameDay(day, today);
+                      return (
+                        <div key={day.toISOString()} className="aspect-square p-0.5">
                           <button
-                            key={day.toISOString()}
                             onClick={() => { if (available) { setSelectedDate(day); setStep("slots"); } }}
                             disabled={!available}
-                            className={`h-9 w-full rounded-lg text-sm font-medium transition-all
-                              ${isSelected ? "text-white shadow-sm" : ""}
-                              ${!isSelected && available ? "hover:bg-gray-100 text-gray-800" : ""}
-                              ${!available ? "text-gray-200 cursor-not-allowed" : ""}
-                              ${isToday && !isSelected ? "font-bold ring-1 ring-inset" : ""}
+                            className={`w-full h-full rounded-xl text-[13px] font-semibold transition-all relative
+                              ${isSelected ? "text-white shadow-lg" : ""}
+                              ${!isSelected && available ? "hover:bg-gray-50 text-[#1C1C27]" : ""}
+                              ${!available ? "text-[#1C1C27]/20 cursor-not-allowed" : ""}
                             `}
-                            style={isSelected ? colorStyle : isToday && !isSelected ? colorBorder : {}}
+                            style={isSelected ? { backgroundColor: widgetColor } : isToday ? { color: widgetColor } : {}}
                           >
                             {format(day, "d")}
+                            {isToday && !isSelected && (
+                              <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full" style={{ backgroundColor: widgetColor }} />
+                            )}
                           </button>
-                        );
-                      })}
-                    </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* ── SLOTS ── */}
-              {step === "slots" && (
-                <div className="p-5 space-y-4">
-                  <div>
-                    <h3 className="font-bold text-gray-900">Pick a Time</h3>
-                    <p className="text-sm text-gray-500 mt-0.5">
-                      {selectedDate && format(selectedDate, "EEEE, MMMM d")} · {selectedService?.name}
-                    </p>
-                  </div>
-
-                  {slotsLoading ? (
-                    <div className="flex flex-col items-center justify-center py-12 gap-3">
-                      <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-                      <p className="text-sm text-gray-400">Loading available times...</p>
-                    </div>
-                  ) : slots.length === 0 ? (
-                    <div className="text-center py-12">
-                      <Calendar className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                      <p className="font-medium text-gray-700 text-sm">No slots available</p>
-                      <p className="text-xs text-gray-400 mt-1">Try a different date</p>
-                      <button onClick={() => setStep("calendar")} className="mt-4 text-sm font-medium underline" style={colorText}>
-                        Go back to calendar
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-2">
-                      {slots.map((slot) => {
-                        const isSelected = selectedSlot?.start === slot.start;
-                        return (
-                          <button
-                            key={slot.start}
-                            onClick={() => { setSelectedSlot(slot); setStep("details"); }}
-                            className={`py-3 px-3 rounded-xl border-2 text-sm font-medium transition-all flex items-center justify-center gap-1.5
-                              ${isSelected ? "text-white border-transparent" : "border-gray-100 text-gray-700 hover:border-current hover:shadow-sm"}`}
-                            style={isSelected ? colorStyle : {}}
-                          >
-                            <Clock className={`w-3.5 h-3.5 ${isSelected ? "text-white/80" : "text-gray-400"}`} />
-                            {slot.label.split(" - ")[0]}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
+            {/* SLOTS */}
+            {step === "slots" && (
+              <div className="p-5 space-y-4">
+                <div className="wg-slide">
+                  <h3 className="font-cormorant font-bold text-2xl text-[#1C1C27]">{t("pickTime")}</h3>
+                  <p className="text-[13px] text-[#1C1C27]/45 mt-0.5 capitalize">
+                    {selectedDate && format(selectedDate, "EEEE, d MMMM", { locale: dfLocale })}
+                  </p>
                 </div>
-              )}
 
-              {/* ── PATIENT DETAILS ── */}
-              {step === "details" && (
-                <div className="p-5 space-y-4">
-                  <div>
-                    <h3 className="font-bold text-gray-900">Your Details</h3>
-                    <p className="text-sm text-gray-500 mt-0.5">We need a few details to confirm your booking</p>
+                {slotsLoading ? (
+                  <div className="flex flex-col items-center justify-center py-14 gap-3">
+                    <Loader2 className="w-7 h-7 animate-spin" style={{ color: widgetColor }} />
+                    <p className="text-[13px] text-[#1C1C27]/40">{t("loadingTimes")}</p>
                   </div>
-
-                  <div className="space-y-3">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Full Name *</label>
-                      <div className="relative">
-                        <UserCircle2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                          type="text"
-                          value={patientName}
-                          onChange={(e) => setPatientName(e.target.value)}
-                          placeholder="John Smith"
-                          className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all"
-                          style={{ "--tw-ring-color": widgetColor } as React.CSSProperties}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Phone Number *</label>
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                          type="tel"
-                          value={patientPhone}
-                          onChange={(e) => setPatientPhone(e.target.value)}
-                          placeholder="+1 (555) 000-0000"
-                          className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                        Email <span className="text-gray-400 font-normal normal-case">(optional)</span>
-                      </label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                          type="email"
-                          value={patientEmail}
-                          onChange={(e) => setPatientEmail(e.target.value)}
-                          placeholder="john@example.com"
-                          className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {bookingError && (
-                    <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{bookingError}</p>
-                  )}
-
-                  <button
-                    onClick={() => {
-                      if (!patientName.trim() || !patientPhone.trim()) {
-                        setBookingError("Name and phone number are required.");
-                        return;
-                      }
-                      setBookingError("");
-                      setStep("confirm");
-                    }}
-                    className="w-full py-3 rounded-xl text-white font-semibold text-sm transition-all hover:opacity-90 active:scale-95"
-                    style={colorStyle}
-                  >
-                    Review Booking
-                  </button>
-                </div>
-              )}
-
-              {/* ── CONFIRM ── */}
-              {step === "confirm" && (
-                <div className="p-5 space-y-4">
-                  <div>
-                    <h3 className="font-bold text-gray-900">Confirm Booking</h3>
-                    <p className="text-sm text-gray-500 mt-0.5">Please review your appointment details</p>
-                  </div>
-
-                  <div className="rounded-xl border border-gray-100 overflow-hidden divide-y divide-gray-100">
-                    <div className="flex items-center gap-3 p-4">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white flex-shrink-0" style={colorStyle}>
-                        <Stethoscope className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400">Service</p>
-                        <p className="text-sm font-semibold text-gray-900">{selectedService?.name}</p>
-                        <p className="text-xs text-gray-500">{selectedService?.duration_minutes} min{selectedService?.price ? ` · $${selectedService.price}` : ""}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-4">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white flex-shrink-0" style={colorStyle}>
-                        <Calendar className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400">Date & Time</p>
-                        <p className="text-sm font-semibold text-gray-900">
-                          {selectedDate && format(selectedDate, "EEEE, MMMM d, yyyy")}
-                        </p>
-                        <p className="text-xs text-gray-500">{selectedSlot?.label}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-4">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white flex-shrink-0" style={colorStyle}>
-                        <User className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400">Patient</p>
-                        <p className="text-sm font-semibold text-gray-900">{patientName}</p>
-                        <p className="text-xs text-gray-500">{patientPhone}{patientEmail ? ` · ${patientEmail}` : ""}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {bookingError && (
-                    <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{bookingError}</p>
-                  )}
-
-                  <div className="space-y-2">
+                ) : slots.length === 0 ? (
+                  <div className="text-center py-12 bg-white rounded-2xl" style={{ border: "1px solid rgba(0,0,0,0.05)" }}>
+                    <Calendar className="w-10 h-10 mx-auto mb-3" style={{ color: pa(0.3) }} />
+                    <p className="font-bold text-[#1C1C27] text-[14px]">{t("noSlots")}</p>
+                    <p className="text-[13px] text-[#1C1C27]/40 mt-1">{t("tryDifferent")}</p>
                     <button
-                      onClick={confirmBooking}
-                      disabled={bookingLoading}
-                      className="w-full py-3 rounded-xl text-white font-semibold text-sm transition-all hover:opacity-90 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-70"
-                      style={colorStyle}
+                      onClick={() => setStep("calendar")}
+                      className="mt-5 text-[13px] font-bold px-5 py-2 rounded-full bg-[#F0EEF2] text-[#1C1C27] hover:bg-gray-200 transition-colors"
                     >
-                      {bookingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                      {bookingLoading ? "Confirming..." : "Confirm Appointment"}
-                    </button>
-                    <button
-                      onClick={() => setStep("details")}
-                      disabled={bookingLoading}
-                      className="w-full py-2.5 rounded-xl text-gray-600 text-sm font-medium hover:bg-gray-50 transition-all"
-                    >
-                      Edit Details
+                      {t("goBack")}
                     </button>
                   </div>
-                </div>
-              )}
-
-              {/* ── SUCCESS ── */}
-              {step === "success" && (
-                <div className="p-5 flex flex-col items-center justify-center text-center h-full space-y-4 pt-10">
-                  <div className="w-16 h-16 rounded-full flex items-center justify-center text-white shadow-lg" style={colorStyle}>
-                    <CheckCircle className="w-9 h-9" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-gray-900 text-lg">Booking Confirmed!</h3>
-                    <p className="text-gray-500 text-sm mt-1">Your appointment has been successfully booked.</p>
-                  </div>
-
-                  <div className="w-full rounded-xl bg-gray-50 border border-gray-100 p-4 text-left space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Service</span>
-                      <span className="font-medium text-gray-900">{selectedService?.name}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Date</span>
-                      <span className="font-medium text-gray-900">{selectedDate && format(selectedDate, "MMM d, yyyy")}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Time</span>
-                      <span className="font-medium text-gray-900">{selectedSlot?.label.split(" - ")[0]}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Patient</span>
-                      <span className="font-medium text-gray-900">{patientName}</span>
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-gray-400">We look forward to seeing you. Please arrive 5 minutes early.</p>
-
-                  <button
-                    onClick={reset}
-                    className="w-full py-3 rounded-xl text-white font-semibold text-sm transition-all hover:opacity-90"
-                    style={colorStyle}
-                  >
-                    Book Another Appointment
-                  </button>
-                </div>
-              )}
-
-              {/* ── CHAT ── */}
-              {step === "chat" && (
-                <div className="flex flex-col h-full">
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    {messages.map((msg) => (
-                      <div key={msg.id} className={`flex items-end gap-2 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
-                        <div
-                          className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === "user" ? "bg-gray-200" : "text-white"}`}
-                          style={msg.role === "assistant" ? colorStyle : {}}
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    {slots.map((slot) => {
+                      const isSelected = selectedSlot?.start === slot.start;
+                      return (
+                        <button
+                          key={slot.start}
+                          data-selected={isSelected}
+                          onClick={() => { setSelectedSlot(slot); setStep("details"); }}
+                          className={`wg-slot-btn py-3 px-3 rounded-xl text-[13px] font-bold transition-all flex items-center justify-center gap-1.5 border`}
+                          style={isSelected ? {
+                            backgroundColor: widgetColor,
+                            borderColor: widgetColor,
+                            color: "white",
+                            boxShadow: `0 6px 20px -4px ${pa(0.5)}`,
+                          } : {
+                            backgroundColor: "white",
+                            borderColor: "rgba(0,0,0,0.07)",
+                            color: "#1C1C27",
+                          }}
                         >
-                          {msg.role === "user" ? <User className="w-4 h-4 text-gray-600" /> : <Bot className="w-4 h-4" />}
-                        </div>
-                        <div className={`max-w-[80%] flex flex-col gap-1 ${msg.role === "user" ? "items-end" : "items-start"}`}>
-                          {msg.role === "user" ? (
-                            <div className="rounded-2xl rounded-br-sm px-3.5 py-2.5 text-sm leading-relaxed bg-gray-100 text-gray-900">
-                              {msg.content}
-                            </div>
-                          ) : (
-                            <div className="rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-sm leading-relaxed text-white" style={colorStyle}>
-                              <MarkdownMessage content={msg.content} />
-                              {msg.bookingSuccess && (
-                                <div className="mt-2 flex items-center gap-1 text-green-200 text-xs border-t border-white/20 pt-2">
-                                  <CheckCircle className="w-3.5 h-3.5" /> Appointment confirmed!
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          <span className="text-xs text-gray-400 px-1">{format(msg.timestamp, "h:mm a")}</span>
-                        </div>
-                      </div>
-                    ))}
-                    {chatLoading && (
-                      <div className="flex items-end gap-2">
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-white" style={colorStyle}>
-                          <Bot className="w-4 h-4" />
-                        </div>
-                        <div className="rounded-2xl rounded-bl-sm px-4 py-3" style={colorStyle}>
-                          <div className="flex gap-1">
-                            {[0, 1, 2].map((i) => (
-                              <div key={i} className="w-1.5 h-1.5 bg-white/70 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    <div ref={messagesEndRef} />
+                          <Clock className={`w-3.5 h-3.5 ${isSelected ? "text-white/80" : "text-[#1C1C27]/30"}`} />
+                          {slot.label.split(" - ")[0]}
+                        </button>
+                      );
+                    })}
                   </div>
+                )}
+              </div>
+            )}
 
-                  <div className="p-3 border-t border-gray-100 bg-gray-50">
-                    <div className="flex items-center gap-2">
-                      <input
-                        ref={chatInputRef}
-                        value={chatInput}
-                        onChange={(e) => setChatInput(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }}
-                        placeholder="Type a message..."
-                        className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 bg-white"
-                        disabled={chatLoading}
-                      />
-                      <button
-                        onClick={sendChatMessage}
-                        disabled={!chatInput.trim() || chatLoading}
-                        className="w-9 h-9 rounded-xl flex items-center justify-center text-white transition-all hover:opacity-90 disabled:opacity-40"
-                        style={colorStyle}
+            {/* DETAILS */}
+            {step === "details" && (
+              <div className="p-5 space-y-4">
+                <div className="wg-slide">
+                  <h3 className="font-cormorant font-bold text-2xl text-[#1C1C27]">{t("yourDetails")}</h3>
+                  <p className="text-[13px] text-[#1C1C27]/45 mt-0.5">{t("detailsSubtitle")}</p>
+                </div>
+
+                <div className="bg-white rounded-2xl p-4 space-y-3" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)", border: "1px solid rgba(0,0,0,0.05)" }}>
+                  {[
+                    { label: t("fullName"), icon: UserCircle2, value: patientName, set: setPatientName, type: "text", placeholder: "Marie Dupont" },
+                    { label: t("phone"), icon: Phone, value: patientPhone, set: setPatientPhone, type: "tel", placeholder: "+33 6 12 34 56 78" },
+                    { label: `${t("email")} (${t("optional")})`, icon: Mail, value: patientEmail, set: setPatientEmail, type: "email", placeholder: "marie@exemple.fr" },
+                  ].map(({ label, icon: Icon, value, set, type, placeholder }) => (
+                    <div key={type} className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-[#1C1C27]/40 uppercase tracking-[0.12em]">{label}</label>
+                      <div
+                        className="wg-input relative flex items-center rounded-xl border bg-[#FAFAF8] transition-all"
+                        style={{ borderColor: "rgba(0,0,0,0.08)" }}
                       >
-                        {chatLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                      </button>
+                        <Icon className="absolute left-3.5 w-4 h-4 text-[#1C1C27]/30" />
+                        <input
+                          type={type}
+                          value={value}
+                          onChange={(e) => set(e.target.value)}
+                          placeholder={placeholder}
+                          className="w-full pl-10 pr-4 py-2.5 text-[14px] bg-transparent focus:outline-none font-medium text-[#1C1C27] placeholder-[#1C1C27]/25 rounded-xl"
+                        />
+                      </div>
                     </div>
-                    <p className="text-center text-xs text-gray-400 mt-2">Powered by MedBook AI</p>
+                  ))}
+                </div>
+
+                {bookingError && (
+                  <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-[13px] font-medium">
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
+                    {bookingError}
+                  </div>
+                )}
+
+                <button
+                  onClick={() => {
+                    if (!patientName.trim() || !patientPhone.trim()) { setBookingError(t("nameReq")); return; }
+                    setBookingError("");
+                    setStep("confirm");
+                  }}
+                  className="w-full py-3.5 rounded-xl text-white font-bold text-[14px] transition-all wg-btn-primary"
+                  style={{ backgroundColor: widgetColor, boxShadow: `0 6px 24px -4px ${pa(0.45)}` }}
+                >
+                  {t("review")}
+                </button>
+              </div>
+            )}
+
+            {/* CONFIRM */}
+            {step === "confirm" && (
+              <div className="p-5 space-y-4">
+                <div className="wg-slide">
+                  <h3 className="font-cormorant font-bold text-2xl text-[#1C1C27]">{t("confirmTitle")}</h3>
+                  <p className="text-[13px] text-[#1C1C27]/45 mt-0.5">{t("confirmSubtitle")}</p>
+                </div>
+
+                <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.05)" }}>
+                  {[
+                    { icon: Stethoscope, label: t("service"), main: selectedService?.name, sub: `${selectedService?.duration_minutes} min${selectedService?.price ? ` · ${selectedService.price} €` : ""}` },
+                    { icon: Calendar, label: t("dateTime"), main: selectedDate && format(selectedDate, "EEEE d MMMM yyyy", { locale: dfLocale }), sub: selectedSlot?.label },
+                    { icon: User, label: t("patient"), main: patientName, sub: patientPhone + (patientEmail ? ` · ${patientEmail}` : "") },
+                  ].map(({ icon: Icon, label, main, sub }, i, arr) => (
+                    <div key={label} className={`flex gap-4 p-4 ${i < arr.length - 1 ? "border-b border-[#F0EEF2]" : ""}`}>
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: pa(0.08), color: widgetColor }}
+                      >
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-[#1C1C27]/30 uppercase tracking-widest">{label}</p>
+                        <p className="text-[14px] font-bold text-[#1C1C27] mt-0.5 capitalize">{main}</p>
+                        <p className="text-[12px] text-[#1C1C27]/45 font-medium mt-0.5">{sub}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {bookingError && (
+                  <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-[13px]">
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
+                    {bookingError}
+                  </div>
+                )}
+
+                <div className="space-y-2.5">
+                  <button
+                    onClick={confirmBooking}
+                    disabled={bookingLoading}
+                    className="w-full py-3.5 rounded-xl text-white font-bold text-[14px] transition-all wg-btn-primary flex items-center justify-center gap-2 disabled:opacity-70"
+                    style={{ backgroundColor: widgetColor, boxShadow: `0 6px 24px -4px ${pa(0.45)}` }}
+                  >
+                    {bookingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                    {bookingLoading ? t("confirmingBtn") : t("confirmBtn")}
+                  </button>
+                  <button
+                    onClick={() => setStep("details")}
+                    disabled={bookingLoading}
+                    className="w-full py-3 rounded-xl text-[#1C1C27]/60 font-semibold text-[13px] hover:bg-[#F0EEF2] transition-colors bg-[#F8F7F5]"
+                  >
+                    {t("editBtn")}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* SUCCESS */}
+            {step === "success" && (
+              <div className="p-5 flex flex-col items-center text-center h-full">
+                <div className="pt-6 pb-4">
+                  <div
+                    className="relative w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-xl mx-auto mb-4"
+                    style={{ background: `linear-gradient(135deg, ${widgetColor}, ${pa(0.8)})` }}
+                  >
+                    <div className="absolute inset-0 rounded-2xl animate-ping opacity-20" style={{ backgroundColor: widgetColor }} />
+                    <CheckCircle className="w-8 h-8 relative z-10" />
+                  </div>
+                  <h3 className="font-cormorant font-bold text-3xl text-[#1C1C27]">{t("successTitle")}</h3>
+                  <p className="text-[#1C1C27]/45 text-[13px] mt-2">{t("successSubtitle")}</p>
+                </div>
+
+                <div className="w-full bg-white rounded-2xl p-4 space-y-3" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)", border: "1px solid rgba(0,0,0,0.05)" }}>
+                  {[
+                    { label: t("service"), value: selectedService?.name },
+                    { label: t("dateTime"), value: selectedDate && format(selectedDate, "d MMM yyyy", { locale: dfLocale }) },
+                    { label: t("pickTime"), value: selectedSlot?.label.split(" - ")[0] },
+                    { label: t("patient"), value: patientName },
+                  ].map(({ label, value }, i, arr) => (
+                    <div key={label} className={`flex justify-between items-center text-[13px] ${i < arr.length - 1 ? "pb-3 border-b border-[#F0EEF2]" : ""}`}>
+                      <span className="text-[#1C1C27]/40 font-medium">{label}</span>
+                      <span className="font-bold text-[#1C1C27] capitalize">{value}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <p className="text-[11px] text-[#1C1C27]/30 mt-4 mb-5 font-medium">{t("successNotes")}</p>
+
+                <button
+                  onClick={reset}
+                  className="w-full py-3.5 rounded-xl font-bold text-[14px] bg-white border border-[rgba(0,0,0,0.07)] text-[#1C1C27] hover:bg-[#F0EEF2] transition-colors"
+                >
+                  {t("bookAnother")}
+                </button>
+              </div>
+            )}
+
+            {/* CHAT */}
+            {step === "chat" && (
+              <div className="flex flex-col h-full bg-[#F8F7F5]">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {messages.map((msg) => (
+                    <div key={msg.id} className={`flex items-end gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
+                      {msg.role === "assistant" && (
+                        <div
+                          className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-white shadow-sm flex-shrink-0 mb-4"
+                          style={{ background: `linear-gradient(135deg, ${widgetColor}, ${pa(0.8)})` }}
+                        >
+                          <Bot className="w-3.5 h-3.5" />
+                        </div>
+                      )}
+                      <div className={`max-w-[82%] flex flex-col gap-1 ${msg.role === "user" ? "items-end" : "items-start"}`}>
+                        {msg.role === "user" ? (
+                          <div
+                            className="rounded-2xl rounded-br-sm px-4 py-2.5 text-[14px] leading-relaxed text-white font-medium shadow-sm"
+                            style={{
+                              background: `linear-gradient(135deg, ${widgetColor}, ${hexToRgba(widgetColor, 0.85)})`,
+                              boxShadow: `0 4px 14px -2px ${pa(0.35)}`,
+                            }}
+                          >
+                            {msg.content}
+                          </div>
+                        ) : (
+                          <div
+                            className="rounded-2xl rounded-bl-sm px-4 py-2.5 text-[14px] leading-relaxed text-[#1C1C27] bg-white shadow-sm border border-black/[0.05]"
+                          >
+                            <MarkdownMessage content={msg.content} />
+                            {msg.bookingSuccess && (
+                              <div className="mt-2.5 flex items-center gap-1.5 text-emerald-600 text-[11px] border-t border-black/[0.06] pt-2.5 font-semibold">
+                                <CheckCircle className="w-3.5 h-3.5" /> Rendez-vous confirmé
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <span className="text-[10px] text-[#1C1C27]/30 font-medium px-1">
+                          {format(msg.timestamp, widgetLocale === "fr" ? "HH:mm" : "h:mm a")}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  {chatLoading && (
+                    <div className="flex items-end gap-2.5">
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-white shadow-sm"
+                        style={{ background: `linear-gradient(135deg, ${widgetColor}, ${pa(0.8)})` }}>
+                        <Bot className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="rounded-2xl rounded-bl-md px-4 py-3 shadow-sm" style={{ backgroundColor: widgetColor }}>
+                        <div className="flex gap-1">
+                          {[0, 1, 2].map((i) => (
+                            <div key={i} className="w-1.5 h-1.5 bg-white/70 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                <div className="p-3 border-t border-black/[0.05] bg-[#F8F7F5] flex-shrink-0">
+                  <div
+                    className="wg-input flex items-end gap-2 bg-white rounded-2xl p-1.5 border transition-all shadow-sm"
+                    style={{ borderColor: "rgba(0,0,0,0.07)" }}
+                  >
+                    <textarea
+                      ref={chatInputRef as unknown as React.RefObject<HTMLTextAreaElement>}
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }}
+                      placeholder={t("typeMessage")}
+                      rows={1}
+                      className="flex-1 max-h-24 px-3 py-2 text-[14px] bg-transparent focus:outline-none resize-none font-medium text-[#1C1C27] placeholder-[#1C1C27]/30"
+                      disabled={chatLoading}
+                    />
+                    <button
+                      onClick={sendChatMessage}
+                      disabled={!chatInput.trim() || chatLoading}
+                      className="w-9 h-9 rounded-xl flex items-center justify-center text-white transition-all hover:opacity-90 disabled:opacity-30 flex-shrink-0 mb-0.5 mr-0.5 hover:scale-105 active:scale-95"
+                      style={{ backgroundColor: chatInput.trim() ? widgetColor : "rgba(0,0,0,0.15)" }}
+                    >
+                      {chatLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 ml-0.5" />}
+                    </button>
+                  </div>
+                  <div className="flex justify-center items-center gap-1 mt-1.5">
+                    <Sparkles className="w-2.5 h-2.5 text-[#1C1C27]/15" />
+                    <p className="text-[9px] font-semibold tracking-widest text-[#1C1C27]/15 uppercase">{t("poweredBy")}</p>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-            </div>
-          )}
+          </div>
         </div>
       )}
     </>
@@ -715,29 +998,26 @@ function MarkdownMessage({ content }: { content: string }) {
   return (
     <ReactMarkdown
       components={{
-        p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
-        strong: ({ children }) => <strong className="font-bold text-white">{children}</strong>,
-        em: ({ children }) => <em className="italic text-white/90">{children}</em>,
-        ul: ({ children }) => <ul className="mt-1 mb-2 space-y-1 last:mb-0">{children}</ul>,
-        ol: ({ children }) => <ol className="mt-1 mb-2 space-y-1 last:mb-0 list-none">{children}</ol>,
-        li: ({ children, ...props }) => {
-          const ordered = (props as any).ordered;
-          return (
-            <li className="flex items-start gap-2 text-sm">
-              {ordered ? null : <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-white/60 flex-shrink-0" />}
-              <span>{children}</span>
-            </li>
-          );
-        },
-        h1: ({ children }) => <p className="font-bold text-base mb-1">{children}</p>,
-        h2: ({ children }) => <p className="font-bold text-sm mb-1">{children}</p>,
-        h3: ({ children }) => <p className="font-semibold text-sm mb-1">{children}</p>,
-        hr: () => <div className="my-2 border-t border-white/20" />,
+        p: ({ children }) => <p className="mb-2.5 last:mb-0 leading-relaxed text-[#1C1C27]">{children}</p>,
+        strong: ({ children }) => <strong className="font-bold text-[#1C1C27]">{children}</strong>,
+        em: ({ children }) => <em className="italic text-[#1C1C27]/80">{children}</em>,
+        ul: ({ children }) => <ul className="mt-1.5 mb-2.5 space-y-1.5 last:mb-0">{children}</ul>,
+        ol: ({ children }) => <ol className="mt-1.5 mb-2.5 space-y-1.5 list-decimal list-inside last:mb-0">{children}</ol>,
+        li: ({ children }) => (
+          <li className="flex items-start gap-2 text-[14px] text-[#1C1C27]">
+            <span className="mt-2 w-1 h-1 rounded-full bg-[#1C1C27]/40 flex-shrink-0" />
+            <span className="leading-relaxed">{children}</span>
+          </li>
+        ),
+        h1: ({ children }) => <p className="font-bold text-[16px] mb-2 text-[#1C1C27]">{children}</p>,
+        h2: ({ children }) => <p className="font-bold text-[15px] mb-1.5 text-[#1C1C27]">{children}</p>,
+        h3: ({ children }) => <p className="font-bold text-[14px] mb-1 text-[#1C1C27]">{children}</p>,
+        hr: () => <div className="my-3 border-t border-black/10" />,
         code: ({ children }) => (
-          <code className="bg-white/20 rounded px-1 py-0.5 text-xs font-mono">{children}</code>
+          <code className="bg-black/[0.06] rounded px-1.5 py-0.5 text-[12px] font-mono text-[#1C1C27]">{children}</code>
         ),
         blockquote: ({ children }) => (
-          <blockquote className="border-l-2 border-white/40 pl-3 my-1 italic text-white/80">{children}</blockquote>
+          <blockquote className="border-l-2 border-black/20 pl-3 my-2 italic text-[#1C1C27]/70 bg-black/[0.03] py-1 pr-2 rounded-r-lg">{children}</blockquote>
         ),
       }}
     >

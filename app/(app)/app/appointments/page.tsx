@@ -2,47 +2,30 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarCheck, Filter, RefreshCw } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { CalendarCheck2, Filter, RefreshCw, Download } from "lucide-react";
 import { AppointmentTable } from "@/components/appointments/appointment-table";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { AppointmentWithRelations } from "@/types";
+import { PaginationBar } from "@/components/ui/pagination-bar";
+import { getAppointments } from "@/actions/appointments";
 import { useTranslations } from "next-intl";
+import { AppointmentCreateModal } from "@/components/appointments/appointment-create-modal";
 
-async function fetchClinicId(): Promise<string | null> {
-  const supabase = createClient() as any;
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data } = await supabase.from("users").select("clinic_id").eq("id", user.id).single();
-  return (data as { clinic_id: string } | null)?.clinic_id || null;
-}
+const PAGE_SIZE = 20;
 
-async function fetchAppointments(clinicId: string, status: string) {
-  const supabase = createClient() as any;
-  let query = supabase
-    .from("appointments")
-    .select("*, patient:patients(*), service:services(*)")
-    .eq("clinic_id", clinicId)
-    .order("start_at", { ascending: false });
-
-  if (status !== "all") query = query.eq("status", status);
-
-  const { data } = await query.limit(100);
-  return (data || []) as unknown as AppointmentWithRelations[];
-}
-
-const STATUS_COUNT_COLORS: Record<string, string> = {
-  all: "bg-slate-100 text-slate-600",
-  booked: "bg-teal-50 text-teal-700",
-  confirmed: "bg-emerald-50 text-emerald-700",
-  completed: "bg-slate-50 text-slate-600",
-  cancelled: "bg-red-50 text-red-600",
-  no_show: "bg-amber-50 text-amber-700",
+/* Dark-mode safe filter tab classes */
+const STATUS_FILTER_ACTIVE: Record<string, string> = {
+  all: "bg-primary text-primary-foreground",
+  booked: "status-booked font-semibold",
+  confirmed: "status-confirmed font-semibold",
+  completed: "status-completed font-semibold",
+  cancelled: "status-cancelled font-semibold",
+  no_show: "status-no_show font-semibold",
 };
 
 export default function AppointmentsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useState(1);
   const t = useTranslations("appointments");
 
   const statusOptions = [
@@ -54,90 +37,130 @@ export default function AppointmentsPage() {
     { value: "no_show", label: t("statusNoShow") },
   ];
 
-  const { data: clinicId } = useQuery({ queryKey: ["clinicId"], queryFn: fetchClinicId });
+  function handleStatusChange(value: string) {
+    setStatusFilter(value);
+    setPage(1);
+  }
 
-  const { data: appointments = [], isLoading, refetch, isFetching } = useQuery({
-    queryKey: ["appointments", clinicId, statusFilter],
-    queryFn: () => fetchAppointments(clinicId!, statusFilter),
-    enabled: !!clinicId,
+  const { data: result, isLoading, refetch, isFetching } = useQuery({
+    queryKey: ["appointments", statusFilter, page],
+    queryFn: () => getAppointments(page, PAGE_SIZE, statusFilter),
   });
 
+  const appointments = result?.data ?? [];
+  const total = result?.total ?? 0;
+  const totalPages = result?.totalPages ?? 1;
+
   return (
-    <div className="p-6 space-y-6 max-w-[1400px]">
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* ── BOLD HERO HEADER ─────────────────────────────────────────────────── */}
+      <div className="relative overflow-hidden bg-card border-b border-border px-4 py-8 md:px-6 md:py-12 lg:px-10 lg:py-16 fade-in-up flex-shrink-0">
+        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Header */}
-      <div className="flex items-start justify-between flex-wrap gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 rounded-xl gradient-brand flex items-center justify-center">
-              <CalendarCheck className="w-4 h-4 text-white" />
+        <div className="relative max-w-7xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <div className="inline-flex items-center gap-2 mb-2 md:mb-4">
+              <CalendarCheck2 className="w-5 h-5 text-primary" strokeWidth={2} />
+              <span className="font-semibold text-xs text-primary uppercase tracking-[0.2em]">{t("title")}</span>
             </div>
-            <h2 className="text-2xl font-bold text-slate-800 tracking-tight">{t("title")}</h2>
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground tracking-tight mb-2 md:mb-3">
+              {t("manageTrack")}
+            </h1>
           </div>
-          <p className="text-slate-500 text-sm ml-10">{t("manageTrack")}</p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isFetching}
-          className="rounded-xl border-slate-200 text-slate-600 hover:bg-teal-50 hover:border-teal-200 hover:text-teal-700 transition-all"
-        >
-          <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? "animate-spin" : ""}`} />
-          {t("refresh")}
-        </Button>
-      </div>
 
-      {/* Filter tabs */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {statusOptions.map((opt) => (
-          <button
-            key={opt.value}
-            onClick={() => setStatusFilter(opt.value)}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 border ${
-              statusFilter === opt.value
-                ? "gradient-brand text-white border-transparent shadow-md shadow-teal-200/40"
-                : "bg-white border-slate-200 text-slate-500 hover:border-teal-200 hover:text-teal-600 hover:bg-teal-50"
-            }`}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Table card */}
-      <div className="glass-card rounded-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-slate-400" />
-            <span className="font-semibold text-slate-700 text-sm">
-              {statusOptions.find(o => o.value === statusFilter)?.label}
-            </span>
-            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${STATUS_COUNT_COLORS[statusFilter]}`}>
-              {appointments.length}
-            </span>
-          </div>
-          <div className="hidden md:block">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40 h-8 rounded-xl text-xs border-slate-200 bg-slate-50">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border-slate-100">
-                {statusOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value} className="text-sm rounded-lg">
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex gap-2 w-full md:w-auto">
+            <AppointmentCreateModal onCreated={() => refetch()} />
+            <Button
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="btn-secondary flex items-center gap-2 flex-1 md:flex-none justify-center"
+            >
+              <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
+              {t("refresh")}
+            </Button>
+            <a
+              href="/api/export/appointments"
+              download
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-card text-sm font-semibold text-foreground hover:bg-accent transition-colors flex-1 md:flex-none justify-center"
+            >
+              <Download className="w-4 h-4" />
+              CSV
+            </a>
           </div>
         </div>
-        <div className="p-4">
-          <AppointmentTable
-            appointments={appointments}
-            loading={isLoading}
-            onRefresh={refetch}
-          />
+      </div>
+
+      {/* ── CONTENT BODY ──────────────────────────────────────────────────────── */}
+      <div className="p-4 md:p-6 lg:p-10 max-w-7xl mx-auto space-y-6 md:space-y-8 fade-in-up flex-1 w-full" style={{ animationDelay: "0.1s" }}>
+
+        {/* Mobile Swipe Hint */}
+        <div className="md:hidden flex items-center justify-center gap-2 text-[11px] font-bold text-muted-foreground bg-muted/30 py-1.5 rounded-xl border border-border">
+          <svg className="w-3.5 h-3.5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+          {t("swipeFiltersHint")}
+        </div>
+
+        {/* Filter tabs */}
+        <div className="flex items-center gap-2 md:gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4 md:mx-0 md:px-0">
+          <div className="flex gap-2 md:gap-3 min-w-max">
+            {statusOptions.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => handleStatusChange(opt.value)}
+                className={`px-4 py-2 md:px-5 md:py-2.5 rounded-full text-xs md:text-sm font-bold uppercase tracking-wider transition-all duration-200 border shadow-sm whitespace-nowrap ${
+                  statusFilter === opt.value
+                    ? STATUS_FILTER_ACTIVE[opt.value] || "bg-primary text-primary-foreground border-transparent"
+                    : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-accent"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Table card */}
+        <div className="card-panel">
+          <div className="card-panel-header bg-muted/20">
+            <div className="flex items-center gap-3">
+              <Filter className="w-4 h-4 text-primary" />
+              <span className="font-bold text-foreground text-[15px] uppercase tracking-wider">
+                {statusOptions.find(o => o.value === statusFilter)?.label}
+              </span>
+              <span className="text-xs font-bold px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+                {total}
+              </span>
+            </div>
+            <div className="hidden md:block">
+              <Select value={statusFilter} onValueChange={handleStatusChange}>
+                <SelectTrigger className="w-48 h-10 rounded-xl text-sm font-bold border-border bg-card shadow-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-border font-medium">
+                  {statusOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value} className="text-sm rounded-lg py-2">
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="p-0">
+            <AppointmentTable
+              appointments={appointments}
+              loading={isLoading}
+              onRefresh={refetch}
+            />
+          </div>
+          <div className="px-4">
+            <PaginationBar
+              page={page}
+              totalPages={totalPages}
+              total={total}
+              pageSize={PAGE_SIZE}
+              onPageChange={setPage}
+            />
+          </div>
         </div>
       </div>
     </div>

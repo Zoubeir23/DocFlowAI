@@ -63,10 +63,16 @@ const config: Config = {
           900: "#1e3a8a",
         },
       },
+      fontFamily: {
+        sans: ["var(--font-dm-sans)", "system-ui", "sans-serif"],
+        cormorant: ["var(--font-cormorant)", "serif"],
+        mono: ["var(--font-ibm-mono)", "monospace"],
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        xl: "calc(var(--radius) + 4px)",
       },
       keyframes: {
         "accordion-down": {
