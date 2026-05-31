@@ -14,7 +14,8 @@ import {
   Plug, Webhook, Code2, Zap, RefreshCw, Plus, Trash2, Eye, EyeOff,
   Copy, Check, Loader2, ToggleLeft, ToggleRight, AlertTriangle, Crown,
   Lock, ChevronRight, Send, RotateCcw, ExternalLink, CheckCircle2,
-  Key, Bot,
+  Key, Bot, Calendar, Bell, FileText, Users, MessageSquare, Sparkles,
+  HelpCircle, ChevronDown, ChevronUp, Stethoscope, ClipboardList,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +38,6 @@ function usePlan() {
       if (!user) return "free";
       const { data: userData } = await db.from("users").select("clinic_id, role").eq("id", user.id).maybeSingle();
       if (!userData) return "free";
-      // Le super admin a accès à toutes les fonctionnalités sans restriction de plan
       if (userData.role === "super_admin") return "enterprise";
       if (!userData.clinic_id) return "free";
       const { data: sub } = await db.from("subscriptions").select("plan").eq("clinic_id", userData.clinic_id).maybeSingle();
@@ -57,6 +57,224 @@ function CopyButton({ value }: { value: string }) {
     <button onClick={copy} className="p-1 rounded hover:bg-muted transition-colors">
       {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-muted-foreground" />}
     </button>
+  );
+}
+
+// ─── EXPLICATION MÉDECIN ───────────────────────────────────────────────────────
+
+const MEDICAL_USE_CASES = [
+  {
+    icon: Calendar,
+    color: "text-blue-600",
+    bg: "bg-blue-500/10",
+    title: "Synchroniser votre agenda",
+    description: "Chaque nouveau rendez-vous DocFlow apparaît automatiquement dans Google Calendar, Outlook ou votre agenda personnel. Fini la double saisie.",
+    integration: "Zapier / Make",
+    difficulty: "Facile",
+  },
+  {
+    icon: Bell,
+    color: "text-violet-600",
+    bg: "bg-violet-500/10",
+    title: "Alertes en temps réel",
+    description: "Recevez une notification WhatsApp ou SMS dès qu'un patient annule un rendez-vous de dernière minute ou remplit sa fiche de pré-consultation.",
+    integration: "Zapier / Make",
+    difficulty: "Facile",
+  },
+  {
+    icon: FileText,
+    color: "text-emerald-600",
+    bg: "bg-emerald-500/10",
+    title: "Alimenter votre DPI",
+    description: "Envoyez automatiquement les données de consultation (diagnostic, ordonnance) vers votre logiciel médical existant — Mediboard, Doctolib, Axisanté, etc.",
+    integration: "API REST",
+    difficulty: "Technique",
+  },
+  {
+    icon: Users,
+    color: "text-amber-600",
+    bg: "bg-amber-500/10",
+    title: "CRM & suivi patient",
+    description: "Créez automatiquement une fiche patient dans votre CRM dès la première consultation, et mettez-la à jour après chaque visite.",
+    integration: "Webhooks",
+    difficulty: "Technique",
+  },
+  {
+    icon: MessageSquare,
+    color: "text-pink-600",
+    bg: "bg-pink-500/10",
+    title: "Notifications équipe",
+    description: "Envoyez un message Slack ou Teams à votre secrétaire quand un patient arrive ou confirme son rendez-vous.",
+    integration: "Zapier / Make",
+    difficulty: "Facile",
+  },
+  {
+    icon: Sparkles,
+    color: "text-indigo-600",
+    bg: "bg-indigo-500/10",
+    title: "Assistant IA vocal",
+    description: "Posez des questions à Claude Desktop en langage naturel : \"Quels patients ai-je cet après-midi ?\", \"Crée un rendez-vous pour Fatima demain à 15h\".",
+    integration: "MCP Claude",
+    difficulty: "Facile",
+  },
+];
+
+const DIFFICULTY_COLORS: Record<string, string> = {
+  "Facile": "text-emerald-600 bg-emerald-500/10 border-emerald-500/20",
+  "Technique": "text-amber-600 bg-amber-500/10 border-amber-500/20",
+};
+
+const INTEGRATION_COLORS: Record<string, string> = {
+  "Zapier / Make": "text-amber-600 bg-amber-500/10 border-amber-500/20",
+  "API REST": "text-blue-600 bg-blue-500/10 border-blue-500/20",
+  "Webhooks": "text-violet-600 bg-violet-500/10 border-violet-500/20",
+  "MCP Claude": "text-indigo-600 bg-indigo-500/10 border-indigo-500/20",
+};
+
+function MedicalUseCasesSection() {
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-sm font-bold text-foreground">Ce que vous pouvez faire avec les intégrations</h3>
+        <p className="text-xs text-muted-foreground mt-1">
+          Les intégrations permettent à DocFlow de communiquer avec les autres outils que vous utilisez au quotidien — sans avoir besoin de coder.
+        </p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {MEDICAL_USE_CASES.map((useCase) => (
+          <div key={useCase.title} className="p-4 bg-card border border-border rounded-2xl space-y-3">
+            <div className="flex items-start gap-3">
+              <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0", useCase.bg)}>
+                <useCase.icon className={cn("w-4 h-4", useCase.color)} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-foreground">{useCase.title}</p>
+                <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">{useCase.description}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full border", INTEGRATION_COLORS[useCase.integration])}>
+                {useCase.integration}
+              </span>
+              <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full border", DIFFICULTY_COLORS[useCase.difficulty])}>
+                {useCase.difficulty}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── FAQ ──────────────────────────────────────────────────────────────────────
+
+const FAQ_ITEMS = [
+  {
+    question: "C'est quoi un webhook ?",
+    answer: "Un webhook, c'est comme un \"signal d'alerte\" que DocFlow envoie à un autre logiciel dès qu'il se passe quelque chose (nouveau rendez-vous, annulation, etc.). L'autre logiciel reçoit ce signal et peut agir en conséquence — par exemple, envoyer un SMS à votre secrétaire.",
+  },
+  {
+    question: "C'est quoi une clé API ?",
+    answer: "Une clé API, c'est un mot de passe spécial qui permet à un autre logiciel de se connecter à DocFlow en votre nom. Comme une carte d'accès : seul le logiciel qui possède la clé peut lire ou écrire dans vos données.",
+  },
+  {
+    question: "C'est quoi MCP / Claude Desktop ?",
+    answer: "MCP (Model Context Protocol) est une technologie qui connecte DocFlow à Claude Desktop, l'assistant IA d'Anthropic. Une fois configuré, vous pouvez parler à Claude en langage naturel et il accède directement à vos données DocFlow pour vous répondre.",
+  },
+  {
+    question: "Je ne suis pas informaticien. Par où commencer ?",
+    answer: "Commencez par l'intégration MCP avec Claude Desktop — c'est la plus simple, aucun code requis. Ensuite, si vous voulez automatiser des tâches (agenda, notifications), utilisez Zapier ou Make avec les webhooks. Ces deux plateformes proposent des tutoriels visuels sans code.",
+  },
+  {
+    question: "Est-ce que mes données patients sont sécurisées ?",
+    answer: "Oui. Chaque webhook est signé avec une clé secrète unique, et chaque clé API peut être révoquée à tout moment. Toutes les communications passent par HTTPS. Vous contrôlez exactement quelles données sont partagées et avec qui.",
+  },
+];
+
+function FaqSection() {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <HelpCircle className="w-4 h-4 text-muted-foreground" />
+        <h3 className="text-sm font-bold text-foreground">Questions fréquentes</h3>
+      </div>
+      <div className="space-y-2">
+        {FAQ_ITEMS.map((item, index) => (
+          <div key={index} className="border border-border rounded-2xl overflow-hidden">
+            <button
+              onClick={() => setOpenIndex(openIndex === index ? null : index)}
+              className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-muted/30 transition-colors"
+            >
+              <p className="text-xs font-semibold text-foreground">{item.question}</p>
+              {openIndex === index
+                ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />}
+            </button>
+            {openIndex === index && (
+              <div className="px-4 pb-4">
+                <p className="text-[11px] text-muted-foreground leading-relaxed">{item.answer}</p>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── GUIDE DÉMARRAGE RAPIDE ───────────────────────────────────────────────────
+
+function QuickStartGuideSection() {
+  return (
+    <div className="p-5 bg-primary/5 border border-primary/20 rounded-2xl space-y-4">
+      <div className="flex items-center gap-2">
+        <Stethoscope className="w-4 h-4 text-primary" />
+        <p className="text-sm font-bold text-foreground">Guide de démarrage — Pour les médecins non-techniciens</p>
+      </div>
+      <div className="space-y-3">
+        {[
+          {
+            step: "1",
+            title: "Configurez Claude Desktop (5 min)",
+            detail: "Dans la section MCP ci-dessous, générez une clé API, copiez la configuration JSON, et collez-la dans Claude Desktop. Vous pourrez ensuite parler à votre cabinet en langage naturel.",
+            tag: "Recommandé en premier",
+            tagColor: "text-emerald-600 bg-emerald-500/10 border-emerald-500/20",
+          },
+          {
+            step: "2",
+            title: "Créez un compte Zapier gratuit",
+            detail: "Zapier permet de connecter DocFlow à des centaines d'applications (Google Calendar, Slack, Gmail...) sans une seule ligne de code. Créez un webhook DocFlow, puis utilisez-le comme déclencheur dans Zapier.",
+            tag: "Sans code",
+            tagColor: "text-blue-600 bg-blue-500/10 border-blue-500/20",
+          },
+          {
+            step: "3",
+            title: "Intégrez votre logiciel médical",
+            detail: "Si vous utilisez un DPI (Mediboard, Axisanté, etc.), demandez à votre prestataire informatique de connecter l'API DocFlow. Transmettez-lui la documentation ci-dessous et votre clé API.",
+            tag: "Nécessite un technicien",
+            tagColor: "text-amber-600 bg-amber-500/10 border-amber-500/20",
+          },
+        ].map((item) => (
+          <div key={item.step} className="flex items-start gap-3">
+            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 border border-primary/20 text-primary font-bold text-xs flex items-center justify-center mt-0.5">
+              {item.step}
+            </span>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-xs font-semibold text-foreground">{item.title}</p>
+                <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full border", item.tagColor)}>
+                  {item.tag}
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">{item.detail}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -143,11 +361,22 @@ function WebhooksSection() {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-bold text-foreground">Webhooks</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">Notifications HTTP en temps réel vers vos systèmes</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            DocFlow envoie un signal automatique à l&apos;URL de votre choix à chaque événement (rendez-vous créé, annulé, etc.).
+            Utilisez ces signaux avec <strong>Zapier</strong> ou <strong>Make</strong> pour déclencher n&apos;importe quelle action.
+          </p>
         </div>
-        <Button size="sm" onClick={() => setShowCreateForm(true)} className="btn-primary rounded-xl gap-1.5 text-xs">
+        <Button size="sm" onClick={() => setShowCreateForm(true)} className="btn-primary rounded-xl gap-1.5 text-xs flex-shrink-0">
           <Plus className="w-3.5 h-3.5" /> Nouveau
         </Button>
+      </div>
+
+      {/* Reminder box for non-technical users */}
+      <div className="flex items-start gap-2 p-3 bg-muted/40 border border-border rounded-xl">
+        <ClipboardList className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          <strong className="text-foreground">Comment ça marche :</strong> Créez un webhook ici, copiez son URL, puis collez-la dans Zapier (déclencheur &quot;Catch Hook&quot;) ou Make (déclencheur &quot;Custom Webhook&quot;). DocFlow enverra automatiquement les données à chaque événement sélectionné.
+        </p>
       </div>
 
       {showCreateForm && (
@@ -156,15 +385,16 @@ function WebhooksSection() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold">Nom</Label>
-              <Input placeholder="Ex : CRM Salesforce" value={newName} onChange={(e) => setNewName(e.target.value)} className="rounded-xl text-sm" />
+              <Input placeholder="Ex : Sync Google Calendar" value={newName} onChange={(e) => setNewName(e.target.value)} className="rounded-xl text-sm" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">URL (HTTPS requis)</Label>
-              <Input placeholder="https://votre-serveur.com/webhook" value={newUrl} onChange={(e) => setNewUrl(e.target.value)} className="rounded-xl text-sm" />
+              <Label className="text-xs font-semibold">URL de destination (HTTPS requis)</Label>
+              <Input placeholder="https://hooks.zapier.com/hooks/catch/..." value={newUrl} onChange={(e) => setNewUrl(e.target.value)} className="rounded-xl text-sm" />
+              <p className="text-[10px] text-muted-foreground">Copiez cette URL depuis Zapier ou Make</p>
             </div>
           </div>
           <div className="space-y-2">
-            <Label className="text-xs font-semibold">Événements</Label>
+            <Label className="text-xs font-semibold">Événements à surveiller</Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {WEBHOOK_EVENTS.map((ev) => (
                 <button
@@ -202,6 +432,7 @@ function WebhooksSection() {
         <div className="flex flex-col items-center gap-2 py-8 text-center">
           <Webhook className="w-8 h-8 text-muted-foreground/40" />
           <p className="text-sm text-muted-foreground">Aucun webhook configuré</p>
+          <p className="text-xs text-muted-foreground max-w-xs">Créez votre premier webhook pour commencer à connecter DocFlow à vos outils.</p>
         </div>
       )}
 
@@ -231,7 +462,7 @@ function WebhooksSection() {
                     {hook.last_status_code}
                   </span>
                 )}
-                <button onClick={() => handleToggle(hook)} disabled={isPending} className="text-muted-foreground hover:text-foreground transition-colors">
+                <button onClick={() => handleToggle(hook)} disabled={isPending} className="text-muted-foreground hover:text-foreground transition-colors" title={hook.is_active ? "Désactiver" : "Activer"}>
                   {hook.is_active
                     ? <ToggleRight className="w-5 h-5 text-emerald-500" />
                     : <ToggleLeft className="w-5 h-5" />}
@@ -239,18 +470,17 @@ function WebhooksSection() {
                 <button
                   onClick={() => handleTest(hook.id)}
                   disabled={isPending || testingId === hook.id}
-                  title="Envoyer un payload test"
+                  title="Envoyer un payload de test pour vérifier que la connexion fonctionne"
                   className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                 >
                   {testingId === hook.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                 </button>
-                <button onClick={() => handleDelete(hook.id)} disabled={isPending} className="p-1 rounded hover:bg-destructive/10 transition-colors text-muted-foreground hover:text-destructive">
+                <button onClick={() => handleDelete(hook.id)} disabled={isPending} className="p-1 rounded hover:bg-destructive/10 transition-colors text-muted-foreground hover:text-destructive" title="Supprimer ce webhook">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
 
-            {/* Events badges + secret */}
             <div className="px-4 pb-4 space-y-3">
               <div className="flex flex-wrap gap-1.5">
                 {hook.events.map((ev) => (
@@ -260,18 +490,17 @@ function WebhooksSection() {
                 ))}
               </div>
 
-              {/* Secret reveal */}
               {revealedSecrets[hook.id] ? (
                 <div className="flex items-center gap-2 p-2 bg-amber-500/8 border border-amber-500/20 rounded-xl">
                   <p className="text-[11px] font-mono text-amber-700 dark:text-amber-400 flex-1 truncate">{revealedSecrets[hook.id]}</p>
                   <CopyButton value={revealedSecrets[hook.id]} />
-                  <button onClick={() => setRevealedSecrets((prev) => { const n = { ...prev }; delete n[hook.id]; return n; })} className="p-1 rounded hover:bg-muted transition-colors">
+                  <button onClick={() => setRevealedSecrets((prev) => { const next = { ...prev }; delete next[hook.id]; return next; })} className="p-1 rounded hover:bg-muted transition-colors">
                     <EyeOff className="w-3.5 h-3.5 text-muted-foreground" />
                   </button>
                 </div>
               ) : (
-                <button onClick={() => handleRegenSecret(hook.id)} disabled={isPending} className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors">
-                  <RotateCcw className="w-3 h-3" /> Régénérer le secret
+                <button onClick={() => handleRegenSecret(hook.id)} disabled={isPending} className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors" title="Régénérer le secret de sécurité de ce webhook">
+                  <RotateCcw className="w-3 h-3" /> Régénérer le secret de sécurité
                 </button>
               )}
 
@@ -287,8 +516,10 @@ function WebhooksSection() {
 
       {/* Signature verification doc */}
       <div className="p-4 bg-muted/40 border border-border rounded-2xl space-y-2">
-        <p className="text-xs font-bold text-foreground">Vérification de signature</p>
-        <p className="text-[11px] text-muted-foreground">Chaque requête contient un header <code className="font-mono bg-muted px-1 py-0.5 rounded">X-DocFlow-Signature: sha256=&lt;hmac&gt;</code>. Vérifiez-le avec votre secret pour authentifier les payloads.</p>
+        <p className="text-xs font-bold text-foreground">Vérification de signature (pour développeurs)</p>
+        <p className="text-[11px] text-muted-foreground">
+          Pour sécuriser votre webhook côté serveur, vérifiez que chaque requête vient bien de DocFlow en validant le header <code className="font-mono bg-muted px-1 py-0.5 rounded">X-DocFlow-Signature: sha256=&lt;hmac&gt;</code> avec votre secret.
+        </p>
         <pre className="text-[10px] font-mono text-muted-foreground bg-muted p-3 rounded-xl overflow-auto">{`const crypto = require('crypto');
 function verify(secret, payload, signature) {
   const expected = 'sha256=' + crypto
@@ -347,14 +578,24 @@ function ApiKeysSection({ onKeyGenerated }: { onKeyGenerated?: (rawKey: string) 
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-bold text-foreground">Clés API</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">Authentifiez vos appels à l&apos;API REST DocFlow</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Une clé API est un mot de passe unique qui permet à un logiciel externe de se connecter à DocFlow en votre nom.
+            Créez une clé par logiciel connecté — si vous suspectez une fuite, révoquez-la immédiatement.
+          </p>
         </div>
-        <Button size="sm" onClick={() => setShowCreateForm(true)} className="btn-primary rounded-xl gap-1.5 text-xs">
+        <Button size="sm" onClick={() => setShowCreateForm(true)} className="btn-primary rounded-xl gap-1.5 text-xs flex-shrink-0">
           <Plus className="w-3.5 h-3.5" /> Générer
         </Button>
       </div>
 
-      {/* New key reveal banner */}
+      {/* Security notice */}
+      <div className="flex items-start gap-2 p-3 bg-amber-500/8 border border-amber-500/20 rounded-xl">
+        <AlertTriangle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
+        <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed">
+          <strong>Important :</strong> Une clé API n&apos;est affichée qu&apos;une seule fois à sa création. Copiez-la immédiatement et conservez-la dans un endroit sûr. Si vous la perdez, supprimez-la et créez-en une nouvelle.
+        </p>
+      </div>
+
       {revealedKey && (
         <div className="p-4 bg-amber-500/8 border border-amber-500/30 rounded-2xl space-y-2">
           <p className="text-xs font-bold text-amber-700 dark:text-amber-400">Copiez cette clé maintenant — elle ne sera plus affichée.</p>
@@ -372,9 +613,9 @@ function ApiKeysSection({ onKeyGenerated }: { onKeyGenerated?: (rawKey: string) 
         <div className="p-4 bg-card border border-border rounded-2xl space-y-3">
           <p className="text-sm font-semibold text-foreground">Nouvelle clé API</p>
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">Nom (pour identification)</Label>
+            <Label className="text-xs font-semibold">Nom (pour vous rappeler à quoi elle sert)</Label>
             <Input
-              placeholder="Ex : Zapier Production"
+              placeholder="Ex : Connexion Mediboard, Zapier Production"
               value={newKeyName}
               onChange={(e) => setNewKeyName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleCreate()}
@@ -395,6 +636,7 @@ function ApiKeysSection({ onKeyGenerated }: { onKeyGenerated?: (rawKey: string) 
         <div className="flex flex-col items-center gap-2 py-8 text-center">
           <Key className="w-8 h-8 text-muted-foreground/40" />
           <p className="text-sm text-muted-foreground">Aucune clé API générée</p>
+          <p className="text-xs text-muted-foreground max-w-xs">Générez une clé pour connecter DocFlow à un logiciel médical ou à l&apos;assistant MCP.</p>
         </div>
       )}
 
@@ -405,16 +647,16 @@ function ApiKeysSection({ onKeyGenerated }: { onKeyGenerated?: (rawKey: string) 
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-foreground">{k.name}</p>
               <div className="flex items-center gap-3 mt-0.5">
-                <code className="text-[10px] font-mono text-muted-foreground">{k.key_prefix}</code>
+                <code className="text-[10px] font-mono text-muted-foreground">{k.key_prefix}••••••••</code>
                 {k.last_used_at && (
                   <span className="text-[10px] text-muted-foreground">
-                    Utilisée le {format(new Date(k.last_used_at), "d MMM yyyy", { locale: fr })}
+                    Dernière utilisation : {format(new Date(k.last_used_at), "d MMM yyyy", { locale: fr })}
                   </span>
                 )}
               </div>
             </div>
             {k.is_active && (
-              <Button variant="outline" size="sm" onClick={() => handleRevoke(k.id)} disabled={isPending} className="rounded-xl text-xs text-destructive border-destructive/20 hover:bg-destructive/10 flex-shrink-0 gap-1">
+              <Button variant="outline" size="sm" onClick={() => handleRevoke(k.id)} disabled={isPending} className="rounded-xl text-xs text-destructive border-destructive/20 hover:bg-destructive/10 flex-shrink-0 gap-1" title="Révoquer cette clé — elle ne fonctionnera plus immédiatement">
                 <Trash2 className="w-3 h-3" /> Révoquer
               </Button>
             )}
@@ -424,8 +666,11 @@ function ApiKeysSection({ onKeyGenerated }: { onKeyGenerated?: (rawKey: string) 
 
       {/* API reference */}
       <div className="p-4 bg-muted/40 border border-border rounded-2xl space-y-2">
-        <p className="text-xs font-bold text-foreground">Référence API</p>
-        <p className="text-[11px] text-muted-foreground">Authentifiez vos requêtes avec le header <code className="font-mono bg-muted px-1 py-0.5 rounded">Authorization: Bearer dfk_...</code></p>
+        <p className="text-xs font-bold text-foreground">Référence API (pour développeurs)</p>
+        <p className="text-[11px] text-muted-foreground">
+          Transmettez votre clé à votre prestataire informatique pour qu&apos;il intègre DocFlow à votre DPI.
+          L&apos;authentification se fait via le header <code className="font-mono bg-muted px-1 py-0.5 rounded">Authorization: Bearer dfk_...</code>
+        </p>
         <div className="space-y-1.5">
           {[
             { method: "GET", path: "/api/v1/appointments", desc: "Lister les rendez-vous" },
@@ -451,12 +696,12 @@ function ApiKeysSection({ onKeyGenerated }: { onKeyGenerated?: (rawKey: string) 
 // ─── MCP SECTION ──────────────────────────────────────────────────────────────
 
 const MCP_TOOLS = [
-  { name: "get_today_appointments", desc: "Rendez-vous du jour" },
-  { name: "list_appointments", desc: "Lister les rendez-vous (+ filtre statut)" },
-  { name: "list_patients", desc: "Lister / rechercher les patients" },
-  { name: "get_dashboard_stats", desc: "Statistiques du cabinet" },
-  { name: "create_appointment", desc: "Créer un rendez-vous" },
-  { name: "list_services", desc: "Lister les services actifs" },
+  { name: "get_today_appointments", desc: "Rendez-vous du jour", example: "\"Quels patients ai-je cet après-midi ?\"" },
+  { name: "list_appointments", desc: "Lister les rendez-vous (+ filtre statut)", example: "\"Mes rendez-vous annulés cette semaine\"" },
+  { name: "list_patients", desc: "Lister / rechercher les patients", example: "\"Trouve la fiche de Mohamed Diallo\"" },
+  { name: "get_dashboard_stats", desc: "Statistiques du cabinet", example: "\"Combien de consultations ce mois ?\"" },
+  { name: "create_appointment", desc: "Créer un rendez-vous", example: "\"Prends un RDV pour Fatima demain à 14h\"" },
+  { name: "list_services", desc: "Lister les services actifs", example: "\"Quels services propose mon cabinet ?\"" },
 ];
 
 const OS_CONFIG_PATHS = [
@@ -496,7 +741,7 @@ function McpSection({ lastRawKey }: { lastRawKey: string | null }) {
       <div className="card-panel-header">
         <div className="flex items-center gap-2">
           <Bot className="w-4 h-4 text-emerald-600" />
-          <h3 className="font-bold text-foreground">MCP — Intégration Claude Desktop</h3>
+          <h3 className="font-bold text-foreground">Assistant IA — Claude Desktop</h3>
         </div>
         <span className="text-xs font-bold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
           Gratuit
@@ -504,59 +749,93 @@ function McpSection({ lastRawKey }: { lastRawKey: string | null }) {
       </div>
 
       <div className="p-5 space-y-6">
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          Connectez DocFlow à <strong className="text-foreground">Claude Desktop</strong> via le protocole MCP (Model Context Protocol).
-          Posez des questions en langage naturel : <em>&quot;Quels sont mes rendez-vous de demain ?&quot;</em>,{" "}
-          <em>&quot;Crée un rendez-vous pour Mohamed demain à 10h&quot;</em>.
-        </p>
 
-        {/* Outils disponibles */}
+        {/* Plain language intro */}
+        <div className="p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl space-y-2">
+          <p className="text-xs font-bold text-foreground">En quoi ça consiste ?</p>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Une fois configuré, vous ouvrez <strong className="text-foreground">Claude Desktop</strong> sur votre ordinateur et vous lui parlez comme à un assistant.
+            Claude a accès à votre cabinet DocFlow en temps réel et peut répondre à vos questions ou effectuer des actions — le tout en langage naturel, sans interface à apprendre.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
+            {[
+              { quote: "\"Qui est mon prochain patient ?\"", response: "Dr, votre prochain RDV est M. Alioune Sall à 14h30 pour une consultation générale." },
+              { quote: "\"Annule le RDV de demain matin\"", response: "J'ai annulé le rendez-vous de Mme Traoré prévu demain à 9h." },
+              { quote: "\"Combien de patients cette semaine ?\"", response: "Vous avez eu 23 consultations cette semaine, dont 3 annulées." },
+            ].map((item) => (
+              <div key={item.quote} className="p-2.5 bg-muted/40 rounded-xl border border-border space-y-1.5">
+                <p className="text-[10px] font-semibold text-primary">{item.quote}</p>
+                <p className="text-[10px] text-muted-foreground italic leading-relaxed">{item.response}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Available tools */}
         <div className="space-y-2">
-          <p className="text-xs font-bold text-foreground uppercase tracking-wider">Outils disponibles</p>
+          <p className="text-xs font-bold text-foreground uppercase tracking-wider">Ce que Claude peut faire avec votre cabinet</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {MCP_TOOLS.map((tool) => (
-              <div key={tool.name} className="flex items-center gap-2 p-2.5 bg-muted/40 rounded-xl border border-border">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
+              <div key={tool.name} className="flex items-start gap-2 p-2.5 bg-muted/40 rounded-xl border border-border">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0 mt-1.5" />
                 <div className="min-w-0">
-                  <p className="text-xs font-mono font-semibold text-foreground truncate">{tool.name}</p>
-                  <p className="text-[10px] text-muted-foreground">{tool.desc}</p>
+                  <p className="text-xs font-semibold text-foreground">{tool.desc}</p>
+                  <p className="text-[10px] text-muted-foreground italic mt-0.5">{tool.example}</p>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Étapes */}
+        {/* Steps */}
         <div className="space-y-2">
-          <p className="text-xs font-bold text-foreground uppercase tracking-wider">Comment configurer</p>
+          <p className="text-xs font-bold text-foreground uppercase tracking-wider">Configuration en 4 étapes (5 minutes)</p>
           <ol className="space-y-2">
             {[
-              { label: "Générez une clé API", detail: isKeyReady ? "Clé prête — copiez la config ci-dessous" : "Dans la section \"Clés API\" (plan Enterprise) ou utilisez votre clé existante" },
-              { label: "Ouvrez le fichier de config Claude Desktop", detail: "Claude Desktop → Settings → Developer → Edit Config" },
-              { label: "Collez la config JSON ci-dessous", detail: "Remplacez tout le contenu ou fusionnez avec l'existant" },
-              { label: "Redémarrez Claude Desktop", detail: "L'outil \"docflow\" apparaît dans la barre d'outils de Claude" },
+              {
+                label: "Téléchargez Claude Desktop",
+                detail: "Disponible gratuitement sur claude.ai/download pour Mac et Windows.",
+                link: null,
+              },
+              {
+                label: "Générez une clé API DocFlow",
+                detail: isKeyReady
+                  ? "Clé prête — la configuration ci-dessous est déjà remplie avec votre clé."
+                  : "Dans la section \"Clés API\" ci-dessus (plan Entreprise), cliquez \"Générer\" et donnez-lui un nom. Revenez ici — la config se met à jour automatiquement.",
+                link: null,
+              },
+              {
+                label: "Ouvrez le fichier de configuration Claude Desktop",
+                detail: "Dans Claude Desktop : menu Fichier → Paramètres → Développeur → Modifier la config. Ou naviguez directement au chemin indiqué ci-dessous selon votre système.",
+                link: null,
+              },
+              {
+                label: "Collez la configuration JSON et redémarrez",
+                detail: "Copiez le bloc JSON ci-dessous, collez-le dans le fichier, sauvegardez, puis redémarrez Claude Desktop. L'outil \"docflow\" apparaît dans la barre d'outils.",
+                link: null,
+              },
             ].map((step, i) => (
               <li key={i} className="flex items-start gap-3">
                 <span className={cn(
                   "flex-shrink-0 w-5 h-5 rounded-full font-bold text-[10px] flex items-center justify-center mt-0.5 border",
-                  i === 0 && isKeyReady
+                  i === 1 && isKeyReady
                     ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600"
                     : "bg-primary/10 border-primary/20 text-primary"
                 )}>
-                  {i === 0 && isKeyReady ? <Check className="w-3 h-3" /> : i + 1}
+                  {i === 1 && isKeyReady ? <Check className="w-3 h-3" /> : i + 1}
                 </span>
                 <div>
                   <p className="text-xs font-semibold text-foreground">{step.label}</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{step.detail}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{step.detail}</p>
                 </div>
               </li>
             ))}
           </ol>
         </div>
 
-        {/* Chemins de fichier par OS */}
+        {/* OS paths */}
         <div className="space-y-2">
-          <p className="text-xs font-bold text-foreground uppercase tracking-wider">Emplacement du fichier de config</p>
+          <p className="text-xs font-bold text-foreground uppercase tracking-wider">Emplacement du fichier de configuration</p>
           <div className="space-y-1.5">
             {OS_CONFIG_PATHS.map(({ os, path }) => (
               <div key={os} className="flex items-center justify-between gap-3 px-3 py-2 bg-muted/40 rounded-xl border border-border">
@@ -564,7 +843,7 @@ function McpSection({ lastRawKey }: { lastRawKey: string | null }) {
                   <span className="text-[10px] font-bold text-muted-foreground w-14">{os}</span>
                   <code className="text-[10px] font-mono text-foreground">{path}</code>
                 </div>
-                <button onClick={() => copy(path, `path-${os}`)} className="p-1 rounded hover:bg-muted transition-colors flex-shrink-0">
+                <button onClick={() => copy(path, `path-${os}`)} className="p-1 rounded hover:bg-muted transition-colors flex-shrink-0" title="Copier le chemin">
                   {copiedKey === `path-${os}` ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-muted-foreground" />}
                 </button>
               </div>
@@ -577,11 +856,11 @@ function McpSection({ lastRawKey }: { lastRawKey: string | null }) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-bold text-foreground uppercase tracking-wider">
-                Config à coller <span className="font-normal normal-case tracking-normal text-muted-foreground">(claude_desktop_config.json)</span>
+                Configuration à coller <span className="font-normal normal-case tracking-normal text-muted-foreground">(claude_desktop_config.json)</span>
               </p>
               {isKeyReady && (
                 <p className="text-[11px] text-emerald-600 font-semibold mt-0.5 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> Clé API incluse — prête à coller
+                  <CheckCircle2 className="w-3 h-3" /> Votre clé API est incluse — prête à coller
                 </p>
               )}
             </div>
@@ -606,7 +885,7 @@ function McpSection({ lastRawKey }: { lastRawKey: string | null }) {
           {!isKeyReady && (
             <p className="flex items-center gap-1.5 text-xs text-amber-600">
               <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-              Générez une clé API, puis revenez ici — la config se met à jour automatiquement avec votre vraie clé.
+              Générez une clé API dans la section ci-dessus, puis revenez ici — la configuration se met à jour automatiquement avec votre vraie clé.
             </p>
           )}
         </div>
@@ -620,6 +899,7 @@ function McpSection({ lastRawKey }: { lastRawKey: string | null }) {
           <button
             onClick={() => copy(`${appUrl}/api/mcp`, "url")}
             className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            title="Copier l'URL"
           >
             {copiedKey === "url" ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
@@ -647,6 +927,7 @@ export default function IntegrationsPage() {
 
   return (
     <div className="page-container max-w-4xl space-y-8">
+
       {/* Header */}
       <div className="section-header">
         <div className="icon-container">
@@ -654,7 +935,7 @@ export default function IntegrationsPage() {
         </div>
         <div className="flex-1">
           <h2 className="section-title">Intégrations</h2>
-          <p className="section-subtitle">Connectez DocFlow à vos outils via Webhooks et API REST</p>
+          <p className="section-subtitle">Connectez DocFlow à vos outils — agenda, logiciel médical, assistant IA et automatisations</p>
         </div>
         {isEnterprise && (
           <span className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 rounded-xl">
@@ -663,13 +944,14 @@ export default function IntegrationsPage() {
         )}
       </div>
 
+      {/* Plan lock banner */}
       {!isEnterprise && (
         <div className="flex items-center justify-between gap-4 px-5 py-4 bg-muted/50 border border-border rounded-2xl">
           <div className="flex items-center gap-3">
             <Lock className="w-5 h-5 text-amber-500 flex-shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-foreground">Intégrations — Plan Entreprise</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Webhooks temps réel, API REST, clés d&apos;accès</p>
+              <p className="text-sm font-semibold text-foreground">Webhooks et API REST — Plan Entreprise</p>
+              <p className="text-xs text-muted-foreground mt-0.5">L&apos;assistant IA (MCP) est disponible sur tous les plans gratuitement.</p>
             </div>
           </div>
           <Link href="/app/billing" className="flex-shrink-0 flex items-center gap-1 text-xs font-bold text-primary hover:underline">
@@ -678,15 +960,21 @@ export default function IntegrationsPage() {
         </div>
       )}
 
-      {/* Available integrations overview */}
+      {/* Use cases grid */}
+      <MedicalUseCasesSection />
+
+      {/* Quick start guide */}
+      <QuickStartGuideSection />
+
+      {/* Integration overview */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { icon: Webhook, label: "Webhooks", desc: "Événements temps réel", color: "text-violet-600", bg: "bg-violet-500/10" },
-          { icon: Code2, label: "API REST", desc: "Accès complet", color: "text-blue-600", bg: "bg-blue-500/10" },
-          { icon: Zap, label: "Zapier / Make", desc: "Via Webhooks", color: "text-amber-600", bg: "bg-amber-500/10" },
-          { icon: RefreshCw, label: "DPI / EHR", desc: "Via API REST", color: "text-emerald-600", bg: "bg-emerald-500/10" },
+          { icon: Webhook, label: "Webhooks", desc: "Signaux automatiques à chaque événement", color: "text-violet-600", bg: "bg-violet-500/10" },
+          { icon: Code2, label: "API REST", desc: "Connexion à votre DPI / logiciel médical", color: "text-blue-600", bg: "bg-blue-500/10" },
+          { icon: Zap, label: "Zapier / Make", desc: "Automatisations sans code", color: "text-amber-600", bg: "bg-amber-500/10" },
+          { icon: Bot, label: "Claude Desktop", desc: "Assistant IA en langage naturel", color: "text-emerald-600", bg: "bg-emerald-500/10" },
         ].map((item) => (
-          <div key={item.label} className={cn("flex flex-col items-center gap-2 p-4 rounded-2xl border border-border text-center", isEnterprise ? "bg-card" : "bg-muted/30 opacity-60")}>
+          <div key={item.label} className={cn("flex flex-col items-center gap-2 p-4 rounded-2xl border border-border text-center", isEnterprise || item.label === "Claude Desktop" ? "bg-card" : "bg-muted/30 opacity-60")}>
             <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", item.bg)}>
               <item.icon className={cn("w-5 h-5", item.color)} strokeWidth={1.8} />
             </div>
@@ -694,7 +982,7 @@ export default function IntegrationsPage() {
               <p className="text-xs font-bold text-foreground">{item.label}</p>
               <p className="text-[10px] text-muted-foreground">{item.desc}</p>
             </div>
-            {isEnterprise && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
+            {(isEnterprise || item.label === "Claude Desktop") && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
           </div>
         ))}
       </div>
@@ -707,10 +995,13 @@ export default function IntegrationsPage() {
               <Zap className="w-5 h-5 text-amber-600" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-bold text-foreground">Zapier & Make</p>
+              <p className="text-sm font-bold text-foreground">Zapier & Make — Automatisations sans code</p>
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                Créez un webhook DocFlow, puis utilisez l&apos;URL comme trigger dans Zapier (<strong>Catch Hook</strong>) ou Make (<strong>Custom Webhook</strong>).
-                Tous les événements (rendez-vous créé, annulé, etc.) arrivent automatiquement dans votre Zap.
+                Ces plateformes permettent de connecter DocFlow à des centaines d&apos;applications sans écrire une seule ligne de code.
+                <strong className="text-foreground"> Exemple :</strong> à chaque nouveau rendez-vous DocFlow → ajouter automatiquement une entrée dans Google Calendar, envoyer un SMS au patient, ou créer une tâche dans Notion.
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                <strong className="text-foreground">Comment faire :</strong> Créez un webhook DocFlow ci-dessous → copiez son URL → dans Zapier choisissez &quot;Webhook → Catch Hook&quot; et collez l&apos;URL.
               </p>
               <div className="flex gap-2 mt-2">
                 <a href="https://zapier.com/apps/webhook/integrations" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs font-bold text-amber-600 hover:underline">
@@ -750,12 +1041,14 @@ export default function IntegrationsPage() {
               </div>
             </div>
           </div>
-
         </>
       )}
 
       {/* MCP — visible pour tous les plans */}
       <McpSection lastRawKey={lastRawKey} />
+
+      {/* FAQ */}
+      <FaqSection />
     </div>
   );
 }
