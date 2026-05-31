@@ -49,3 +49,6 @@ coverage/
 typechain-types/
 feature.md
 .env.production
+
+# Sentry Config File
+.env.sentry-build-plugin
