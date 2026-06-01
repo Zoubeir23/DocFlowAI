@@ -112,7 +112,7 @@ const nextConfig: NextConfig = {
 
 const sentryConfig = {
   org: "isi-of",
-  project: "javascript-nextjs",
+  project: "docflowia",
   silent: !process.env.CI,
   widenClientFileUpload: true,
   tunnelRoute: "/monitoring",
