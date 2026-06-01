@@ -122,7 +122,7 @@ export default function PatientsPage() {
             className="rounded-xl font-medium"
           >
             <FileDown className="w-4 h-4 mr-2" />
-            Importer un Carnet
+            {t("importCarnet")}
           </Button>
           <Button
             onClick={() => setShowAddModal(true)}
