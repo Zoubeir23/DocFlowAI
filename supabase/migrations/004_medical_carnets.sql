@@ -22,7 +22,7 @@ DECLARE
 BEGIN
   FOR r IN SELECT id FROM patients WHERE carnet_id IS NULL LOOP
     -- Generate a random code like CAR-1A2B3C4D
-    new_code := 'CAR-' || upper(substr(md5(random()::text), 1, 8));
+    new_code := 'CAR-' || upper(substr(replace(uuid_generate_v4()::text, '-', ''), 1, 16));
     
     -- Ensure uniqueness (loop until successful insertion in case of collision, though very rare)
     BEGIN
