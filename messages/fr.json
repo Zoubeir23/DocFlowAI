@@ -30,7 +30,8 @@
     "planRenewBefore": "Renouvelez avant expiration",
     "subscriptionRenew": "Abonnement à renouveler",
     "waitlist": "Liste d'attente",
-    "diagnostics": "Diagnostics"
+    "diagnostics": "Diagnostics",
+    "signIn": "Se connecter"
   },
   "topbar": {
     "searchPlaceholder": "Rechercher patients, rendez-vous...",
