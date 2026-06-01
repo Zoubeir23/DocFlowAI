@@ -53,6 +53,7 @@ export async function createDiagnosticDraft(
     .from("diagnostics")
     .insert({
       clinic_id: clinicId,
+      patient_id: profile.patient_id ?? null,
       patient_full_name: profile.patient_full_name,
       patient_age_years: profile.patient_age_years,
       patient_age_group: profile.patient_age_group,

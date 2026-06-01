@@ -196,6 +196,7 @@ export interface DiagnosticRecord {
 
 // Partial inputs per step
 export interface PatientProfileInput {
+  patient_id?: string | null;
   patient_full_name: string;
   patient_age_years: number;
   patient_age_group: PatientAgeGroup;

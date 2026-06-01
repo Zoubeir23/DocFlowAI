@@ -114,14 +114,16 @@ function TagInput({ value, onChange, placeholder, suggestions = [] }: TagInputPr
 
 interface PatientProfileStepProps {
   defaultValues?: Partial<PatientProfileInput>;
+  defaultPatientName?: string;
   onNext: (data: PatientProfileInput) => void;
 }
 
-export function PatientProfileStep({ defaultValues, onNext }: PatientProfileStepProps) {
+export function PatientProfileStep({ defaultValues, defaultPatientName, onNext }: PatientProfileStepProps) {
   const t = useTranslations("diagnostics.patientStep");
   const { register, handleSubmit, control, watch, setValue, formState: { errors } } = useForm<PatientProfileInput>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
+      patient_full_name: defaultPatientName ?? "",
       patient_age_group: "adult",
       patient_sex: "male",
       patient_blood_group: "unknown",
