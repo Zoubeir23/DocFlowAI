@@ -11,12 +11,14 @@ import { toast } from "sonner";
 import { signupSchema, type SignupInput } from "@/lib/validations";
 import { createClient } from "@/lib/supabase/client";
 import { useTranslations } from "next-intl";
+import { GoogleOAuthButton } from "@/components/auth/google-oauth-button";
 
 export default function SignupPage() {
   const router = useRouter();
   const supabase = createClient();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const t = useTranslations("auth.signup");
 
   const { register, handleSubmit, formState: { errors } } = useForm<SignupInput>({
@@ -25,6 +27,11 @@ export default function SignupPage() {
 
   const onSubmit = async (data: SignupInput) => {
     setLoading(true);
+    if (!acceptedTerms) {
+      toast.error("Vous devez accepter les CGU et la politique de confidentialité.");
+      setLoading(false);
+      return;
+    }
     try {
       const { data: authData, error } = await supabase.auth.signUp({
         email: data.email,
@@ -167,15 +174,47 @@ export default function SignupPage() {
               {errors.confirmPassword && <p className="text-[15px] font-sans text-red-400 mt-1">{errors.confirmPassword.message}</p>}
             </div>
 
+            {/* Legal checkbox */}
+            <div className="flex items-start gap-3 pt-2">
+              <input
+                id="terms"
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="mt-0.5 w-4 h-4 accent-[#14b8a6] cursor-pointer flex-shrink-0"
+              />
+              <label htmlFor="terms" className="text-[13px] text-foreground/60 leading-relaxed cursor-pointer">
+                J&apos;ai lu et j&apos;accepte les{" "}
+                <Link href="/terms" target="_blank" className="text-[#14b8a6] hover:underline">
+                  Conditions Générales d&apos;Utilisation
+                </Link>{" "}
+                et la{" "}
+                <Link href="/privacy" target="_blank" className="text-[#14b8a6] hover:underline">
+                  Politique de Confidentialité
+                </Link>
+                , y compris le traitement de données de santé.
+              </label>
+            </div>
+
             <button
               type="submit"
-              className="btn-void-primary w-full h-12 flex items-center justify-center gap-2 mt-4"
-              disabled={loading}
+              className="btn-void-primary w-full h-12 flex items-center justify-center gap-2 mt-4 disabled:opacity-40 disabled:cursor-not-allowed"
+              disabled={loading || !acceptedTerms}
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {loading ? t("submitLoading") : t("submitButton")}
             </button>
           </form>
+
+          <div className="mt-6 flex items-center gap-3">
+            <div className="flex-1 h-[1px] bg-foreground/15" />
+            <span className="font-mono text-[12px] uppercase tracking-widest text-foreground/40">{t('orContinueWith')}</span>
+            <div className="flex-1 h-[1px] bg-foreground/15" />
+          </div>
+
+          <div className="mt-4">
+            <GoogleOAuthButton label={t('continueWithGoogle')} redirectTo="/onboarding" />
+          </div>
 
           <div className="mt-8 pt-8 border-t border-foreground/15 text-center">
             <p className="font-sans font-normal text-foreground/70 text-[15px]">
@@ -186,11 +225,10 @@ export default function SignupPage() {
             </p>
           </div>
 
-          <p className="mt-6 font-sans font-normal text-[15px] text-foreground/60 text-center leading-relaxed">
-            {t("termsText")}{" "}
-            <span className="text-foreground/80 cursor-pointer hover:text-foreground transition-colors">{t("termsOfService")}</span>
-            {" "}and{" "}
-            <span className="text-foreground/80 cursor-pointer hover:text-foreground transition-colors">{t("privacyPolicy")}</span>.
+          <p className="mt-6 font-sans font-normal text-[13px] text-foreground/40 text-center leading-relaxed">
+            <Link href="/terms" target="_blank" className="hover:text-foreground/70 transition-colors underline underline-offset-2">CGU</Link>
+            {" · "}
+            <Link href="/privacy" target="_blank" className="hover:text-foreground/70 transition-colors underline underline-offset-2">Politique de confidentialité</Link>
           </p>
 
         </div>

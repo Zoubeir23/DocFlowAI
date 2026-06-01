@@ -609,7 +609,9 @@
       "welcomeBack": "Welcome back",
       "dashboardSubtitle": "Sign in to your clinic dashboard",
       "dontHaveAccount": "Don't have an account?",
-      "startFreeTrial": "Start free trial"
+      "startFreeTrial": "Start free trial",
+      "orContinueWith": "or",
+      "continueWithGoogle": "Continue with Google"
     },
     "signup": {
       "title": "Create Account",
@@ -642,7 +644,9 @@
       "feature2": "Free plan includes 50 appointments/mo",
       "feature3": "AI widget ready in 2 minutes",
       "feature4": "Cancel anytime",
-      "copyright": "© 2024 DocFlow IA · All rights reserved"
+      "copyright": "© 2024 DocFlow IA · All rights reserved",
+      "orContinueWith": "or",
+      "continueWithGoogle": "Continue with Google"
     }
   },
   "onboarding": {
@@ -863,7 +867,9 @@
       "pricing": "Pricing",
       "login": "Login",
       "signup": "Sign Up",
-      "rights": "All rights reserved."
+      "rights": "All rights reserved.",
+      "terms": "Terms",
+      "privacy": "Privacy"
     }
   },
   "widgetChat": {

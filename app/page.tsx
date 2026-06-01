@@ -446,6 +446,8 @@ export default async function HomePage() {
             <Link href="/pricing" className="hover:text-primary transition-colors">{t("footer.pricing")}</Link>
             <Link href="/login" className="hover:text-primary transition-colors">{t("footer.login")}</Link>
             <Link href="/signup" className="hover:text-primary transition-colors">{t("footer.signup")}</Link>
+            <Link href="/terms" className="hover:text-primary transition-colors">{t("footer.terms")}</Link>
+            <Link href="/privacy" className="hover:text-primary transition-colors">{t("footer.privacy")}</Link>
           </div>
           <div className="text-sm font-medium text-muted-foreground">
             © 2026 DocFlow IA. {t("footer.rights")}

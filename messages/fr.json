@@ -609,7 +609,9 @@
       "welcomeBack": "Bon retour",
       "dashboardSubtitle": "Connectez-vous à votre tableau de bord",
       "dontHaveAccount": "Pas encore de compte ?",
-      "startFreeTrial": "Démarrer l'essai gratuit"
+      "startFreeTrial": "Démarrer l'essai gratuit",
+      "orContinueWith": "ou",
+      "continueWithGoogle": "Continuer avec Google"
     },
     "signup": {
       "title": "Créer un compte",
@@ -642,7 +644,9 @@
       "feature2": "Le plan gratuit inclut 50 rendez-vous/mois",
       "feature3": "Widget IA prêt en 2 minutes",
       "feature4": "Annulable à tout moment",
-      "copyright": "© 2024 DocFlow IA · Tous droits réservés"
+      "copyright": "© 2024 DocFlow IA · Tous droits réservés",
+      "orContinueWith": "ou",
+      "continueWithGoogle": "Continuer avec Google"
     }
   },
   "onboarding": {
@@ -863,7 +867,9 @@
       "pricing": "Tarifs",
       "login": "Connexion",
       "signup": "Inscription",
-      "rights": "Tous droits réservés."
+      "rights": "Tous droits réservés.",
+      "terms": "CGU",
+      "privacy": "Confidentialité"
     }
   },
   "widgetChat": {
