@@ -20,6 +20,8 @@ import { getStatusColor, getStatusLabel } from "@/lib/utils";
 import type { Patient } from "@/types";
 import { useTranslations } from "next-intl";
 import { CsvImportDialog } from "@/components/patients/csv-import-dialog";
+import { ImportCarnetDialog } from "@/components/patients/import-carnet-dialog";
+import { FileDown } from "lucide-react";
 
 async function fetchClinicId() {
   const supabase = createClient() as any;
@@ -43,6 +45,7 @@ export default function PatientsPage() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCsvImport, setShowCsvImport] = useState(false);
+  const [showImportCarnet, setShowImportCarnet] = useState(false);
   const queryClient = useQueryClient();
   const t = useTranslations("patients");
 
@@ -114,6 +117,14 @@ export default function PatientsPage() {
             {t("importCsv")}
           </Button>
           <Button
+            variant="secondary"
+            onClick={() => setShowImportCarnet(true)}
+            className="rounded-xl font-medium"
+          >
+            <FileDown className="w-4 h-4 mr-2" />
+            Importer un Carnet
+          </Button>
+          <Button
             onClick={() => setShowAddModal(true)}
             className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-medium shadow-sm"
           >
@@ -123,6 +134,14 @@ export default function PatientsPage() {
         </div>
       </div>
 
+      {clinicId && (
+        <ImportCarnetDialog
+          open={showImportCarnet}
+          onOpenChange={setShowImportCarnet}
+          clinicId={clinicId}
+        />
+      )}
+      
       {/* Search */}
       <div className="relative max-w-lg">
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />

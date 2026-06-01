@@ -18,6 +18,7 @@ import {
   ChevronDown,
   ChevronUp,
   Stethoscope,
+  BookOpen,
 } from "lucide-react";
 import { format, parseISO, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -29,6 +30,7 @@ import { updateAppointmentMedicalNotes } from "@/actions/appointments";
 import { InvitePatientButton } from "@/components/portail/invite-patient-button";
 import { StartTeleconsultationButton } from "@/components/teleconsultation/start-teleconsultation-button";
 import { PreconsultationCard, type PreconsultationData } from "@/components/appointments/preconsultation-card";
+import { CarnetNumeriqueSection } from "@/components/patients/carnet-numerique-section";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -426,6 +428,12 @@ export default function PatientDetailPage() {
                   {format(parseISO((patient as any).date_of_birth), "MMM d, yyyy")}
                 </span>
               )}
+              {patient.carnet?.public_code && (
+                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2.5 py-0.5 rounded-full">
+                  <BookOpen className="w-3.5 h-3.5" />
+                  Carnet: {patient.carnet.public_code}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -517,6 +525,9 @@ export default function PatientDetailPage() {
           )}
         </div>
       </div>
+
+      {/* ─ Carnet Numerique ─ */}
+      <CarnetNumeriqueSection patientId={patient.id} />
 
       {/* ─ Consultation history ─ */}
       <div className="glass-card p-6">

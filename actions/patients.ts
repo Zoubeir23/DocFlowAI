@@ -61,11 +61,11 @@ export async function getPatient(patientId: string) {
   if (!clinicId) return null;
   const { data } = await db
     .from("patients")
-    .select("*")
+    .select("*, carnet:patient_carnets(public_code)")
     .eq("id", patientId)
     .eq("clinic_id", clinicId)
     .maybeSingle();
-  return data as Patient | null;
+  return data as (Patient & { carnet: { public_code: string } | null }) | null;
 }
 
 export async function getPatientAppointments(patientId: string) {
@@ -117,4 +117,111 @@ export async function updatePatient(
   const { error } = await db.from("patients").update(data).eq("id", patientId).eq("clinic_id", userClinicId);
   if (error) return { success: false, error: error.message };
   return { success: true };
+}
+
+export async function importPatientCarnet(
+  clinicId: string,
+  publicCode: string,
+  data: PatientInput
+): Promise<ApiResponse<{ id: string }>> {
+  const db = await getDB();
+  const userClinicId = await getAuthenticatedClinicId(db);
+  if (!userClinicId || userClinicId !== clinicId) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  // 1. Find the carnet by public code. To bypass RLS (since they don't have a patient linked yet),
+  // we could just try to insert with a subquery, or we use a service role client.
+  // Actually, wait: our RLS policy says "staff can SELECT patient_carnets if they have a patient linked to it".
+  // Which means the staff CANNOT SELECT a carnet they are not linked to yet!
+  // So we MUST use the admin client (service role) to lookup the carnet!
+  const { createAdminClient } = await import("@/lib/supabase/server");
+  const adminDb = (await createAdminClient()) as any;
+  
+  const { data: carnet } = await adminDb
+    .from("patient_carnets")
+    .select("id")
+    .eq("public_code", publicCode)
+    .maybeSingle();
+
+  if (!carnet) {
+    return { success: false, error: "Code Carnet invalide ou introuvable." };
+  }
+
+  // 2. Create the local patient linked to this carnet_id
+  const validated = patientSchema.safeParse(data);
+  if (!validated.success) {
+    return { success: false, error: validated.error.errors[0].message };
+  }
+
+  const { data: patient, error } = await db
+    .from("patients")
+    .insert({ 
+      ...validated.data, 
+      clinic_id: clinicId, 
+      email: validated.data.email || null,
+      carnet_id: carnet.id
+    })
+    .select()
+    .maybeSingle();
+
+  if (error || !patient) return { success: false, error: error?.message ?? "Erreur lors de la création du patient" };
+  
+  return { success: true, data: { id: patient.id } };
+}
+
+export async function getPatientCarnetHistory(patientId: string) {
+  const db = await getDB();
+  const clinicId = await getAuthenticatedClinicId(db);
+  if (!clinicId) return [];
+
+  // First, verify the patient belongs to the caller's clinic and get their carnet_id
+  const { data: patient } = await db
+    .from("patients")
+    .select("carnet_id")
+    .eq("id", patientId)
+    .eq("clinic_id", clinicId)
+    .maybeSingle();
+
+  if (!patient || !patient.carnet_id) return [];
+
+  // Now, fetch all diagnostics across all clinics that share this carnet_id.
+  // Our RLS policy 'diagnostics_select_shared_carnet' allows this!
+  const { data } = await db
+    .from("diagnostics")
+    .select("*, clinic:clinics(name, logo_url)")
+    .eq("carnet_id", patient.carnet_id)
+    .order("created_at", { ascending: false });
+
+  return data || [];
+}
+
+export async function generateCarnetSummary(patientId: string): Promise<ApiResponse<string>> {
+  try {
+    const diagnostics = await getPatientCarnetHistory(patientId);
+    
+    if (!diagnostics || diagnostics.length === 0) {
+      return { success: false, error: "Aucun historique disponible pour ce patient." };
+    }
+
+    // Format the diagnostics into a readable text block
+    const historyText = diagnostics.map((d: any) => {
+      let text = `Date: ${new Date(d.created_at).toLocaleDateString()} (Clinique: ${d.clinic?.name || "Inconnue"})\n`;
+      text += `Motif: ${d.chief_complaint}\n`;
+      text += `Symptômes: ${d.symptoms?.join(", ")}\n`;
+      if (d.validated_diagnosis_name) text += `Diagnostic retenu: ${d.validated_diagnosis_name}\n`;
+      if (d.treatments && d.treatments.length > 0) {
+        const treatmentsStr = d.treatments.map((t: any) => `${t.drug_name} (${t.dosage_mg})`).join(", ");
+        text += `Traitements prescrits: ${treatmentsStr}\n`;
+      }
+      return text;
+    }).join("\n---\n");
+
+    const { summarizeCarnet } = await import("@/lib/ai/gemini");
+    const summary = await summarizeCarnet(historyText);
+
+    return { success: true, data: summary };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Erreur lors de la génération du résumé." };
+  }
 }

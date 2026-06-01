@@ -64,10 +64,28 @@ export interface Database {
           created_at?: string;
         };
       };
+      patient_carnets: {
+        Row: {
+          id: string;
+          public_code: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          public_code: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          public_code?: string;
+          created_at?: string;
+        };
+      };
       patients: {
         Row: {
           id: string;
           clinic_id: string;
+          carnet_id: string | null;
           full_name: string;
           phone: string;
           email: string | null;
@@ -77,6 +95,7 @@ export interface Database {
         Insert: {
           id?: string;
           clinic_id: string;
+          carnet_id?: string | null;
           full_name: string;
           phone: string;
           email?: string | null;
@@ -86,6 +105,7 @@ export interface Database {
         Update: {
           id?: string;
           clinic_id?: string;
+          carnet_id?: string | null;
           full_name?: string;
           phone?: string;
           email?: string | null;
