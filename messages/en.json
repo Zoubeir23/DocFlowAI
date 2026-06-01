@@ -867,7 +867,9 @@
       "pricing": "Pricing",
       "login": "Login",
       "signup": "Sign Up",
-      "rights": "All rights reserved."
+      "rights": "All rights reserved.",
+      "terms": "Terms",
+      "privacy": "Privacy"
     }
   },
   "widgetChat": {

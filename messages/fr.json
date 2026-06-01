@@ -867,7 +867,9 @@
       "pricing": "Tarifs",
       "login": "Connexion",
       "signup": "Inscription",
-      "rights": "Tous droits réservés."
+      "rights": "Tous droits réservés.",
+      "terms": "CGU",
+      "privacy": "Confidentialité"
     }
   },
   "widgetChat": {
