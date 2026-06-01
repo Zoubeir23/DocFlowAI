@@ -28,7 +28,7 @@ BEGIN
     BEGIN
       INSERT INTO patient_carnets (public_code) VALUES (new_code) RETURNING id INTO new_carnet_id;
     EXCEPTION WHEN unique_violation THEN
-      new_code := 'CAR-' || upper(substr(md5(random()::text), 1, 8));
+      new_code := 'CAR-' || upper(substr(replace(uuid_generate_v4()::text, '-', ''), 1, 16));
       INSERT INTO patient_carnets (public_code) VALUES (new_code) RETURNING id INTO new_carnet_id;
     END;
 
