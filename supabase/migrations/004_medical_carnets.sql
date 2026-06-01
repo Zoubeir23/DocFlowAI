@@ -61,7 +61,8 @@ USING (
 -- Staff can read a diagnostic from ANY clinic if it shares a carnet_id with a patient in their clinic
 CREATE POLICY "diagnostics_select_shared_carnet" ON diagnostics FOR SELECT
 USING (
-  carnet_id IN (
+  validation_status = 'validated'
+  AND carnet_id IN (
     SELECT carnet_id FROM patients 
     WHERE clinic_id IN (SELECT clinic_id FROM users WHERE id = auth.uid())
   )
