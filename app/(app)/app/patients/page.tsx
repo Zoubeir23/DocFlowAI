@@ -255,10 +255,10 @@ export default function PatientsPage() {
                   </div>
                   <Link
                     href={`/app/patients/${selectedPatient.id}`}
-                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
                     onClick={() => setSelectedPatient(null)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm"
                   >
-                    <ExternalLink className="w-3.5 h-3.5" />
+                    <ExternalLink className="w-4 h-4" />
                     {t("viewFullProfile")}
                   </Link>
                 </div>
