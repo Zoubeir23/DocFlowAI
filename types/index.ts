@@ -11,6 +11,12 @@ export type AiConversation = Database["public"]["Tables"]["ai_conversations"]["R
 export type ClinicSettings = Database["public"]["Tables"]["clinic_settings"]["Row"];
 export type Subscription = Database["public"]["Tables"]["subscriptions"]["Row"];
 
+export type PatientCarnet = {
+  id: string;
+  public_code: string;
+  created_at: string;
+};
+
 export type AppointmentStatus = Appointment["status"];
 export type UserRole = User["role"];
 export type SubscriptionPlan = Subscription["plan"];
@@ -126,6 +132,7 @@ export interface DiagnosticRecord {
   id: string;
   clinic_id: string;
   patient_id: string | null;
+  carnet_id: string | null;
 
   // Step 1 — demographics
   patient_full_name: string;
