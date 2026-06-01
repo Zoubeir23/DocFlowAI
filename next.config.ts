@@ -112,18 +112,18 @@ const nextConfig: NextConfig = {
 
 const sentryConfig = {
   org: "isi-of",
-  project: "javascript-nextjs-6z",
+  project: "javascript-nextjs",
   silent: !process.env.CI,
   widenClientFileUpload: true,
   tunnelRoute: "/monitoring",
+  // Never fail the build on Sentry errors (missing project, network issues, etc.)
+  errorHandler: (err: Error) => {
+    console.warn("[Sentry] Build warning (non-fatal):", err.message);
+  },
   webpack: {
     automaticVercelMonitors: true,
     treeshake: { removeDebugLogging: true },
   },
 };
 
-// Only wrap with Sentry when SENTRY_AUTH_TOKEN is configured.
-// Without it, the Sentry CLI crashes the build trying to create releases.
-export default process.env.SENTRY_AUTH_TOKEN
-  ? withSentryConfig(withNextIntl(nextConfig), sentryConfig)
-  : withNextIntl(nextConfig);
+export default withSentryConfig(withNextIntl(nextConfig), sentryConfig);
