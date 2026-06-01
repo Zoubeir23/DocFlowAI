@@ -31,6 +31,7 @@
     "subscriptionRenew": "Subscription renewal needed",
     "waitlist": "Waitlist",
     "diagnostics": "Diagnostics",
+    "carnets": "Medical Records",
     "signIn": "Sign In"
   },
   "topbar": {
@@ -1073,5 +1074,15 @@
     "createButton": "Create my website",
     "toastSuccess": "Website created successfully!",
     "toastError": "Unable to create the site"
+  },
+  "carnets": {
+    "title": "Digital Medical Records",
+    "count": "{count} linked records",
+    "importButton": "Import a Record",
+    "searchPlaceholder": "Search by name, phone or code...",
+    "empty": "No linked records",
+    "emptyHint": "Import a patient's record using their unique code.",
+    "since": "Since",
+    "selectHint": "Select a patient to view their medical record."
   }
 }
