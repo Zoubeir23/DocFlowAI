@@ -31,6 +31,7 @@
     "subscriptionRenew": "Abonnement à renouveler",
     "waitlist": "Liste d'attente",
     "diagnostics": "Diagnostics",
+    "carnets": "Carnets",
     "signIn": "Se connecter"
   },
   "topbar": {
@@ -191,6 +192,7 @@
     "autoAdded": "Les patients sont ajoutés automatiquement lors d'une réservation via le widget IA",
     "visitHistory": "Historique des visites",
     "noHistory": "Aucun historique de rendez-vous",
+    "viewFullProfile": "Voir le dossier complet",
     "addNewPatient": "Ajouter un nouveau patient",
     "fullName": "Nom complet",
     "fullNamePlaceholder": "Dr. Jean Dupont",
@@ -1072,5 +1074,15 @@
     "createButton": "Créer mon site web",
     "toastSuccess": "Site web créé avec succès !",
     "toastError": "Impossible de créer le site"
+  },
+  "carnets": {
+    "title": "Carnets Numériques",
+    "count": "{count} carnet(s) liés",
+    "importButton": "Importer un Carnet",
+    "searchPlaceholder": "Rechercher par nom, téléphone ou code...",
+    "empty": "Aucun carnet lié",
+    "emptyHint": "Importez le carnet d'un patient via son code unique.",
+    "since": "Depuis",
+    "selectHint": "Sélectionnez un patient pour voir son carnet numérique."
   }
 }

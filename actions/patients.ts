@@ -197,6 +197,29 @@ export async function getPatientCarnetHistory(patientId: string) {
   return data || [];
 }
 
+export async function getPatientsWithCarnets() {
+  const db = await getDB();
+  const clinicId = await getAuthenticatedClinicId(db);
+  if (!clinicId) return [];
+
+  const { data } = await db
+    .from("patients")
+    .select("id, full_name, phone, email, created_at, carnet_id, carnet:patient_carnets(public_code)")
+    .eq("clinic_id", clinicId)
+    .not("carnet_id", "is", null)
+    .order("created_at", { ascending: false });
+
+  return (data || []) as Array<{
+    id: string;
+    full_name: string;
+    phone: string;
+    email: string | null;
+    created_at: string;
+    carnet_id: string;
+    carnet: { public_code: string } | null;
+  }>;
+}
+
 export async function generateCarnetSummary(patientId: string): Promise<ApiResponse<string>> {
   try {
     const diagnostics = await getPatientCarnetHistory(patientId);

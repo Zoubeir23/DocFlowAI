@@ -26,6 +26,7 @@ import {
   Building2,
   Plug,
   Stethoscope,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeSwitcher } from "@/components/theme-switcher";
@@ -53,6 +54,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/app/calendar",       labelKey: "calendar",       icon: CalendarDays,    group: "main",   minRole: "receptionist" },
   { href: "/app/appointments",   labelKey: "appointments",   icon: CalendarCheck2,  group: "main",   minRole: "receptionist" },
   { href: "/app/patients",       labelKey: "patients",       icon: Users,           group: "main",   minRole: "receptionist" },
+  { href: "/app/carnets",        labelKey: "carnets",        icon: BookOpen,        group: "main",   minRole: "receptionist" },
   { href: "/app/diagnostics",    labelKey: "diagnostics",    icon: Stethoscope,     group: "main",   minRole: "receptionist" },
   { href: "/app/waitlist",       labelKey: "waitlist",       icon: Clock,           group: "main",   minRole: "receptionist" },
   { href: "/app/services",       labelKey: "services",       icon: HeartPulse,      group: "main",   minRole: "owner" },
