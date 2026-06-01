@@ -121,6 +121,11 @@ export default withSentryConfig(withNextIntl(nextConfig), {
   // Only print logs for uploading source maps in CI
   silent: !process.env.CI,
 
+  // Skip source map upload if SENTRY_AUTH_TOKEN is not configured — prevents build failure
+  sourcemaps: {
+    disable: !process.env.SENTRY_AUTH_TOKEN,
+  },
+
   // For all available options, see:
   // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
 
