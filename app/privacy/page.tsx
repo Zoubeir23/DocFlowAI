@@ -1,6 +1,6 @@
 import Link from "next/link";
-import Image from "next/image";
 import type { Metadata } from "next";
+import { LegalPageHeader } from "@/components/legal/legal-page-header";
 
 export const metadata: Metadata = {
   title: "Politique de Confidentialité — DocFlow IA",
@@ -15,15 +15,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://docflow.ia";
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-background text-foreground font-sans">
-      {/* Header */}
-      <header className="border-b border-foreground/10 px-6 py-4 flex items-center justify-between max-w-5xl mx-auto">
-        <Link href="/">
-          <Image src="/logo.png" alt="DocFlow IA" width={120} height={32} className="object-contain dark:brightness-0 dark:invert" />
-        </Link>
-        <Link href="/login" className="text-sm text-foreground/60 hover:text-foreground transition-colors">
-          Se connecter
-        </Link>
-      </header>
+      <LegalPageHeader />
 
       <main className="max-w-3xl mx-auto px-6 py-16 space-y-12">
         {/* Title */}
