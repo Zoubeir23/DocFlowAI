@@ -191,6 +191,7 @@
     "autoAdded": "Les patients sont ajoutés automatiquement lors d'une réservation via le widget IA",
     "visitHistory": "Historique des visites",
     "noHistory": "Aucun historique de rendez-vous",
+    "viewFullProfile": "Voir le dossier complet",
     "addNewPatient": "Ajouter un nouveau patient",
     "fullName": "Nom complet",
     "fullNamePlaceholder": "Dr. Jean Dupont",

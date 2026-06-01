@@ -191,6 +191,7 @@
     "autoAdded": "Patients are added automatically when they book via the AI widget",
     "visitHistory": "Visit History",
     "noHistory": "No appointment history yet",
+    "viewFullProfile": "View full profile",
     "addNewPatient": "Add New Patient",
     "fullName": "Full Name",
     "fullNamePlaceholder": "Dr. John Smith",

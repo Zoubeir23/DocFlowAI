@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, Phone, Mail, FileText, Users, X, CalendarDays, Upload } from "lucide-react";
+import { Plus, Search, Phone, Mail, FileText, Users, X, CalendarDays, Upload, ExternalLink } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -19,8 +19,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getStatusColor, getStatusLabel } from "@/lib/utils";
 import type { Patient } from "@/types";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { CsvImportDialog } from "@/components/patients/csv-import-dialog";
 import { ImportCarnetDialog } from "@/components/patients/import-carnet-dialog";
+import { CarnetNumeriqueSection } from "@/components/patients/carnet-numerique-section";
 import { FileDown } from "lucide-react";
 
 async function fetchClinicId() {
@@ -232,27 +234,37 @@ export default function PatientsPage() {
             <>
               {/* Modal header */}
               <div className="border-b border-border bg-muted/30 px-6 py-5">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center text-primary font-bold text-xl">
-                    {selectedPatient.full_name.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-foreground">{selectedPatient.full_name}</h3>
-                    <div className="flex items-center gap-3 mt-1">
-                      <span className="flex items-center gap-1 text-muted-foreground text-xs">
-                        <Phone className="w-3 h-3" /> {selectedPatient.phone}
-                      </span>
-                      {selectedPatient.email && (
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center text-primary font-bold text-xl">
+                      {selectedPatient.full_name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-foreground">{selectedPatient.full_name}</h3>
+                      <div className="flex items-center gap-3 mt-1">
                         <span className="flex items-center gap-1 text-muted-foreground text-xs">
-                          <Mail className="w-3 h-3" /> {selectedPatient.email}
+                          <Phone className="w-3 h-3" /> {selectedPatient.phone}
                         </span>
-                      )}
+                        {selectedPatient.email && (
+                          <span className="flex items-center gap-1 text-muted-foreground text-xs">
+                            <Mail className="w-3 h-3" /> {selectedPatient.email}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
+                  <Link
+                    href={`/app/patients/${selectedPatient.id}`}
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
+                    onClick={() => setSelectedPatient(null)}
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    {t("viewFullProfile")}
+                  </Link>
                 </div>
               </div>
 
-              <div className="p-6 space-y-5">
+              <div className="p-6 space-y-5 overflow-y-auto max-h-[70vh]">
                 {selectedPatient.notes && (
                   <div className="p-4 bg-muted/30 rounded-xl border border-border">
                     <div className="flex items-center gap-2 text-sm font-medium text-foreground mb-2">
@@ -293,6 +305,8 @@ export default function PatientsPage() {
                     </div>
                   )}
                 </div>
+
+                <CarnetNumeriqueSection patientId={selectedPatient.id} />
               </div>
             </>
           )}
