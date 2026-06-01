@@ -3,9 +3,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 
 export function LegalPageHeader() {
+  const t = useTranslations("navigation");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
@@ -28,11 +30,11 @@ export function LegalPageHeader() {
       </Link>
       {isLoggedIn ? (
         <Link href="/app/dashboard" className="text-sm text-foreground/60 hover:text-foreground transition-colors">
-          Tableau de bord
+          {t("dashboard")}
         </Link>
       ) : (
         <Link href="/login" className="text-sm text-foreground/60 hover:text-foreground transition-colors">
-          Se connecter
+          {t("signIn")}
         </Link>
       )}
     </header>

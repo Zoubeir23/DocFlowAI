@@ -30,7 +30,8 @@
     "planRenewBefore": "Renew before expiration",
     "subscriptionRenew": "Subscription renewal needed",
     "waitlist": "Waitlist",
-    "diagnostics": "Diagnostics"
+    "diagnostics": "Diagnostics",
+    "signIn": "Sign In"
   },
   "topbar": {
     "searchPlaceholder": "Search patients, appointments...",
