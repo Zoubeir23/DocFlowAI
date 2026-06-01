@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import { loginSchema, type LoginInput } from '@/lib/validations'
 import { createClient } from '@/lib/supabase/client'
 import { useTranslations } from 'next-intl'
+import { GoogleOAuthButton } from '@/components/auth/google-oauth-button'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -158,6 +159,16 @@ export default function LoginPage() {
               {loading ? '...' : t('submit')}
             </button>
           </form>
+
+          <div className="mt-6 flex items-center gap-3">
+            <div className="flex-1 h-[1px] bg-foreground/15" />
+            <span className="font-mono text-[12px] uppercase tracking-widest text-foreground/40">{t('orContinueWith')}</span>
+            <div className="flex-1 h-[1px] bg-foreground/15" />
+          </div>
+
+          <div className="mt-4">
+            <GoogleOAuthButton label={t('continueWithGoogle')} />
+          </div>
 
           <div className="mt-8 pt-8 border-t border-foreground/15 text-center space-y-3">
             <p className="font-sans font-normal text-foreground/70 text-[15px]">
