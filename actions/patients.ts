@@ -191,6 +191,7 @@ export async function getPatientCarnetHistory(patientId: string) {
     .from("diagnostics")
     .select("*, clinic:clinics(name, logo_url)")
     .eq("carnet_id", patient.carnet_id)
+    .eq("validation_status", "validated")
     .order("created_at", { ascending: false });
 
   return data || [];
