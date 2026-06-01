@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Stethoscope, CheckCircle2 } from "lucide-react";
 import { PatientProfileStep } from "@/components/diagnostics/patient-profile-step";
@@ -35,6 +35,10 @@ const STEPS: { step: WizardStep; label: string; description: string }[] = [
 
 export default function NewDiagnosticPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const linkedPatientId = searchParams.get("patientId");
+  const linkedPatientName = searchParams.get("patientName");
+
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [diagnosticId, setDiagnosticId] = useState<string | null>(null);
@@ -49,7 +53,10 @@ export default function NewDiagnosticPage() {
   async function handlePatientProfileSubmit(data: PatientProfileInput) {
     setIsSubmitting(true);
     try {
-      const result = await createDiagnosticDraft(data);
+      const result = await createDiagnosticDraft({
+        ...data,
+        patient_id: linkedPatientId ?? data.patient_id ?? null,
+      });
       if (!result.success || !result.data) {
         toast.error(result.error ?? "Erreur de création");
         return;
@@ -200,7 +207,10 @@ export default function NewDiagnosticPage() {
         {/* Step content */}
         <div className="bg-card border border-border rounded-2xl p-6 md:p-8">
           {currentStep === 1 && (
-            <PatientProfileStep onNext={handlePatientProfileSubmit} />
+            <PatientProfileStep
+              onNext={handlePatientProfileSubmit}
+              defaultPatientName={linkedPatientName ?? undefined}
+            />
           )}
 
           {currentStep === 2 && (

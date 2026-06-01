@@ -436,6 +436,18 @@ export default function PatientDetailPage() {
               )}
             </div>
           </div>
+          <div className="mt-4 flex justify-end">
+            <Button
+              size="sm"
+              className="btn-primary rounded-xl gap-1.5"
+              onClick={() => router.push(
+                `/app/diagnostics/new?patientId=${patient.id}&patientName=${encodeURIComponent(patient.full_name)}`
+              )}
+            >
+              <Stethoscope className="w-3.5 h-3.5" />
+              Nouveau diagnostic
+            </Button>
+          </div>
         </div>
       </div>
 
