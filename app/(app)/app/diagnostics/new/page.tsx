@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Stethoscope, CheckCircle2 } from "lucide-react";
+import { Stethoscope, CheckCircle2, Users, Search, ChevronDown, X, Loader2 } from "lucide-react";
 import { PatientProfileStep } from "@/components/diagnostics/patient-profile-step";
 import { SymptomsVitalsStep } from "@/components/diagnostics/symptoms-vitals-step";
 import { IcdAnalysisStep } from "@/components/diagnostics/icd-analysis-step";
@@ -15,7 +16,10 @@ import {
   updateDiagnosticAnalysis,
   validateDiagnostic,
   updateDiagnosticPrescription,
+  getPatientLastDiagnosticProfile,
 } from "@/actions/diagnostics";
+import { getPatients } from "@/actions/patients";
+import { createClient } from "@/lib/supabase/client";
 import type {
   PatientProfileInput,
   SymptomsInput,
@@ -33,6 +37,14 @@ const STEPS: { step: WizardStep; label: string; description: string }[] = [
   { step: 5, label: "Ordonnance", description: "Prescription" },
 ];
 
+async function fetchClinicId() {
+  const supabase = createClient() as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data } = await supabase.from("users").select("clinic_id").eq("id", user.id).maybeSingle();
+  return data?.clinic_id || null;
+}
+
 export default function NewDiagnosticPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -44,18 +56,70 @@ export default function NewDiagnosticPage() {
   const [diagnosticId, setDiagnosticId] = useState<string | null>(null);
   const [validatedDiagnosisName, setValidatedDiagnosisName] = useState("");
 
+  // Patient selector state
+  const [patientSearch, setPatientSearch] = useState("");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(linkedPatientId);
+  const [selectedPatientName, setSelectedPatientName] = useState<string | null>(linkedPatientName);
+  const [prefillData, setPrefillData] = useState<Partial<PatientProfileInput> | null>(null);
+  const [isFetchingPrefill, setIsFetchingPrefill] = useState(false);
+  const [formKey, setFormKey] = useState(0);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   // Accumulated data across steps
   const [patientProfile, setPatientProfile] = useState<PatientProfileInput | null>(null);
   const [symptomsData, setSymptomsData] = useState<SymptomsInput | null>(null);
   const [candidates, setCandidates] = useState<IcdCandidate[]>([]);
   const [additionalTests, setAdditionalTests] = useState<string[]>([]);
 
+  const { data: clinicId } = useQuery({ queryKey: ["clinicId"], queryFn: fetchClinicId });
+
+  const { data: patientsResult } = useQuery({
+    queryKey: ["patients", clinicId, patientSearch],
+    queryFn: () => getPatients(clinicId!, 1, 20, patientSearch),
+    enabled: !!clinicId,
+  });
+
+  const patients = patientsResult?.data ?? [];
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  async function handleSelectPatient(patient: { id: string; full_name: string }) {
+    setSelectedPatientId(patient.id);
+    setSelectedPatientName(patient.full_name);
+    setDropdownOpen(false);
+    setPatientSearch("");
+    setIsFetchingPrefill(true);
+    try {
+      const lastProfile = await getPatientLastDiagnosticProfile(patient.id);
+      setPrefillData(lastProfile ? { ...lastProfile, patient_full_name: patient.full_name } : { patient_full_name: patient.full_name });
+    } finally {
+      setIsFetchingPrefill(false);
+      setFormKey((k) => k + 1);
+    }
+  }
+
+  function handleClearPatient() {
+    setSelectedPatientId(null);
+    setSelectedPatientName(null);
+    setPrefillData(null);
+    setFormKey((k) => k + 1);
+  }
+
   async function handlePatientProfileSubmit(data: PatientProfileInput) {
     setIsSubmitting(true);
     try {
       const result = await createDiagnosticDraft({
         ...data,
-        patient_id: linkedPatientId ?? data.patient_id ?? null,
+        patient_id: selectedPatientId ?? data.patient_id ?? null,
       });
       if (!result.success || !result.data) {
         toast.error(result.error ?? "Erreur de création");
@@ -85,11 +149,7 @@ export default function NewDiagnosticPage() {
     }
   }
 
-  async function handleAnalysisSubmit(
-    ranked: IcdCandidate[],
-    tests: string[],
-    clinicalNotes: string
-  ) {
+  async function handleAnalysisSubmit(ranked: IcdCandidate[], tests: string[], clinicalNotes: string) {
     if (!diagnosticId) return;
     setIsSubmitting(true);
     try {
@@ -106,24 +166,11 @@ export default function NewDiagnosticPage() {
     }
   }
 
-  async function handleValidation(
-    code: string,
-    name: string,
-    validatedBy: string,
-    status: "validated" | "rejected",
-    rejectionReason?: string
-  ) {
+  async function handleValidation(code: string, name: string, validatedBy: string, status: "validated" | "rejected", rejectionReason?: string) {
     if (!diagnosticId) return;
     setIsSubmitting(true);
     try {
-      const result = await validateDiagnostic(
-        diagnosticId,
-        code,
-        name,
-        validatedBy,
-        status,
-        rejectionReason
-      );
+      const result = await validateDiagnostic(diagnosticId, code, name, validatedBy, status, rejectionReason);
       if (!result.success) {
         toast.error(result.error ?? "Erreur de validation");
         return;
@@ -185,11 +232,7 @@ export default function NewDiagnosticPage() {
               <div key={step} className="flex items-center flex-shrink-0">
                 <div className="flex flex-col items-center gap-1 px-2">
                   <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
-                    isCompleted
-                      ? "bg-primary text-primary-foreground"
-                      : isActive
-                      ? "bg-primary text-primary-foreground ring-4 ring-primary/20"
-                      : "bg-muted text-muted-foreground"
+                    isCompleted ? "bg-primary text-primary-foreground" : isActive ? "bg-primary text-primary-foreground ring-4 ring-primary/20" : "bg-muted text-muted-foreground"
                   }`}>
                     {isCompleted ? <CheckCircle2 className="w-5 h-5" /> : step}
                   </div>
@@ -204,12 +247,96 @@ export default function NewDiagnosticPage() {
           })}
         </div>
 
+        {/* Patient selector — visible uniquement à l'étape 1 */}
+        {currentStep === 1 && (
+          <div className="mb-4 relative" ref={dropdownRef}>
+            <div
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all ${
+                selectedPatientName
+                  ? "border-primary/40 bg-primary/5"
+                  : "border-border bg-card hover:border-primary/30"
+              }`}
+              onClick={() => !selectedPatientName && setDropdownOpen((o) => !o)}
+            >
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Users className="w-4 h-4 text-primary" />
+              </div>
+
+              {selectedPatientName ? (
+                <div className="flex-1 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Patient sélectionné</p>
+                    <p className="text-sm font-semibold text-foreground">{selectedPatientName}</p>
+                  </div>
+                  {isFetchingPrefill ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleClearPatient(); }}
+                      className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="flex-1 flex items-center justify-between" onClick={() => setDropdownOpen((o) => !o)}>
+                  <p className="text-sm text-muted-foreground">Sélectionner un patient enregistré (optionnel)</p>
+                  <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+                </div>
+              )}
+            </div>
+
+            {dropdownOpen && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden">
+                <div className="p-2 border-b border-border">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      autoFocus
+                      value={patientSearch}
+                      onChange={(e) => setPatientSearch(e.target.value)}
+                      placeholder="Rechercher par nom ou téléphone..."
+                      className="w-full pl-9 pr-3 py-2 text-sm bg-muted/50 rounded-lg border-0 outline-none focus:ring-1 focus:ring-primary text-foreground placeholder:text-muted-foreground"
+                    />
+                  </div>
+                </div>
+                <div className="max-h-56 overflow-y-auto">
+                  {patients.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-6">Aucun patient trouvé</p>
+                  ) : (
+                    patients.map((patient) => (
+                      <button
+                        key={patient.id}
+                        type="button"
+                        onClick={() => handleSelectPatient(patient)}
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
+                          {patient.full_name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{patient.full_name}</p>
+                          <p className="text-xs text-muted-foreground">{patient.phone}</p>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Step content */}
         <div className="bg-card border border-border rounded-2xl p-6 md:p-8">
           {currentStep === 1 && (
             <PatientProfileStep
+              key={formKey}
               onNext={handlePatientProfileSubmit}
-              defaultPatientName={linkedPatientName ?? undefined}
+              defaultPatientName={prefillData?.patient_full_name ?? linkedPatientName ?? undefined}
+              defaultValues={prefillData ?? undefined}
             />
           )}
 

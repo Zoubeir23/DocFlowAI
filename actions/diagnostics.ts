@@ -262,6 +262,24 @@ export async function getDiagnosticById(
   return data as DiagnosticRecord;
 }
 
+export async function getPatientLastDiagnosticProfile(patientId: string): Promise<Partial<PatientProfileInput> | null> {
+  const supabase = await createClient();
+  const clinicId = await resolveClinicId();
+  if (!clinicId) return null;
+
+  const { data } = await (supabase as any)
+    .from("diagnostics")
+    .select("patient_full_name, patient_age_years, patient_age_group, patient_sex, patient_weight_kg, patient_height_cm, patient_blood_group, chronic_conditions, allergies, current_medications, surgical_history, family_history")
+    .eq("patient_id", patientId)
+    .eq("clinic_id", clinicId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!data) return null;
+  return data as Partial<PatientProfileInput>;
+}
+
 export async function deleteDiagnostic(id: string): Promise<ActionResult> {
   const supabase = await createClient();
   const clinicId = await resolveClinicId();
