@@ -6,6 +6,7 @@ import { Providers } from "@/components/providers";
 import { ThemeProvider } from "@/components/theme-provider";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
+import { Analytics } from "@vercel/analytics/next";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -117,6 +118,7 @@ export default async function RootLayout({
             <Providers>
               {children}
               <Toaster position="top-right" richColors />
+              <Analytics />
             </Providers>
           </ThemeProvider>
         </NextIntlClientProvider>
