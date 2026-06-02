@@ -42,11 +42,10 @@ export function InvitePatientButton({ patientId, hasEmail, alreadyInvited }: Inv
 
   return (
     <Button
-      variant="outline"
       size="sm"
       onClick={handleInvite}
       disabled={loading}
-      className="rounded-xl border-border text-sm gap-1.5"
+      className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm gap-1.5 shadow-sm"
     >
       {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
       {loading ? "Envoi…" : "Inviter au portail"}

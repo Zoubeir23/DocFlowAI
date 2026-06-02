@@ -23,6 +23,7 @@ import Link from "next/link";
 import { CsvImportDialog } from "@/components/patients/csv-import-dialog";
 import { ImportCarnetDialog } from "@/components/patients/import-carnet-dialog";
 import { CarnetNumeriqueSection } from "@/components/patients/carnet-numerique-section";
+import { InvitePatientButton } from "@/components/portail/invite-patient-button";
 import { FileDown } from "lucide-react";
 
 async function fetchClinicId() {
@@ -253,14 +254,21 @@ export default function PatientsPage() {
                       </div>
                     </div>
                   </div>
-                  <Link
-                    href={`/app/patients/${selectedPatient.id}`}
-                    onClick={() => setSelectedPatient(null)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                    {t("viewFullProfile")}
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <InvitePatientButton
+                      patientId={selectedPatient.id}
+                      hasEmail={!!selectedPatient.email}
+                      alreadyInvited={!!(selectedPatient as any).portal_invited_at}
+                    />
+                    <Link
+                      href={`/app/patients/${selectedPatient.id}`}
+                      onClick={() => setSelectedPatient(null)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      {t("viewFullProfile")}
+                    </Link>
+                  </div>
                 </div>
               </div>
 

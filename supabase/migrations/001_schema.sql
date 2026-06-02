@@ -41,6 +41,7 @@ CREATE TABLE patients (
   phone             TEXT        NOT NULL,
   email             TEXT,
   notes             TEXT,
+  date_of_birth     DATE,
   auth_user_id      UUID        REFERENCES auth.users(id) ON DELETE SET NULL,
   portal_invited_at TIMESTAMPTZ,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
