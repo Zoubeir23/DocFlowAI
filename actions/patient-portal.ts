@@ -81,29 +81,6 @@ export async function invitePatientToPortal(patientId: string): Promise<{ succes
   if (!patient) return { success: false, error: "Patient introuvable" };
   if (!patient.email) return { success: false, error: "Ce patient n'a pas d'email enregistré" };
 
-  // Vérifier si un compte auth existe déjà pour cet email
-  const adminSupabaseForCheck = await createAdminClient();
-  const { data: existingAuthUsers } = await (adminSupabaseForCheck as any)
-    .schema("auth")
-    .from("users")
-    .select("id, raw_app_meta_data")
-    .eq("email", patient.email)
-    .limit(1);
-
-  const existingAuthUser = existingAuthUsers?.[0] ?? null;
-
-  // Bloquer seulement si c'est un compte médecin/admin (pas un compte patient portail)
-  if (existingAuthUser) {
-    const meta = existingAuthUser.raw_app_meta_data ?? {};
-    const isDoctor = meta.role && meta.role !== "patient";
-    if (isDoctor) {
-      return {
-        success: false,
-        error: "Cet email est déjà associé à un compte médecin. Veuillez utiliser une adresse email différente.",
-      };
-    }
-  }
-
   // Rate limiting : empêcher les invitations répétées dans les 5 minutes
   if (patient.portal_invited_at) {
     const lastInvitedAt = new Date(patient.portal_invited_at).getTime();
@@ -123,15 +100,23 @@ export async function invitePatientToPortal(patientId: string): Promise<{ succes
   const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
   const redirectTo = `${appUrl}/portail/callback`;
 
-  // Si le user existe déjà → magic link ; sinon → invitation
-  const linkType = existingAuthUser ? "magiclink" : "invite";
-  const { data: linkData, error } = await (adminSupabase.auth.admin as any).generateLink({
-    type: linkType,
+  // Tenter invite d'abord ; si l'email est déjà enregistré → fallback magiclink
+  let linkResult = await (adminSupabase.auth.admin as any).generateLink({
+    type: "invite",
     email: patient.email,
     options: { redirectTo },
   }) as { data: { properties?: { action_link?: string } } | null; error: { message: string } | null };
 
-  if (error) return { success: false, error: error.message };
+  if (linkResult.error?.message?.toLowerCase().includes("already been registered")) {
+    linkResult = await (adminSupabase.auth.admin as any).generateLink({
+      type: "magiclink",
+      email: patient.email,
+      options: { redirectTo },
+    }) as { data: { properties?: { action_link?: string } } | null; error: { message: string } | null };
+  }
+
+  if (linkResult.error) return { success: false, error: linkResult.error.message };
+  const { data: linkData } = linkResult;
 
   const magicLink = linkData?.properties?.action_link ?? redirectTo;
   const clinicName = clinic?.name ?? "votre médecin";
