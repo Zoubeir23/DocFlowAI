@@ -39,6 +39,7 @@ export function LanguageSwitcher() {
         <button
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-none text-foreground/60 hover:text-foreground hover:bg-foreground/5 border border-transparent hover:border-foreground/10 transition-all duration-200 text-sm font-medium disabled:opacity-50"
           disabled={isPending}
+          aria-label="Changer la langue"
         >
           {isPending ? (
             <Loader2 className="w-4 h-4 animate-spin" />
