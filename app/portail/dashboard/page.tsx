@@ -37,6 +37,9 @@ export default async function PortailDashboardPage({
   const past = appointments.filter((a) => a.status === "completed" || a.status === "no_show" || (a.status === "cancelled") || isPast(new Date(a.start_at)));
 
   const clinicName = (patient.clinics as any)?.name ?? "Votre clinique";
+  const carnetCode = Array.isArray(patient.carnet)
+    ? patient.carnet[0]?.public_code ?? null
+    : (patient.carnet as any)?.public_code ?? null;
 
   return (
     <div className="space-y-8">
@@ -61,7 +64,7 @@ export default async function PortailDashboardPage({
       </div>
 
       {/* Carte médicale d'urgence */}
-      {(patient.carnet as any)?.public_code && (
+      {carnetCode && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-primary flex items-center gap-2">
             <span>🆘</span>
@@ -73,7 +76,7 @@ export default async function PortailDashboardPage({
             </p>
             <MedicalEmergencyCard
               patientName={patient.full_name}
-              publicCode={(patient.carnet as any).public_code}
+              publicCode={carnetCode}
               clinicName={clinicName}
             />
           </div>

@@ -26,6 +26,7 @@ function buildPortalInvitationEmail({
   const safePatientName = escapeHtml(patientName);
   const safeClinicName = escapeHtml(clinicName);
   const safeLoginUrl = escapeHtml(loginUrl);
+  const safeMagicLink = escapeHtml(magicLink);
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -42,7 +43,7 @@ function buildPortalInvitationEmail({
         Votre médecin vous a ouvert un accès à votre espace patient. Vous pouvez y consulter
         vos rendez-vous, votre historique de consultations et vos documents médicaux.
       </p>
-      <a href="${magicLink}" style="display:inline-block;background:#0d9488;color:#ffffff;padding:14px 28px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">
+      <a href="${safeMagicLink}" style="display:inline-block;background:#0d9488;color:#ffffff;padding:14px 28px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">
         Accéder à mon espace →
       </a>
       <p style="margin:24px 0 8px;color:#94a3b8;font-size:12px;">Ce lien est valable 24 heures.</p>
@@ -219,7 +220,7 @@ export interface PortalPatient {
   email: string | null;
   clinic_id: string;
   clinics: { name: string; slug: string } | null;
-  carnet: { public_code: string } | null;
+  carnet: { public_code: string }[] | null;
 }
 
 export interface PortalAppointment {
