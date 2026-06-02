@@ -219,6 +219,7 @@ export interface PortalPatient {
   email: string | null;
   clinic_id: string;
   clinics: { name: string; slug: string } | null;
+  carnet: { public_code: string } | null;
 }
 
 export interface PortalAppointment {
@@ -242,7 +243,7 @@ export async function getPatientPortalData(): Promise<{ patient: PortalPatient; 
 
   const { data: patient } = await (supabase as any)
     .from("patients")
-    .select("id, full_name, phone, email, clinic_id, clinics(name, slug)")
+    .select("id, full_name, phone, email, clinic_id, clinics(name, slug), carnet:patient_carnets(public_code)")
     .eq("auth_user_id", user.id)
     .maybeSingle() as { data: PortalPatient | null };
 

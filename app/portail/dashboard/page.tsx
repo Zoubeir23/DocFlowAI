@@ -5,6 +5,7 @@ import { format, isPast, isFuture } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Calendar, Clock, CheckCircle2, XCircle, AlertTriangle, FileText, LogOut, CalendarPlus, Download } from "lucide-react";
 import { CancelAppointmentButton } from "@/components/portail/cancel-appointment-button";
+import { MedicalEmergencyCard } from "@/components/portail/medical-emergency-card";
 import { JoinTeleconsultationButton } from "@/components/teleconsultation/join-teleconsultation-button";
 import { PayAppointmentButton } from "@/components/portail/pay-appointment-button";
 import { PaymentStatusBanner } from "@/components/portail/payment-status-banner";
@@ -58,6 +59,26 @@ export default async function PortailDashboardPage({
           </button>
         </form>
       </div>
+
+      {/* Carte médicale d'urgence */}
+      {(patient.carnet as any)?.public_code && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-primary flex items-center gap-2">
+            <span>🆘</span>
+            Carte médicale d'urgence
+          </h2>
+          <div className="bg-card border border-border rounded-2xl p-5">
+            <p className="text-sm text-muted-foreground mb-4">
+              Téléchargez votre carte et gardez-la dans votre portefeuille. En cas d'urgence, un médecin peut scanner le QR code pour accéder à votre historique médical complet.
+            </p>
+            <MedicalEmergencyCard
+              patientName={patient.full_name}
+              publicCode={(patient.carnet as any).public_code}
+              clinicName={clinicName}
+            />
+          </div>
+        </section>
+      )}
 
       {/* Stats rapides */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
