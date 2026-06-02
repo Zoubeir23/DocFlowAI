@@ -125,6 +125,8 @@ export default async function HomePage() {
         </div>
       </nav>
 
+      {/* ── MAIN CONTENT ─────────────────────────────────────────────────── */}
+      <main>
       {/* ── HERO SECTION ─────────────────────────────────────────────────── */}
       <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
         {/* Abstract Backgrounds */}
@@ -352,7 +354,7 @@ export default async function HomePage() {
                 { step: "03", title: t("howItWorks.step3Title"), desc: t("howItWorks.step3Desc") },
               ].map((s, i) => (
                 <div key={s.step} className="bg-card rounded-2xl p-6 border border-border shadow-sm flex gap-6 items-start hover:-translate-y-1 transition-transform">
-                  <div className="text-3xl font-cormorant font-bold text-primary/40">{s.step}</div>
+                  <div className="text-3xl font-cormorant font-bold text-primary/70">{s.step}</div>
                   <div>
                     <h3 className="text-xl font-bold text-foreground mb-2">{s.title}</h3>
                     <p className="text-muted-foreground">{s.desc}</p>
@@ -388,8 +390,8 @@ export default async function HomePage() {
                   </svg>
                 </div>
                 <div>
-                  <div className="font-bold text-muted-foreground/60 text-sm uppercase tracking-widest">{t("earlyAdopters.spot")}</div>
-                  <div className="text-xs text-muted-foreground/40 mt-1">{t("earlyAdopters.available")}</div>
+                  <div className="font-bold text-muted-foreground text-sm uppercase tracking-widest">{t("earlyAdopters.spot")}</div>
+                  <div className="text-xs text-muted-foreground/70 mt-1">{t("earlyAdopters.available")}</div>
                 </div>
               </div>
             ))}
@@ -433,6 +435,8 @@ export default async function HomePage() {
           )}
         </div>
       </section>
+
+      </main>
 
       {/* ── FOOTER ───────────────────────────────────────────────────────── */}
       <footer className="py-12 px-6 border-t border-border bg-card">
