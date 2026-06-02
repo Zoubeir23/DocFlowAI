@@ -80,20 +80,27 @@ export async function invitePatientToPortal(patientId: string): Promise<{ succes
   if (!patient) return { success: false, error: "Patient introuvable" };
   if (!patient.email) return { success: false, error: "Ce patient n'a pas d'email enregistré" };
 
-  // Bloquer si l'email appartient déjà à un compte auth (médecin, admin ou autre)
+  // Vérifier si un compte auth existe déjà pour cet email
   const adminSupabaseForCheck = await createAdminClient();
   const { data: existingAuthUsers } = await (adminSupabaseForCheck as any)
     .schema("auth")
     .from("users")
-    .select("id")
+    .select("id, raw_app_meta_data")
     .eq("email", patient.email)
     .limit(1);
 
-  if (existingAuthUsers && existingAuthUsers.length > 0) {
-    return {
-      success: false,
-      error: "Cet email est déjà associé à un compte existant. Veuillez utiliser une adresse email différente pour ce patient.",
-    };
+  const existingAuthUser = existingAuthUsers?.[0] ?? null;
+
+  // Bloquer seulement si c'est un compte médecin/admin (pas un compte patient portail)
+  if (existingAuthUser) {
+    const meta = existingAuthUser.raw_app_meta_data ?? {};
+    const isDoctor = meta.role && meta.role !== "patient";
+    if (isDoctor) {
+      return {
+        success: false,
+        error: "Cet email est déjà associé à un compte médecin. Veuillez utiliser une adresse email différente.",
+      };
+    }
   }
 
   // Rate limiting : empêcher les invitations répétées dans les 5 minutes
@@ -115,8 +122,10 @@ export async function invitePatientToPortal(patientId: string): Promise<{ succes
   const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
   const redirectTo = `${appUrl}/portail/callback`;
 
+  // Si le user existe déjà → magic link ; sinon → invitation
+  const linkType = existingAuthUser ? "magiclink" : "invite";
   const { data: linkData, error } = await (adminSupabase.auth.admin as any).generateLink({
-    type: "invite",
+    type: linkType,
     email: patient.email,
     options: { redirectTo },
   }) as { data: { properties?: { action_link?: string } } | null; error: { message: string } | null };
