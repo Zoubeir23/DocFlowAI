@@ -30,11 +30,11 @@ const appSecurityHeaders = [
       "font-src 'self' data: https://fonts.gstatic.com",
       // Allow images from Supabase storage, Google user avatars, and common CDNs
       "img-src 'self' data: blob: https://*.supabase.co https://polygonscan.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com https:",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://polygon-rpc.com https://rpc.ankr.com https://*.sentry.io",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://polygon-rpc.com https://rpc.ankr.com https://*.sentry.io https://meet.jit.si wss://meet.jit.si",
       // Web workers for Next.js/Sentry
       "worker-src 'self' blob:",
-      // Allow 'self' so the website-builder can preview the widget in an iframe
-      "frame-src 'self'",
+      // 'self' for widget preview + meet.jit.si for teleconsultation
+      "frame-src 'self' https://meet.jit.si",
       "object-src 'none'",
       "base-uri 'self'",
     ].join("; "),
