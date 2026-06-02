@@ -127,14 +127,22 @@ export async function invitePatientToPortal(patientId: string): Promise<{ succes
   const clinicName = clinic?.name ?? "votre médecin";
   const loginUrl = `${appUrl}/portail/login`;
 
-  // Envoi de l'email d'invitation personnalisé
+  // Envoi de l'email d'invitation via SMTP Google
   try {
-    const { Resend } = await import("resend");
-    const apiKey = process.env.RESEND_API_KEY;
-    if (apiKey) {
-      const resend = new Resend(apiKey);
-      await resend.emails.send({
-        from: process.env.RESEND_FROM_ADDRESS ?? "noreply@docflow.ai",
+    const nodemailer = await import("nodemailer");
+    const googleUser = process.env.SMTP_GOOGLE_EMAIL;
+    const googleAppPassword = process.env.GOOGLE_APP_PASSWORD;
+    const fromAddress = process.env.NEXT_PUBLIC_EMAIL_FROM ?? googleUser ?? "";
+
+    if (googleUser && googleAppPassword) {
+      const transporter = nodemailer.default.createTransport({
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
+        auth: { user: googleUser, pass: googleAppPassword },
+      });
+      await transporter.sendMail({
+        from: fromAddress,
         to: patient.email,
         subject: `Votre espace patient — ${clinicName}`,
         html: buildPortalInvitationEmail({
@@ -144,9 +152,11 @@ export async function invitePatientToPortal(patientId: string): Promise<{ succes
           loginUrl,
         }),
       });
+    } else {
+      console.warn("[Portal] SMTP_GOOGLE_EMAIL ou GOOGLE_APP_PASSWORD non configuré — email non envoyé.");
     }
-  } catch {
-    // Non bloquant — le lien est quand même généré
+  } catch (err) {
+    console.error("[Portal] Erreur envoi email invitation:", err);
   }
 
   await (supabase as any)
