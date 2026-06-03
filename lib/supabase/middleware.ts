@@ -121,5 +121,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  supabaseResponse.headers.set('x-user-authenticated', user ? 'true' : 'false');
+
   return supabaseResponse;
 }

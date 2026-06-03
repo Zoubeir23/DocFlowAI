@@ -3,7 +3,7 @@ import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { ThemeSwitcher } from "@/components/theme-switcher";
-import { createClient } from "@/lib/supabase/server";
+import { headers } from "next/headers";
 import {
   CalendarDays,
   Bot,
@@ -70,9 +70,7 @@ const organizationJsonLd = {
 export default async function HomePage() {
   const t = await getTranslations("landing");
 
-  const db = await createClient();
-  const { data: { user } } = await (db as any).auth.getUser();
-  const isLoggedIn = !!user;
+  const isLoggedIn = (await headers()).get('x-user-authenticated') === 'true';
 
   return (
     <div className="min-h-screen bg-background font-sans text-foreground selection:bg-primary/30 selection:text-primary">
