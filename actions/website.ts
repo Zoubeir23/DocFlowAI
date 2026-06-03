@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { getCurrentClinic } from "./clinic";
 import { clinicTemplates } from "@/data/clinic-templates";
 import { revalidatePath } from "next/cache";
@@ -115,7 +115,7 @@ export async function updateClinicWebsite(updates: any) {
 }
 
 export async function getPublicWebsiteData(slug: string): Promise<{success: boolean, data?: any, error?: string}> {
-  const db = (await createClient()) as any;
+  const db = (await createAdminClient()) as any;
   
   // 1. Get the clinic by slug
   const { data: clinic, error: clinicError } = await db

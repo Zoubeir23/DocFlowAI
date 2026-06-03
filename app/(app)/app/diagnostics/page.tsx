@@ -189,7 +189,7 @@ export default function DiagnosticsPage() {
                   <div key={diagnostic.id} className="flex items-center gap-4 px-6 py-4 hover:bg-accent/40 transition-colors group">
                     {/* Avatar */}
                     <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center flex-shrink-0 text-lg">
-                      {AGE_GROUP_EMOJI[diagnostic.patient_age_group]}
+                      {AGE_GROUP_EMOJI[diagnostic.patient_age_group ?? "adult"] ?? "👤"}
                     </div>
 
                     {/* Main info */}
@@ -213,7 +213,7 @@ export default function DiagnosticsPage() {
                     {/* Document type */}
                     <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground flex-shrink-0">
                       <FileText className="w-3.5 h-3.5" />
-                      {DOCUMENT_TYPE_LABELS[diagnostic.document_type]}
+                      {diagnostic.document_type ? DOCUMENT_TYPE_LABELS[diagnostic.document_type] : "—"}
                     </div>
 
                     {/* Date */}

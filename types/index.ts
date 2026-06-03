@@ -136,9 +136,9 @@ export interface DiagnosticRecord {
 
   // Step 1 — demographics
   patient_full_name: string;
-  patient_age_years: number;
-  patient_age_group: PatientAgeGroup;
-  patient_sex: PatientSex;
+  patient_age_years: number | null;
+  patient_age_group: PatientAgeGroup | null;
+  patient_sex: PatientSex | null;
   patient_weight_kg: number | null;
   patient_height_cm: number | null;
   patient_blood_group: BloodGroup | null;
@@ -159,12 +159,15 @@ export interface DiagnosticRecord {
   vital_oxygen_saturation: number | null;
 
   // Step 2b — symptoms
-  chief_complaint: string;
+  chief_complaint: string | null;
   symptoms: string[];
   symptom_duration: string | null;
   symptom_intensity: number | null;
   aggravating_factors: string[];
   relieving_factors: string[];
+
+  // Progress tracking
+  current_step: number | null;
 
   // Step 3 — ICD analysis
   icd_candidates: IcdCandidate[];
@@ -180,7 +183,7 @@ export interface DiagnosticRecord {
   rejection_reason: string | null;
 
   // Step 5 — prescription
-  document_type: DiagnosticDocumentType;
+  document_type: DiagnosticDocumentType | null;
   treatments: PrescriptionTreatment[];
   recommendations: string[];
   follow_up_delay_days: number | null;
@@ -198,32 +201,32 @@ export interface DiagnosticRecord {
 export interface PatientProfileInput {
   patient_id?: string | null;
   patient_full_name: string;
-  patient_age_years: number;
-  patient_age_group: PatientAgeGroup;
-  patient_sex: PatientSex;
-  patient_weight_kg: number | null;
-  patient_height_cm: number | null;
-  patient_blood_group: BloodGroup;
-  chronic_conditions: string[];
-  allergies: string[];
-  current_medications: string[];
-  surgical_history: string[];
-  family_history: string[];
+  patient_age_years?: number | null;
+  patient_age_group?: PatientAgeGroup | null;
+  patient_sex?: PatientSex | null;
+  patient_weight_kg?: number | null;
+  patient_height_cm?: number | null;
+  patient_blood_group?: BloodGroup;
+  chronic_conditions?: string[];
+  allergies?: string[];
+  current_medications?: string[];
+  surgical_history?: string[];
+  family_history?: string[];
 }
 
 export interface SymptomsInput {
-  chief_complaint: string;
-  symptoms: string[];
-  symptom_duration: string;
-  symptom_intensity: number;
-  aggravating_factors: string[];
-  relieving_factors: string[];
-  vital_temperature: number | null;
-  vital_blood_pressure_systolic: number | null;
-  vital_blood_pressure_diastolic: number | null;
-  vital_heart_rate: number | null;
-  vital_respiratory_rate: number | null;
-  vital_oxygen_saturation: number | null;
+  chief_complaint?: string;
+  symptoms?: string[];
+  symptom_duration?: string;
+  symptom_intensity?: number | null;
+  aggravating_factors?: string[];
+  relieving_factors?: string[];
+  vital_temperature?: number | null;
+  vital_blood_pressure_systolic?: number | null;
+  vital_blood_pressure_diastolic?: number | null;
+  vital_heart_rate?: number | null;
+  vital_respiratory_rate?: number | null;
+  vital_oxygen_saturation?: number | null;
 }
 
 export interface PrescriptionInput {

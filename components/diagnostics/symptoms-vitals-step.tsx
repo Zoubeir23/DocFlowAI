@@ -12,18 +12,18 @@ import { Textarea } from "@/components/ui/textarea";
 import type { SymptomsInput } from "@/types";
 
 const symptomsSchema = z.object({
-  chief_complaint: z.string().min(5, "Motif de consultation requis"),
-  symptoms: z.array(z.string()),
-  symptom_duration: z.string(),
-  symptom_intensity: z.coerce.number().min(1).max(10),
-  aggravating_factors: z.array(z.string()),
-  relieving_factors: z.array(z.string()),
-  vital_temperature: z.coerce.number().nullable(),
-  vital_blood_pressure_systolic: z.coerce.number().nullable(),
-  vital_blood_pressure_diastolic: z.coerce.number().nullable(),
-  vital_heart_rate: z.coerce.number().nullable(),
-  vital_respiratory_rate: z.coerce.number().nullable(),
-  vital_oxygen_saturation: z.coerce.number().nullable(),
+  chief_complaint: z.string().optional(),
+  symptoms: z.array(z.string()).optional(),
+  symptom_duration: z.string().optional(),
+  symptom_intensity: z.coerce.number().min(1).max(10).nullable().optional(),
+  aggravating_factors: z.array(z.string()).optional(),
+  relieving_factors: z.array(z.string()).optional(),
+  vital_temperature: z.coerce.number().nullable().optional(),
+  vital_blood_pressure_systolic: z.coerce.number().nullable().optional(),
+  vital_blood_pressure_diastolic: z.coerce.number().nullable().optional(),
+  vital_heart_rate: z.coerce.number().nullable().optional(),
+  vital_respiratory_rate: z.coerce.number().nullable().optional(),
+  vital_oxygen_saturation: z.coerce.number().nullable().optional(),
 });
 
 const COMMON_SYMPTOMS: string[] = [
@@ -87,33 +87,36 @@ function VitalField({ label, unit, name, normalRange, warningRange, register, wa
 interface SymptomsVitalsStepProps {
   onNext: (data: SymptomsInput) => void;
   onBack: () => void;
+  defaultValues?: Partial<SymptomsInput>;
 }
 
-export function SymptomsVitalsStep({ onNext, onBack }: SymptomsVitalsStepProps) {
-  const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
+export function SymptomsVitalsStep({ onNext, onBack, defaultValues }: SymptomsVitalsStepProps) {
+  const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>(defaultValues?.symptoms ?? []);
   const [customSymptom, setCustomSymptom] = useState("");
-  const [selectedAggravating, setSelectedAggravating] = useState<string[]>([]);
-  const [selectedRelieving, setSelectedRelieving] = useState<string[]>([]);
+  const [selectedAggravating, setSelectedAggravating] = useState<string[]>(defaultValues?.aggravating_factors ?? []);
+  const [selectedRelieving, setSelectedRelieving] = useState<string[]>(defaultValues?.relieving_factors ?? []);
   const [customAggravating, setCustomAggravating] = useState("");
   const [customRelieving, setCustomRelieving] = useState("");
 
   const { register, handleSubmit, control, watch, setValue, formState: { errors } } = useForm<SymptomsInput>({
     resolver: zodResolver(symptomsSchema),
     defaultValues: {
-      symptoms: [],
-      symptom_intensity: 5,
-      aggravating_factors: [],
-      relieving_factors: [],
-      vital_temperature: null,
-      vital_blood_pressure_systolic: null,
-      vital_blood_pressure_diastolic: null,
-      vital_heart_rate: null,
-      vital_respiratory_rate: null,
-      vital_oxygen_saturation: null,
+      symptoms: defaultValues?.symptoms ?? [],
+      symptom_intensity: defaultValues?.symptom_intensity ?? 5,
+      aggravating_factors: defaultValues?.aggravating_factors ?? [],
+      relieving_factors: defaultValues?.relieving_factors ?? [],
+      chief_complaint: defaultValues?.chief_complaint ?? "",
+      symptom_duration: defaultValues?.symptom_duration ?? "",
+      vital_temperature: defaultValues?.vital_temperature ?? null,
+      vital_blood_pressure_systolic: defaultValues?.vital_blood_pressure_systolic ?? null,
+      vital_blood_pressure_diastolic: defaultValues?.vital_blood_pressure_diastolic ?? null,
+      vital_heart_rate: defaultValues?.vital_heart_rate ?? null,
+      vital_respiratory_rate: defaultValues?.vital_respiratory_rate ?? null,
+      vital_oxygen_saturation: defaultValues?.vital_oxygen_saturation ?? null,
     },
   });
 
-  const intensity = watch("symptom_intensity");
+  const intensity = watch("symptom_intensity") ?? 5;
 
   function toggleSymptom(symptom: string) {
     const updated = selectedSymptoms.includes(symptom)
@@ -200,7 +203,7 @@ export function SymptomsVitalsStep({ onNext, onBack }: SymptomsVitalsStepProps) 
             <Controller name="symptom_intensity" control={control} render={({ field }) => (
               <input
                 type="range" min={1} max={10} step={1}
-                value={field.value}
+                value={field.value ?? 5}
                 onChange={(e) => field.onChange(Number(e.target.value))}
                 className="w-full accent-primary"
               />
