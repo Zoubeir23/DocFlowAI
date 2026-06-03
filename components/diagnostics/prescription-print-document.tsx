@@ -44,7 +44,7 @@ export function PrescriptionPrintDocument({
   clinicAddress,
   signatureDataUrl,
 }: PrescriptionPrintDocumentProps) {
-  const documentTitle = DOCUMENT_TYPE_LABELS[diagnostic.document_type] ?? "Document médical";
+  const documentTitle = (diagnostic.document_type ? DOCUMENT_TYPE_LABELS[diagnostic.document_type] : null) ?? "Document médical";
   const formattedDate = format(parseISO(diagnostic.created_at), "d MMMM yyyy", { locale: fr });
 
   return (
@@ -98,7 +98,7 @@ export function PrescriptionPrintDocument({
               </div>
               <div>
                 <p className="text-gray-400 text-xs">Catégorie</p>
-                <p className="font-semibold text-gray-700 mt-0.5">{AGE_GROUP_LABELS[diagnostic.patient_age_group]}</p>
+                <p className="font-semibold text-gray-700 mt-0.5">{diagnostic.patient_age_group ? AGE_GROUP_LABELS[diagnostic.patient_age_group] : "—"}</p>
               </div>
               <div>
                 <p className="text-gray-400 text-xs">Sexe</p>

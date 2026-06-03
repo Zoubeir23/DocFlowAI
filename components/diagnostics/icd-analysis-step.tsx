@@ -32,16 +32,16 @@ export function IcdAnalysisStep({
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
 
   const vitals: VitalSigns = {
-    temperature: symptomsData.vital_temperature,
-    blood_pressure_systolic: symptomsData.vital_blood_pressure_systolic,
-    blood_pressure_diastolic: symptomsData.vital_blood_pressure_diastolic,
-    heart_rate: symptomsData.vital_heart_rate,
-    respiratory_rate: symptomsData.vital_respiratory_rate,
-    oxygen_saturation: symptomsData.vital_oxygen_saturation,
+    temperature: symptomsData.vital_temperature ?? null,
+    blood_pressure_systolic: symptomsData.vital_blood_pressure_systolic ?? null,
+    blood_pressure_diastolic: symptomsData.vital_blood_pressure_diastolic ?? null,
+    heart_rate: symptomsData.vital_heart_rate ?? null,
+    respiratory_rate: symptomsData.vital_respiratory_rate ?? null,
+    oxygen_saturation: symptomsData.vital_oxygen_saturation ?? null,
   };
 
   const runAnalysis = useCallback(async () => {
-    const allSymptoms = symptomsData.symptoms.join(" ");
+    const allSymptoms = (symptomsData.symptoms ?? []).join(" ");
     const query = [symptomsData.chief_complaint, allSymptoms].filter(Boolean).join(" ");
 
     if (!query.trim()) return;
@@ -61,13 +61,13 @@ export function IcdAnalysisStep({
       }));
 
       const scored = scoreAndRankCandidates(rawResults, {
-        symptoms: symptomsData.symptoms,
-        ageYears: patientProfile.patient_age_years,
-        sex: patientProfile.patient_sex,
+        symptoms: symptomsData.symptoms ?? [],
+        ageYears: patientProfile.patient_age_years ?? 30,
+        sex: patientProfile.patient_sex ?? "male",
         vitals,
-        allergies: patientProfile.allergies,
-        chronicConditions: patientProfile.chronic_conditions,
-        currentMedications: patientProfile.current_medications,
+        allergies: patientProfile.allergies ?? [],
+        chronicConditions: patientProfile.chronic_conditions ?? [],
+        currentMedications: patientProfile.current_medications ?? [],
       });
 
       // Apply GHO epidemiological prevalence weighting (best-effort: silently skipped on failure)
@@ -144,9 +144,9 @@ export function IcdAnalysisStep({
         <p className="text-sm text-muted-foreground mt-1">
           <span className="font-medium text-foreground">Motif :</span> {symptomsData.chief_complaint}
         </p>
-        {symptomsData.symptoms.length > 0 && (
+        {(symptomsData.symptoms ?? []).length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-2">
-            {symptomsData.symptoms.map((s) => (
+            {(symptomsData.symptoms ?? []).map((s) => (
               <span key={s} className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-lg">{s}</span>
             ))}
           </div>

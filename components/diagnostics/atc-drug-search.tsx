@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Loader2, Pill } from "lucide-react";
+import { Loader2, Pill, PlusCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 export interface AtcDrugOption {
@@ -23,6 +23,7 @@ export function AtcDrugSearch({ value, atcCode, onSelect, placeholder = "Nom com
   const [options, setOptions] = useState<AtcDrugOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [savingCustom, setSavingCustom] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -51,7 +52,7 @@ export function AtcDrugSearch({ value, atcCode, onSelect, placeholder = "Nom com
         const res = await fetch(`/api/drugs/search?q=${encodeURIComponent(inputValue)}`);
         const data: AtcDrugOption[] = await res.json();
         setOptions(data);
-        setOpen(data.length > 0);
+        setOpen(true);
       } catch {
         setOptions([]);
       } finally {
@@ -64,6 +65,25 @@ export function AtcDrugSearch({ value, atcCode, onSelect, placeholder = "Nom com
     setQuery(option.name);
     onSelect(option.name, option.atcCode ?? "", option.rxcui);
     setOpen(false);
+  }
+
+  async function handleSaveCustomDrug() {
+    const name = query.trim();
+    if (!name) return;
+    setSavingCustom(true);
+    try {
+      const res = await fetch("/api/drugs/custom", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (res.ok) {
+        onSelect(name, "", `custom_${name}`);
+        setOpen(false);
+      }
+    } finally {
+      setSavingCustom(false);
+    }
   }
 
   return (
@@ -87,7 +107,7 @@ export function AtcDrugSearch({ value, atcCode, onSelect, placeholder = "Nom com
         </span>
       )}
 
-      {open && options.length > 0 && (
+      {open && (options.length > 0 || (query.trim().length >= 2 && !loading)) && (
         <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-xl shadow-xl overflow-hidden">
           {options.map((option) => (
             <button
@@ -107,6 +127,24 @@ export function AtcDrugSearch({ value, atcCode, onSelect, placeholder = "Nom com
               </div>
             </button>
           ))}
+          {options.length === 0 && query.trim().length >= 2 && !loading && (
+            <div className="px-3 py-3 border-t border-border">
+              <p className="text-xs text-muted-foreground mb-2">"{query}" introuvable dans la base de données.</p>
+              <button
+                type="button"
+                onClick={handleSaveCustomDrug}
+                disabled={savingCustom}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors disabled:opacity-50"
+              >
+                {savingCustom ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <PlusCircle className="w-3.5 h-3.5" />
+                )}
+                Ajouter "{query}" à ma pharmacopée
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -13,17 +13,17 @@ import type { PatientProfileInput, PatientAgeGroup, PatientSex, BloodGroup } fro
 
 const profileSchema = z.object({
   patient_full_name: z.string().min(2, "Nom requis"),
-  patient_age_years: z.coerce.number().min(0).max(120),
-  patient_age_group: z.enum(["infant", "toddler", "child", "minor", "adult"]),
-  patient_sex: z.enum(["male", "female"]),
-  patient_weight_kg: z.coerce.number().min(0).max(300).nullable(),
-  patient_height_cm: z.coerce.number().min(0).max(250).nullable(),
-  patient_blood_group: z.enum(["A+","A-","B+","B-","AB+","AB-","O+","O-","unknown"]),
-  chronic_conditions: z.array(z.string()),
-  allergies: z.array(z.string()),
-  current_medications: z.array(z.string()),
-  surgical_history: z.array(z.string()),
-  family_history: z.array(z.string()),
+  patient_age_years: z.coerce.number().min(0).max(120).nullable().optional(),
+  patient_age_group: z.enum(["infant", "toddler", "child", "minor", "adult"]).nullable().optional(),
+  patient_sex: z.enum(["male", "female"]).nullable().optional(),
+  patient_weight_kg: z.coerce.number().min(0).max(300).nullable().optional(),
+  patient_height_cm: z.coerce.number().min(0).max(250).nullable().optional(),
+  patient_blood_group: z.enum(["A+","A-","B+","B-","AB+","AB-","O+","O-","unknown"]).optional(),
+  chronic_conditions: z.array(z.string()).optional(),
+  allergies: z.array(z.string()).optional(),
+  current_medications: z.array(z.string()).optional(),
+  surgical_history: z.array(z.string()).optional(),
+  family_history: z.array(z.string()).optional(),
 });
 
 const AGE_GROUPS: { value: PatientAgeGroup; label: string; range: string; emoji: string }[] = [
@@ -248,21 +248,21 @@ export function PatientProfileStep({ defaultValues, defaultPatientName, onNext }
           <div className="space-y-2">
             <Label className="text-sm font-medium">Maladies chroniques</Label>
             <Controller name="chronic_conditions" control={control} render={({ field }) => (
-              <TagInput value={field.value} onChange={field.onChange} placeholder="Ajouter une maladie chronique..." suggestions={COMMON_CHRONIC} />
+              <TagInput value={field.value ?? []} onChange={field.onChange} placeholder="Ajouter une maladie chronique..." suggestions={COMMON_CHRONIC} />
             )} />
           </div>
 
           <div className="space-y-2">
             <Label className="text-sm font-medium">Allergies connues</Label>
             <Controller name="allergies" control={control} render={({ field }) => (
-              <TagInput value={field.value} onChange={field.onChange} placeholder="Ajouter une allergie..." suggestions={COMMON_ALLERGIES} />
+              <TagInput value={field.value ?? []} onChange={field.onChange} placeholder="Ajouter une allergie..." suggestions={COMMON_ALLERGIES} />
             )} />
           </div>
 
           <div className="space-y-2">
             <Label className="text-sm font-medium">Médicaments actuels</Label>
             <Controller name="current_medications" control={control} render={({ field }) => (
-              <TagInput value={field.value} onChange={field.onChange} placeholder="Nom du médicament..." />
+              <TagInput value={field.value ?? []} onChange={field.onChange} placeholder="Nom du médicament..." />
             )} />
           </div>
 
@@ -270,13 +270,13 @@ export function PatientProfileStep({ defaultValues, defaultPatientName, onNext }
             <div className="space-y-2">
               <Label className="text-sm font-medium">Interventions chirurgicales</Label>
               <Controller name="surgical_history" control={control} render={({ field }) => (
-                <TagInput value={field.value} onChange={field.onChange} placeholder="Ex: Appendicectomie 2019..." />
+                <TagInput value={field.value ?? []} onChange={field.onChange} placeholder="Ex: Appendicectomie 2019..." />
               )} />
             </div>
             <div className="space-y-2">
               <Label className="text-sm font-medium">Antécédents familiaux</Label>
               <Controller name="family_history" control={control} render={({ field }) => (
-                <TagInput value={field.value} onChange={field.onChange} placeholder="Ex: Diabète (père)..." />
+                <TagInput value={field.value ?? []} onChange={field.onChange} placeholder="Ex: Diabète (père)..." />
               )} />
             </div>
           </div>

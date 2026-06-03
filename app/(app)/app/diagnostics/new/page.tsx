@@ -125,9 +125,7 @@ export default function NewDiagnosticPage() {
         toast.error(result.error ?? "Erreur de création");
         return;
       }
-      setDiagnosticId(result.data.id);
-      setPatientProfile(data);
-      setCurrentStep(2);
+      router.push(`/app/diagnostics/${result.data.id}/edit?step=2`);
     } finally {
       setIsSubmitting(false);
     }
@@ -371,7 +369,7 @@ export default function NewDiagnosticPage() {
           {currentStep === 5 && patientProfile && (
             <PrescriptionBuilderStep
               validatedDiagnosisName={validatedDiagnosisName}
-              patientAllergies={patientProfile.allergies}
+              patientAllergies={patientProfile.allergies ?? []}
               onSubmit={handlePrescriptionSubmit}
               onBack={() => setCurrentStep(4)}
               isSubmitting={isSubmitting}

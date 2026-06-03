@@ -105,13 +105,13 @@ export function DoctorValidationStep({
           <p className="text-sm text-foreground">{symptomsData.chief_complaint}</p>
         </div>
 
-        {patientProfile.allergies.length > 0 && (
+        {(patientProfile.allergies ?? []).length > 0 && (
           <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl">
             <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-xs font-semibold text-red-700">Allergies connues</p>
               <div className="flex flex-wrap gap-1.5 mt-1">
-                {patientProfile.allergies.map((allergy) => (
+                {(patientProfile.allergies ?? []).map((allergy) => (
                   <span key={allergy} className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-lg">{allergy}</span>
                 ))}
               </div>
@@ -119,11 +119,11 @@ export function DoctorValidationStep({
           </div>
         )}
 
-        {patientProfile.current_medications.length > 0 && (
+        {(patientProfile.current_medications ?? []).length > 0 && (
           <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl">
             <p className="text-xs font-semibold text-blue-700 mb-1">Médicaments actuels</p>
             <div className="flex flex-wrap gap-1.5">
-              {patientProfile.current_medications.map((med) => (
+              {(patientProfile.current_medications ?? []).map((med) => (
                 <span key={med} className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-lg">{med}</span>
               ))}
             </div>

@@ -55,19 +55,20 @@ export async function createDiagnosticDraft(
       clinic_id: clinicId,
       patient_id: profile.patient_id ?? null,
       patient_full_name: profile.patient_full_name,
-      patient_age_years: profile.patient_age_years,
-      patient_age_group: profile.patient_age_group,
-      patient_sex: profile.patient_sex,
-      patient_weight_kg: profile.patient_weight_kg,
-      patient_height_cm: profile.patient_height_cm,
+      patient_age_years: profile.patient_age_years ?? null,
+      patient_age_group: profile.patient_age_group ?? null,
+      patient_sex: profile.patient_sex ?? null,
+      patient_weight_kg: profile.patient_weight_kg ?? null,
+      patient_height_cm: profile.patient_height_cm ?? null,
       patient_blood_group: profile.patient_blood_group || "unknown",
-      chronic_conditions: profile.chronic_conditions,
-      allergies: profile.allergies,
-      current_medications: profile.current_medications,
-      surgical_history: profile.surgical_history,
-      family_history: profile.family_history,
-      chief_complaint: "",
+      chronic_conditions: profile.chronic_conditions ?? [],
+      allergies: profile.allergies ?? [],
+      current_medications: profile.current_medications ?? [],
+      surgical_history: profile.surgical_history ?? [],
+      family_history: profile.family_history ?? [],
+      chief_complaint: null,
       validation_status: "draft",
+      current_step: 2,
     })
     .select("id")
     .maybeSingle();
@@ -89,18 +90,19 @@ export async function updateDiagnosticSymptoms(
   const { error } = await (supabase as any)
     .from("diagnostics")
     .update({
-      chief_complaint: symptoms.chief_complaint,
-      symptoms: symptoms.symptoms,
-      symptom_duration: symptoms.symptom_duration,
-      symptom_intensity: symptoms.symptom_intensity,
-      aggravating_factors: symptoms.aggravating_factors,
-      relieving_factors: symptoms.relieving_factors,
-      vital_temperature: symptoms.vital_temperature,
-      vital_blood_pressure_systolic: symptoms.vital_blood_pressure_systolic,
-      vital_blood_pressure_diastolic: symptoms.vital_blood_pressure_diastolic,
-      vital_heart_rate: symptoms.vital_heart_rate,
-      vital_respiratory_rate: symptoms.vital_respiratory_rate,
-      vital_oxygen_saturation: symptoms.vital_oxygen_saturation,
+      chief_complaint: symptoms.chief_complaint ?? null,
+      symptoms: symptoms.symptoms ?? [],
+      symptom_duration: symptoms.symptom_duration ?? null,
+      symptom_intensity: symptoms.symptom_intensity ?? null,
+      aggravating_factors: symptoms.aggravating_factors ?? [],
+      relieving_factors: symptoms.relieving_factors ?? [],
+      vital_temperature: symptoms.vital_temperature ?? null,
+      vital_blood_pressure_systolic: symptoms.vital_blood_pressure_systolic ?? null,
+      vital_blood_pressure_diastolic: symptoms.vital_blood_pressure_diastolic ?? null,
+      vital_heart_rate: symptoms.vital_heart_rate ?? null,
+      vital_respiratory_rate: symptoms.vital_respiratory_rate ?? null,
+      vital_oxygen_saturation: symptoms.vital_oxygen_saturation ?? null,
+      current_step: 3,
     })
     .eq("id", diagnosticId)
     .eq("clinic_id", clinicId);
@@ -128,6 +130,7 @@ export async function updateDiagnosticAnalysis(
       additional_tests_required: additionalTests,
       clinical_notes: clinicalNotes,
       validation_status: "pending_validation",
+      current_step: 4,
     })
     .eq("id", diagnosticId)
     .eq("clinic_id", clinicId);
@@ -195,6 +198,7 @@ export async function updateDiagnosticPrescription(
       practitioner_title: prescription.practitioner_title,
       practitioner_rpps: prescription.practitioner_rpps,
       icf_codes: prescription.icf_codes ?? [],
+      current_step: 6,
     })
     .eq("id", diagnosticId)
     .eq("clinic_id", clinicId);
