@@ -68,7 +68,7 @@ export function PrescriptionPrintDocument({
               <p className="text-sm text-gray-600 mt-2 font-medium">
                 {diagnostic.practitioner_title} {diagnostic.practitioner_name}
                 {diagnostic.practitioner_rpps && (
-                  <span className="text-gray-400 font-normal ml-2">— N° {diagnostic.practitioner_rpps}</span>
+                  <span className="text-gray-600 font-normal ml-2">— N° {diagnostic.practitioner_rpps}</span>
                 )}
               </p>
             )}
@@ -78,7 +78,7 @@ export function PrescriptionPrintDocument({
               <p className="text-xs font-bold uppercase tracking-widest">{documentTitle}</p>
             </div>
             <p className="text-sm text-gray-500 mt-3">Le {formattedDate}</p>
-            <p className="text-xs text-gray-400 font-mono mt-1">Réf: {diagnostic.id.slice(0, 8).toUpperCase()}</p>
+            <p className="text-xs text-gray-600 font-mono mt-1">Réf: {diagnostic.id.slice(0, 8).toUpperCase()}</p>
           </div>
         </div>
 
@@ -86,35 +86,35 @@ export function PrescriptionPrintDocument({
 
           {/* Patient */}
           <section>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Patient</p>
+            <p className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-3">Patient</p>
             <div className="bg-gray-50 rounded-xl p-5 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm border border-gray-100">
               <div>
-                <p className="text-gray-400 text-xs">Nom complet</p>
+                <p className="text-gray-600 text-xs">Nom complet</p>
                 <p className="font-bold text-gray-900 mt-0.5">{diagnostic.patient_full_name}</p>
               </div>
               <div>
-                <p className="text-gray-400 text-xs">Âge</p>
+                <p className="text-gray-600 text-xs">Âge</p>
                 <p className="font-bold text-gray-900 mt-0.5">{diagnostic.patient_age_years} ans</p>
               </div>
               <div>
-                <p className="text-gray-400 text-xs">Catégorie</p>
+                <p className="text-gray-600 text-xs">Catégorie</p>
                 <p className="font-semibold text-gray-700 mt-0.5">{diagnostic.patient_age_group ? AGE_GROUP_LABELS[diagnostic.patient_age_group] : "—"}</p>
               </div>
               <div>
-                <p className="text-gray-400 text-xs">Sexe</p>
+                <p className="text-gray-600 text-xs">Sexe</p>
                 <p className="font-semibold text-gray-700 mt-0.5">
                   {diagnostic.patient_sex === "male" ? "Masculin" : "Féminin"}
                 </p>
               </div>
               {diagnostic.patient_weight_kg && (
                 <div>
-                  <p className="text-gray-400 text-xs">Poids</p>
+                  <p className="text-gray-600 text-xs">Poids</p>
                   <p className="font-semibold text-gray-700 mt-0.5">{diagnostic.patient_weight_kg} kg</p>
                 </div>
               )}
               {diagnostic.patient_blood_group && diagnostic.patient_blood_group !== "unknown" && (
                 <div>
-                  <p className="text-gray-400 text-xs">Groupe sanguin</p>
+                  <p className="text-gray-600 text-xs">Groupe sanguin</p>
                   <p className="font-bold text-gray-900 mt-0.5">{diagnostic.patient_blood_group}</p>
                 </div>
               )}
@@ -124,7 +124,7 @@ export function PrescriptionPrintDocument({
           {/* Diagnosis */}
           {diagnostic.validated_diagnosis_name && (
             <section>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Diagnostic retenu</p>
+              <p className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-3">Diagnostic retenu</p>
               <div className="flex items-center gap-3 p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
                 {diagnostic.validated_diagnosis_code && (
                   <span className="font-mono text-sm font-bold text-indigo-700 bg-white border border-indigo-200 px-3 py-1 rounded-lg flex-shrink-0">
@@ -139,7 +139,7 @@ export function PrescriptionPrintDocument({
                 </div>
               </div>
               {diagnostic.validated_by && (
-                <p className="text-xs text-gray-400 mt-2">
+                <p className="text-xs text-gray-600 mt-2">
                   Validé par {diagnostic.validated_by}
                   {diagnostic.validated_at && ` le ${format(parseISO(diagnostic.validated_at), "d MMM yyyy 'à' HH:mm", { locale: fr })}`}
                 </p>
@@ -150,17 +150,17 @@ export function PrescriptionPrintDocument({
           {/* Signes vitaux if present */}
           {(diagnostic.vital_temperature || diagnostic.vital_heart_rate || diagnostic.vital_oxygen_saturation) && (
             <section>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Signes vitaux relevés</p>
+              <p className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-3">Signes vitaux relevés</p>
               <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
                 {diagnostic.vital_temperature && (
                   <div className="text-center p-3 bg-gray-50 rounded-xl border border-gray-100">
-                    <p className="text-xs text-gray-400">Temp.</p>
+                    <p className="text-xs text-gray-600">Temp.</p>
                     <p className="font-bold text-gray-900 text-sm mt-1">{diagnostic.vital_temperature}°C</p>
                   </div>
                 )}
                 {diagnostic.vital_blood_pressure_systolic && diagnostic.vital_blood_pressure_diastolic && (
                   <div className="text-center p-3 bg-gray-50 rounded-xl border border-gray-100">
-                    <p className="text-xs text-gray-400">TA</p>
+                    <p className="text-xs text-gray-600">TA</p>
                     <p className="font-bold text-gray-900 text-sm mt-1">
                       {diagnostic.vital_blood_pressure_systolic}/{diagnostic.vital_blood_pressure_diastolic}
                     </p>
@@ -168,13 +168,13 @@ export function PrescriptionPrintDocument({
                 )}
                 {diagnostic.vital_heart_rate && (
                   <div className="text-center p-3 bg-gray-50 rounded-xl border border-gray-100">
-                    <p className="text-xs text-gray-400">FC</p>
+                    <p className="text-xs text-gray-600">FC</p>
                     <p className="font-bold text-gray-900 text-sm mt-1">{diagnostic.vital_heart_rate} bpm</p>
                   </div>
                 )}
                 {diagnostic.vital_oxygen_saturation && (
                   <div className="text-center p-3 bg-gray-50 rounded-xl border border-gray-100">
-                    <p className="text-xs text-gray-400">SpO₂</p>
+                    <p className="text-xs text-gray-600">SpO₂</p>
                     <p className="font-bold text-gray-900 text-sm mt-1">{diagnostic.vital_oxygen_saturation}%</p>
                   </div>
                 )}
@@ -185,7 +185,7 @@ export function PrescriptionPrintDocument({
           {/* Clinical notes */}
           {diagnostic.clinical_notes && (
             <section>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Notes cliniques</p>
+              <p className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-3">Notes cliniques</p>
               <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{diagnostic.clinical_notes}</p>
             </section>
           )}
@@ -193,7 +193,7 @@ export function PrescriptionPrintDocument({
           {/* Treatments */}
           {diagnostic.treatments && diagnostic.treatments.length > 0 && (
             <section>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Traitement prescrit</p>
+              <p className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-3">Traitement prescrit</p>
               <div className="space-y-3">
                 {diagnostic.treatments.map((treatment, index) => (
                   <div key={index} className="p-5 border-l-4 border-indigo-400 bg-indigo-50/60 rounded-r-xl">
@@ -224,7 +224,7 @@ export function PrescriptionPrintDocument({
           {/* Recommendations */}
           {diagnostic.recommendations && diagnostic.recommendations.length > 0 && (
             <section>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Recommandations</p>
+              <p className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-3">Recommandations</p>
               <ul className="space-y-1.5">
                 {diagnostic.recommendations.map((rec, index) => (
                   <li key={index} className="flex items-start gap-2 text-sm text-gray-700">
@@ -239,7 +239,7 @@ export function PrescriptionPrintDocument({
           {/* Follow-up */}
           {(diagnostic.follow_up_delay_days || (diagnostic.follow_up_tests && diagnostic.follow_up_tests.length > 0)) && (
             <section>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Suivi</p>
+              <p className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-3">Suivi</p>
               <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl text-sm text-gray-700 space-y-2">
                 {diagnostic.follow_up_delay_days && (
                   <p>Prochaine consultation recommandée dans <strong>{diagnostic.follow_up_delay_days} jours</strong></p>
@@ -263,12 +263,12 @@ export function PrescriptionPrintDocument({
 
           {/* Signature */}
           <section className="border-t border-gray-200 pt-6 flex justify-between items-end">
-            <div className="text-xs text-gray-400 space-y-1">
+            <div className="text-xs text-gray-600 space-y-1">
               <p>Document généré le {formattedDate}</p>
               <p className="font-mono">Réf: {diagnostic.id.slice(0, 8).toUpperCase()}</p>
             </div>
             <div className="text-center space-y-2">
-              <p className="text-xs text-gray-400">Signature et cachet</p>
+              <p className="text-xs text-gray-600">Signature et cachet</p>
               {signatureDataUrl ? (
                 <div className="flex flex-col items-center gap-1">
                   <img
@@ -287,7 +287,7 @@ export function PrescriptionPrintDocument({
                 </p>
               )}
               {diagnostic.practitioner_rpps && (
-                <p className="text-xs text-gray-400">N° {diagnostic.practitioner_rpps}</p>
+                <p className="text-xs text-gray-600">N° {diagnostic.practitioner_rpps}</p>
               )}
             </div>
           </section>
