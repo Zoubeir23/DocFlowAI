@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/server";
 import { validateApiKey, extractApiKey } from "@/lib/api-auth";
+import { sanitizePostgrestSearchTerm } from "@/lib/security/sanitize-postgrest-search";
 
 function unauthorized() {
   return NextResponse.json(
@@ -124,7 +125,12 @@ async function executeTool(name: string, args: Record<string, any>, clinicId: st
       .limit(limit);
 
     if (args.search) {
-      query = query.or(`full_name.ilike.%${args.search}%,phone.ilike.%${args.search}%,email.ilike.%${args.search}%`);
+      const safeSearch = sanitizePostgrestSearchTerm(String(args.search));
+      if (safeSearch) {
+        query = query.or(
+          `full_name.ilike.%${safeSearch}%,phone.ilike.%${safeSearch}%,email.ilike.%${safeSearch}%`
+        );
+      }
     }
 
     const { data, error } = await query;

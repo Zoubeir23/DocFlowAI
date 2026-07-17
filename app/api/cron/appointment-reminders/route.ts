@@ -1,6 +1,16 @@
+import { timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendNotification } from "@/lib/notifications";
+
+function isValidCronSecret(authHeader: string | null, cronSecret: string | undefined): boolean {
+  if (!cronSecret || !authHeader) return false;
+  const expected = `Bearer ${cronSecret}`;
+  const provided = Buffer.from(authHeader);
+  const expectedBuffer = Buffer.from(expected);
+  if (provided.length !== expectedBuffer.length) return false;
+  return timingSafeEqual(provided, expectedBuffer);
+}
 
 interface AppointmentWithRelations {
   id: string;
@@ -20,7 +30,7 @@ export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
 
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  if (!isValidCronSecret(authHeader, cronSecret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

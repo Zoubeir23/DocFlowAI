@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { createAdminClient } from "@/lib/supabase/server";
+import { validateWebhookUrl } from "@/lib/security/webhook-url-validation";
 
 export type WebhookEvent =
   | "appointment.created"
@@ -24,6 +25,13 @@ async function deliverToEndpoint(
   secret: string,
   payload: WebhookPayload
 ): Promise<{ statusCode: number; success: boolean }> {
+  // Revalide à la livraison : une URL validée à la création peut avoir été
+  // repointée vers une IP interne entre-temps (DNS rebinding).
+  const urlValidation = await validateWebhookUrl(url);
+  if (!urlValidation.valid) {
+    return { statusCode: 0, success: false };
+  }
+
   const body = JSON.stringify(payload);
   const signature = buildSignature(secret, body);
 
@@ -48,6 +56,19 @@ async function deliverToEndpoint(
   } finally {
     clearTimeout(timeout);
   }
+}
+
+export async function deliverTestWebhook(
+  url: string,
+  secret: string,
+  clinicId: string
+): Promise<{ statusCode: number; success: boolean }> {
+  return deliverToEndpoint(url, secret, {
+    event: "appointment.created",
+    clinic_id: clinicId,
+    timestamp: new Date().toISOString(),
+    data: { test: true, message: "Ceci est un test de webhook DocFlow" },
+  });
 }
 
 export async function dispatchWebhookEvent(

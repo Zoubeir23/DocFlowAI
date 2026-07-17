@@ -210,6 +210,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   if (dbError) {
+    // 23505 = violation de la contrainte UNIQUE sur crypto_tx_hash : deux
+    // requêtes concurrentes ont tenté d'activer un abonnement avec la même
+    // transaction. La première a gagné, on rejette proprement la seconde.
+    if ((dbError as { code?: string }).code === "23505") {
+      return NextResponse.json(
+        { error: "Cette transaction a déjà été utilisée pour activer un abonnement." },
+        { status: 409 }
+      );
+    }
     console.error("[CryptoWebhook] DB error:", dbError.message);
     return NextResponse.json(
       { error: "Paiement vérifié mais erreur base de données. Contactez le support avec votre txHash." },
