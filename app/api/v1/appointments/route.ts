@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { validateApiKey, extractApiKey } from "@/lib/api-auth";
 import { checkAppointmentQuota } from "@/lib/subscription/quota";
 import { dispatchWebhookEvent } from "@/lib/webhooks";
+import { checkApiIpRateLimit, getClientIp } from "@/lib/rate-limit";
 
 function unauthorized() {
   return NextResponse.json(
@@ -13,8 +14,17 @@ function unauthorized() {
   );
 }
 
+function tooManyRequests() {
+  return NextResponse.json(
+    { error: "Trop de requêtes. Réessayez dans une minute." },
+    { status: 429 }
+  );
+}
+
 // GET /api/v1/appointments
 export async function GET(req: NextRequest) {
+  if (!(await checkApiIpRateLimit(getClientIp(req)))) return tooManyRequests();
+
   const ctx = await validateApiKey(extractApiKey(req));
   if (!ctx) return unauthorized();
 
@@ -59,6 +69,8 @@ const createAppointmentSchema = z.object({
 
 // POST /api/v1/appointments
 export async function POST(req: NextRequest) {
+  if (!(await checkApiIpRateLimit(getClientIp(req)))) return tooManyRequests();
+
   const ctx = await validateApiKey(extractApiKey(req));
   if (!ctx) return unauthorized();
 

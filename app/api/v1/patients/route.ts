@@ -3,6 +3,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { validateApiKey, extractApiKey } from "@/lib/api-auth";
 import { sanitizePostgrestSearchTerm } from "@/lib/security/sanitize-postgrest-search";
+import { checkApiIpRateLimit, getClientIp } from "@/lib/rate-limit";
+
+function tooManyRequests() {
+  return NextResponse.json(
+    { error: "Trop de requêtes. Réessayez dans une minute." },
+    { status: 429 }
+  );
+}
 
 function unauthorized() {
   return NextResponse.json(
@@ -13,6 +21,8 @@ function unauthorized() {
 
 // GET /api/v1/patients
 export async function GET(req: NextRequest) {
+  if (!(await checkApiIpRateLimit(getClientIp(req)))) return tooManyRequests();
+
   const ctx = await validateApiKey(extractApiKey(req));
   if (!ctx) return unauthorized();
 

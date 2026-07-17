@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server";
 import { checkDrugInteractions } from "@/lib/who-drug-interactions";
 import { createClient } from "@/lib/supabase/server";
+import { checkAuthenticatedRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!(await checkAuthenticatedRateLimit(user.id, "who-interactions"))) {
+    return NextResponse.json({ error: "Trop de requêtes. Réessayez dans une minute." }, { status: 429 });
   }
 
   let body: unknown;

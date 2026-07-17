@@ -31,6 +31,7 @@ import { useRouter } from "next/navigation";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { useTranslations } from "next-intl";
+import DOMPurify from "isomorphic-dompurify";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -833,7 +834,7 @@ function NewsletterPanel() {
               <p className="text-xs font-bold text-muted-foreground mb-2">Aperçu</p>
               <div
                 className="text-sm text-foreground"
-                dangerouslySetInnerHTML={{ __html: bodyHtml }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(bodyHtml) }}
               />
             </div>
           )}

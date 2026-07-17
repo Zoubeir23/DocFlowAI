@@ -4,6 +4,7 @@ import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/server";
 import { validateApiKey, extractApiKey } from "@/lib/api-auth";
 import { sanitizePostgrestSearchTerm } from "@/lib/security/sanitize-postgrest-search";
+import { checkApiIpRateLimit, getClientIp } from "@/lib/rate-limit";
 
 function unauthorized() {
   return NextResponse.json(
@@ -226,6 +227,10 @@ function jsonRpcError(id: unknown, code: number, message: string) {
 }
 
 export async function POST(req: NextRequest) {
+  if (!(await checkApiIpRateLimit(getClientIp(req)))) {
+    return NextResponse.json({ error: "Trop de requêtes. Réessayez dans une minute." }, { status: 429 });
+  }
+
   const ctx = await validateApiKey(extractApiKey(req));
   if (!ctx) return unauthorized();
 
@@ -285,6 +290,10 @@ export async function POST(req: NextRequest) {
 
 // GET for SSE ping / discovery
 export async function GET(req: NextRequest) {
+  if (!(await checkApiIpRateLimit(getClientIp(req)))) {
+    return NextResponse.json({ error: "Trop de requêtes. Réessayez dans une minute." }, { status: 429 });
+  }
+
   const ctx = await validateApiKey(extractApiKey(req));
   if (!ctx) return unauthorized();
 
