@@ -143,7 +143,7 @@ export default async function HomePage() {
               
               <h1 className="text-5xl lg:text-[72px] font-cormorant font-medium leading-[1.1] mb-6 text-foreground">
                 {t("hero.titlePart1")} <br/>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-600 italic pr-2">
+                <span className="text-primary italic pr-2">
                   {t("hero.titleHighlight")}
                 </span>
               </h1>
@@ -227,8 +227,8 @@ export default async function HomePage() {
                         <div className="w-2/3 h-2 bg-blue-500/40 rounded mb-1" />
                         <div className="w-1/2 h-2 bg-blue-500/30 rounded" />
                       </div>
-                      <div className="absolute top-24 left-2/3 right-2 h-12 bg-purple-500/20 border-l-4 border-purple-500 rounded-r-md p-2">
-                         <div className="w-1/2 h-2 bg-purple-500/40 rounded" />
+                      <div className="absolute top-24 left-2/3 right-2 h-12 bg-emerald-500/20 border-l-4 border-emerald-500 rounded-r-md p-2">
+                         <div className="w-1/2 h-2 bg-emerald-500/40 rounded" />
                       </div>
                     </div>
                   </div>
@@ -294,8 +294,8 @@ export default async function HomePage() {
 
             {/* Bento 3: CRM */}
             <div className="bg-card rounded-3xl p-8 lg:p-10 border border-border shadow-sm hover:shadow-xl transition-shadow">
-              <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-8 border border-purple-500/20">
-                <Users className="w-7 h-7 text-purple-500" />
+              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-8 border border-emerald-500/20">
+                <Users className="w-7 h-7 text-emerald-500" />
               </div>
               <h3 className="text-xl font-bold text-foreground mb-4">{t("features.crmTitle")}</h3>
               <p className="text-muted-foreground leading-relaxed">{t("features.crmDesc")}</p>

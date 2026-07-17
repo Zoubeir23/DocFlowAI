@@ -245,6 +245,19 @@ export function WidgetChat({
         .wg-orb-1 { animation: wg-orb-1 6s ease-in-out infinite; }
         .wg-orb-2 { animation: wg-orb-2 8s ease-in-out infinite; }
 
+        @keyframes wg-typing {
+          0%, 60%, 100% { opacity: 0.35; transform: translateY(0); }
+          30% { opacity: 1; transform: translateY(-3px); }
+        }
+        .wg-typing { animation: wg-typing 1.2s cubic-bezier(0.22,1,0.36,1) infinite; }
+
+        @media (prefers-reduced-motion: reduce) {
+          .wg-float, .wg-ping, .wg-orb-1, .wg-orb-2, .wg-typing { animation: none; }
+          .wg-in, .wg-slide, .wg-slide-1, .wg-slide-2, .wg-slide-3 {
+            animation-duration: 0.01ms; opacity: 1;
+          }
+        }
+
         .wg-input:focus-within {
           border-color: ${widgetColor}55;
           box-shadow: 0 0 0 3px ${pa(0.1)};
@@ -946,7 +959,7 @@ export function WidgetChat({
                       <div className="rounded-2xl rounded-bl-md px-4 py-3 shadow-sm" style={{ backgroundColor: widgetColor }}>
                         <div className="flex gap-1">
                           {[0, 1, 2].map((i) => (
-                            <div key={i} className="w-1.5 h-1.5 bg-white/70 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+                            <div key={i} className="w-1.5 h-1.5 bg-white/70 rounded-full wg-typing" style={{ animationDelay: `${i * 0.18}s` }} />
                           ))}
                         </div>
                       </div>
