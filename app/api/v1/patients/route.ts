@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { validateApiKey, extractApiKey } from "@/lib/api-auth";
+import { sanitizePostgrestSearchTerm } from "@/lib/security/sanitize-postgrest-search";
 
 function unauthorized() {
   return NextResponse.json(
@@ -30,7 +31,12 @@ export async function GET(req: NextRequest) {
     .range(offset, offset + limit - 1);
 
   if (search) {
-    query = query.or(`full_name.ilike.%${search}%,phone.ilike.%${search}%,email.ilike.%${search}%`);
+    const safeSearch = sanitizePostgrestSearchTerm(search);
+    if (safeSearch) {
+      query = query.or(
+        `full_name.ilike.%${safeSearch}%,phone.ilike.%${safeSearch}%,email.ilike.%${safeSearch}%`
+      );
+    }
   }
 
   const { data, count, error } = await query;

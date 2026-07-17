@@ -1,14 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-
-function escapeCsvField(value: string | null | undefined): string {
-  if (value === null || value === undefined) return "";
-  const stringValue = String(value);
-  if (stringValue.includes(",") || stringValue.includes('"') || stringValue.includes("\n")) {
-    return `"${stringValue.replace(/"/g, '""')}"`;
-  }
-  return stringValue;
-}
+import { escapeCsvField } from "@/lib/csv/escape-csv-field";
 
 function formatDateFr(iso: string | null): string {
   if (!iso) return "";

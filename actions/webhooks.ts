@@ -2,7 +2,8 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { dispatchWebhookEvent, type WebhookEvent } from "@/lib/webhooks";
+import { deliverTestWebhook, type WebhookEvent } from "@/lib/webhooks";
+import { validateWebhookUrl } from "@/lib/security/webhook-url-validation";
 import crypto from "crypto";
 import type { ApiResponse } from "@/types";
 
@@ -65,8 +66,9 @@ export async function createWebhook(input: {
   if (!trimmedName || trimmedName.length > 100) {
     return { success: false, error: "Nom invalide (1-100 caractères)" };
   }
-  if (!trimmedUrl.startsWith("https://")) {
-    return { success: false, error: "L'URL doit utiliser HTTPS" };
+  const urlValidation = await validateWebhookUrl(trimmedUrl);
+  if (!urlValidation.valid) {
+    return { success: false, error: urlValidation.error ?? "URL invalide" };
   }
   if (!input.events.length) {
     return { success: false, error: "Sélectionnez au moins un événement" };
@@ -149,13 +151,18 @@ export async function testWebhook(webhookId: string): Promise<ApiResponse<{ stat
 
   if (!hook) return { success: false, error: "Webhook introuvable" };
 
-  await dispatchWebhookEvent(auth.clinicId, "appointment.created", {
-    id: "test-" + Date.now(),
-    test: true,
-    message: "Ceci est un test de webhook DocFlow",
-  });
+  const { statusCode, success } = await deliverTestWebhook(hook.url, hook.secret, auth.clinicId);
 
-  return { success: true, data: { statusCode: 200 } };
+  if (!success) {
+    return {
+      success: false,
+      error: statusCode > 0
+        ? `L'endpoint a répondu ${statusCode}`
+        : "Endpoint injoignable ou URL non autorisée",
+    };
+  }
+
+  return { success: true, data: { statusCode } };
 }
 
 export async function regenerateWebhookSecret(
