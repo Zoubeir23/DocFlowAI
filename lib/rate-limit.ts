@@ -71,3 +71,37 @@ export async function checkWidgetSlotsRateLimit(ip: string): Promise<boolean> {
   const { success } = await limiter.limit(`slots:${ip}`);
   return success;
 }
+
+// ── Limiters génériques (endpoints hors widget) ───────────────────────────────
+// Requêtes API par IP : appliqué AVANT la validation de clé, donc protège aussi
+// contre le brute-force de clés d'API (une clé invalide n'a pas de keyId).
+const API_IP_LIMIT: RateLimitConfig = { requests: 120, windowSeconds: 60 };
+// Endpoints authentifiés coûteux (upload, import, proxies externes) : par user.
+const AUTHENTICATED_WRITE_LIMIT: RateLimitConfig = { requests: 30, windowSeconds: 60 };
+
+/**
+ * Vérifie une limite de débit pour un identifiant arbitraire (IP, userId…).
+ * Retombe sur le store en mémoire si Redis n'est pas configuré.
+ */
+export async function checkRateLimit(
+  identifier: string,
+  config: RateLimitConfig
+): Promise<boolean> {
+  const limiter = getLimiter(config);
+  if (!limiter) return inMemoryCheck(identifier, config.requests, config.windowSeconds);
+  const { success } = await limiter.limit(identifier);
+  return success;
+}
+
+export function checkApiIpRateLimit(ip: string): Promise<boolean> {
+  return checkRateLimit(`api-ip:${ip}`, API_IP_LIMIT);
+}
+
+export function checkAuthenticatedRateLimit(userId: string, bucket: string): Promise<boolean> {
+  return checkRateLimit(`auth:${bucket}:${userId}`, AUTHENTICATED_WRITE_LIMIT);
+}
+
+/** Extrait l'IP client de l'en-tête x-forwarded-for (première valeur). */
+export function getClientIp(request: Request): string {
+  return request.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
+}
