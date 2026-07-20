@@ -91,6 +91,14 @@ export default function BillingPage() {
     setStripeStatus(params.get("stripe"));
   }, []);
 
+  // Plafonne le polling déclenché par un retour "success" : au bout de 15s
+  // le webhook a largement eu le temps d'arriver, inutile de continuer.
+  useEffect(() => {
+    if (stripeStatus !== "success") return;
+    const timer = setTimeout(() => setStripeStatus(null), 15000);
+    return () => clearTimeout(timer);
+  }, [stripeStatus]);
+
   // Stripe redirige vers success_url avant l'arrivée du webhook
   // checkout.session.completed qui met réellement à jour la subscription :
   // on poll brièvement tant que le retour est "success" pour éviter d'afficher
