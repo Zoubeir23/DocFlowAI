@@ -18,6 +18,11 @@ function isOverlapConstraintViolation(error: { code?: string; message?: string }
   return error.code === "23P01" || (error.message ?? "").includes("appointments_no_overlap");
 }
 
+function isQuotaTriggerViolation(error: { message?: string } | null): boolean {
+  if (!error) return false;
+  return (error.message ?? "").includes("quota_exceeded");
+}
+
 async function getDB() {
   return (await createClient()) as any;
 }
