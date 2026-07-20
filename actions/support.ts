@@ -69,6 +69,13 @@ export async function sendSupportTicket(
   const context = await getAuthenticatedUserContext();
   if (!context) return { success: false, error: "Non authentifié" };
 
+  if (!data.subject?.trim() || !data.message?.trim()) {
+    return { success: false, error: "Le sujet et le message sont requis." };
+  }
+  if (data.subject.length > 200 || data.message.length > 5000) {
+    return { success: false, error: "Sujet ou message trop long." };
+  }
+
   const isPriority = ["professional", "enterprise"].includes(context.plan);
   const ticketId = `TKT-${Date.now().toString(36).toUpperCase()}`;
   const supportEmail = process.env.SUPPORT_EMAIL ?? process.env.NEXT_PUBLIC_EMAIL_FROM ?? "support@docflow.ai";
