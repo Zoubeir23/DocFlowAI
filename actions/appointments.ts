@@ -115,6 +115,9 @@ export async function createAppointment(
     if (isOverlapConstraintViolation(error)) {
       return { success: false, error: OVERLAP_CONSTRAINT_MESSAGE };
     }
+    if (isQuotaTriggerViolation(error)) {
+      return { success: false, error: "Quota de rendez-vous atteint." };
+    }
     return { success: false, error: error.message };
   }
 
