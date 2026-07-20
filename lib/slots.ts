@@ -28,8 +28,10 @@ export function generateAvailableSlots(input: SlotInput): Slot[] {
     timezone,
   } = input;
 
-  const dateObj = parseISO(date);
-  const dayOfWeek = dateObj.getDay();
+  // parseISO(date).getDay() dépend du fuseau du serveur d'exécution : on dérive
+  // le jour de semaine directement des composants UTC pour rester déterministe.
+  const [year, month, day] = date.split("-").map(Number);
+  const dayOfWeek = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
 
   const isBlocked = blockedDates.some((bd) => bd.date === date);
   if (isBlocked) return [];
