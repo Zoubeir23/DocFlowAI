@@ -12,8 +12,19 @@ async function getDB() {
   return (await createClient()) as any;
 }
 
+async function getAuthenticatedClinicId(db: any): Promise<string | null> {
+  const { data: authData } = await db.auth.getUser();
+  if (!authData.user) return null;
+  const { data: userData } = await db.from("users").select("clinic_id").eq("id", authData.user.id).maybeSingle();
+  return userData?.clinic_id ?? null;
+}
+
 export async function getServices(clinicId: string) {
   const db = await getDB();
+  const userClinicId = await getAuthenticatedClinicId(db);
+  if (!userClinicId || userClinicId !== clinicId) {
+    return { data: [] as Service[], error: { message: "Unauthorized" } };
+  }
   const { data, error } = await db
     .from("services")
     .select("*")
