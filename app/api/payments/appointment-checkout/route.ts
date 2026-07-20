@@ -106,7 +106,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       stripe_checkout_session_id: session.id,
     })
     .eq("id", appointmentId)
-    .eq("payment_status", "not_required");
+    .eq("payment_status", "unpaid");
 
   if (updateError) {
     console.error("[Checkout] Failed to update appointment payment status:", updateError.message);
