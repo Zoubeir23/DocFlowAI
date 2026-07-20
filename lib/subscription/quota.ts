@@ -37,12 +37,19 @@ export async function checkAppointmentQuota(clinicId: string, db: any): Promise<
     return { allowed: true, current: 0, limit: null, plan };
   }
 
+  // Le plan gratuit n'a pas de cycle de facturation qui se renouvelle : sa
+  // current_period_end (fixée une fois à l'onboarding, +14 jours) reste figée
+  // dans le passé indéfiniment, ce qui excluait tout RDV créé après coup du
+  // comptage (.lte(periodEnd)) et désactivait silencieusement la limite.
+  // On utilise donc une fenêtre glissante de 30 jours pour le plan gratuit.
   const periodStart =
-    sub?.current_period_start ??
-    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    plan === "free"
+      ? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+      : sub?.current_period_start ?? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const periodEnd =
-    sub?.current_period_end ??
-    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    plan === "free"
+      ? new Date().toISOString()
+      : sub?.current_period_end ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
   const { count } = await db
     .from("appointments")
