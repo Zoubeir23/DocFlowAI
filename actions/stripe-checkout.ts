@@ -85,7 +85,11 @@ export async function createStripeCheckoutSession(
       const periodStart = new Date(updatedItem.current_period_start * 1000).toISOString();
       const periodEnd = new Date(updatedItem.current_period_end * 1000).toISOString();
 
-      await db
+      // Écriture via le client admin : la policy RLS staff n'autorise que la
+      // lecture sur subscriptions (voir migration 008), toute écriture doit
+      // passer par le service role.
+      const adminDb = (await createAdminClient()) as any;
+      await adminDb
         .from("subscriptions")
         .update({ plan, status: "active", current_period_start: periodStart, current_period_end: periodEnd })
         .eq("clinic_id", userData.clinic_id);
