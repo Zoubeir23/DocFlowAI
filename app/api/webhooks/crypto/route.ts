@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { getStripeServerClient } from "@/lib/stripe/client";
 
 export const runtime = "nodejs";
 
