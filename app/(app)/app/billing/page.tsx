@@ -156,6 +156,12 @@ export default function BillingPage() {
           <p className="text-sm font-medium">{stripeError}</p>
         </div>
       )}
+      {planChangedMessage && (
+        <div className="flex items-center gap-3 p-4 status-confirmed rounded-xl">
+          <CheckCircle className="w-5 h-5 flex-shrink-0" />
+          <p className="text-sm font-medium">{planChangedMessage}</p>
+        </div>
+      )}
 
       {/* Current subscription + quota */}
       {subscription && (() => {
