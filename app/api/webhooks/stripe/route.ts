@@ -203,6 +203,7 @@ async function handleCheckoutSessionCompleted(
 
     if (error) {
       console.error("[StripeWebhook] Failed to update subscription:", error.message);
+      return false;
     }
   } else {
     const { error } = await db.from("subscriptions").insert({
@@ -218,10 +219,12 @@ async function handleCheckoutSessionCompleted(
 
     if (error) {
       console.error("[StripeWebhook] Failed to insert subscription:", error.message);
+      return false;
     }
   }
 
   console.log(`[StripeWebhook] Subscription activated — clinic: ${clinicId}, plan: ${plan}`);
+  return true;
 }
 
 // Mappe le statut Stripe (plus fin) vers les valeurs acceptées par la colonne
