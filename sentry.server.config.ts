@@ -14,7 +14,10 @@ Sentry.init({
   // Enable logs to be sent to Sentry
   enableLogs: true,
 
-  // Enable sending user PII (Personally Identifiable Information)
+  // sendDefaultPii désactivé : application médicale, pas d'IP/cookies/headers
+  // d'auth par défaut sur des endpoints qui manipulent des données patients.
   // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
-  sendDefaultPii: true,
+  sendDefaultPii: false,
+
+  beforeSend: (event) => scrubSentryEvent(event),
 });
