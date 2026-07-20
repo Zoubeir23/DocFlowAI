@@ -254,9 +254,9 @@ function resolvePlanFromPriceId(priceId: string | undefined): "starter" | "profe
 
 async function handleSubscriptionRenewed(
   stripeSubscription: Stripe.Subscription
-): Promise<void> {
+): Promise<boolean> {
   const clinicId = stripeSubscription.metadata?.clinic_id;
-  if (!clinicId) return;
+  if (!clinicId) return true;
 
   const firstItem = stripeSubscription.items?.data?.[0];
   const itemPeriod = firstItem?.current_period_start && firstItem?.current_period_end
@@ -293,12 +293,14 @@ async function handleSubscriptionRenewed(
 
   if (error) {
     console.error("[StripeWebhook] Failed to renew subscription:", error.message);
+    return false;
   }
+  return true;
 }
 
 async function handleSubscriptionDeleted(
   stripeSubscription: Stripe.Subscription
-): Promise<void> {
+): Promise<boolean> {
   const subscriptionId = stripeSubscription.id;
   const supabase = await createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -311,8 +313,9 @@ async function handleSubscriptionDeleted(
 
   if (error) {
     console.error("[StripeWebhook] Failed to cancel subscription:", error.message);
-    return;
+    return false;
   }
 
   console.log(`[StripeWebhook] Subscription cancelled — stripe_id: ${subscriptionId}`);
+  return true;
 }
