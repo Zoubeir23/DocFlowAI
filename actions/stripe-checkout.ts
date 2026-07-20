@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { getStripeServerClient, STRIPE_PLAN_PRICE_IDS } from "@/lib/stripe/client";
 
 export type StripePlan = "starter" | "professional" | "enterprise";
@@ -48,6 +48,55 @@ export async function createStripeCheckoutSession(
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const stripe = getStripeServerClient();
+
+  // Changement de plan sur un abonnement Stripe déjà actif : on modifie
+  // l'abonnement existant au lieu de créer une nouvelle session checkout,
+  // qui créerait un second abonnement Stripe facturé en parallèle du premier.
+  const { data: existingSubscription } = await db
+    .from("subscriptions")
+    .select("stripe_subscription_id, status, payment_provider")
+    .eq("clinic_id", userData.clinic_id)
+    .maybeSingle();
+
+  if (
+    existingSubscription?.stripe_subscription_id &&
+    existingSubscription.payment_provider === "stripe" &&
+    existingSubscription.status === "active"
+  ) {
+    try {
+      const currentSubscription = await stripe.subscriptions.retrieve(
+        existingSubscription.stripe_subscription_id
+      );
+      const currentItem = currentSubscription.items.data[0];
+      if (!currentItem) {
+        return { checkoutUrl: null, error: "Abonnement Stripe introuvable ou invalide." };
+      }
+
+      const updatedSubscription = await stripe.subscriptions.update(
+        existingSubscription.stripe_subscription_id,
+        {
+          items: [{ id: currentItem.id, price: priceId }],
+          proration_behavior: "create_prorations",
+          metadata: { clinic_id: userData.clinic_id as string, plan },
+        }
+      );
+
+      const updatedItem = updatedSubscription.items.data[0];
+      const periodStart = new Date(updatedItem.current_period_start * 1000).toISOString();
+      const periodEnd = new Date(updatedItem.current_period_end * 1000).toISOString();
+
+      await db
+        .from("subscriptions")
+        .update({ plan, status: "active", current_period_start: periodStart, current_period_end: periodEnd })
+        .eq("clinic_id", userData.clinic_id);
+
+      return { checkoutUrl: null, error: null, updatedDirectly: true };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Erreur Stripe inconnue";
+      console.error("[Stripe] updateSubscription error:", message);
+      return { checkoutUrl: null, error: message };
+    }
+  }
 
   try {
     const session = await stripe.checkout.sessions.create({
