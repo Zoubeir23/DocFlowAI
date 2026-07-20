@@ -62,14 +62,27 @@ export async function updateService(
   data: Partial<ServiceInput>
 ): Promise<ApiResponse> {
   const db = await getDB();
-  const { error } = await db.from("services").update(data).eq("id", serviceId);
+  const userClinicId = await getAuthenticatedClinicId(db);
+  if (!userClinicId) return { success: false, error: "Not authenticated" };
+  const { clinic_id: _clinicId, id: _id, ...safeData } = data as Partial<ServiceInput> & { clinic_id?: string; id?: string };
+  const { error } = await db
+    .from("services")
+    .update(safeData)
+    .eq("id", serviceId)
+    .eq("clinic_id", userClinicId);
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
 
 export async function deleteService(serviceId: string): Promise<ApiResponse> {
   const db = await getDB();
-  const { error } = await db.from("services").delete().eq("id", serviceId);
+  const userClinicId = await getAuthenticatedClinicId(db);
+  if (!userClinicId) return { success: false, error: "Not authenticated" };
+  const { error } = await db
+    .from("services")
+    .delete()
+    .eq("id", serviceId)
+    .eq("clinic_id", userClinicId);
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
