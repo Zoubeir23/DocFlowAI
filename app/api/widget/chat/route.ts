@@ -71,7 +71,8 @@ export async function POST(req: NextRequest) {
   const nextDates = getNextAvailableDates(
     availabilityRules as AvailabilityRule[],
     blockedDates as BlockedDate[],
-    14
+    14,
+    clinic.timezone
   ).slice(0, 5);
 
   const slotsPerDate = await Promise.all(
