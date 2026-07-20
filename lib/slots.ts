@@ -106,10 +106,12 @@ export function generateAvailableSlots(input: SlotInput): Slot[] {
 export function getNextAvailableDates(
   availabilityRules: AvailabilityRule[],
   blockedDates: BlockedDate[],
-  daysToCheck = 30
+  daysToCheck = 30,
+  timezone = "UTC"
 ): string[] {
   const available: string[] = [];
-  const today = new Date();
+  // "Aujourd'hui" doit être la date calendaire côté clinique, pas côté serveur.
+  const todayInClinicTz = toZonedTime(new Date(), timezone);
   const activeDays = availabilityRules
     .filter((r) => r.is_active)
     .map((r) => r.day_of_week);
@@ -117,7 +119,7 @@ export function getNextAvailableDates(
   const blockedSet = new Set(blockedDates.map((b) => b.date));
 
   for (let i = 0; i < daysToCheck; i++) {
-    const d = new Date(today);
+    const d = new Date(todayInClinicTz);
     d.setDate(d.getDate() + i);
     const dateStr = format(d, "yyyy-MM-dd");
     const dow = d.getDay();
