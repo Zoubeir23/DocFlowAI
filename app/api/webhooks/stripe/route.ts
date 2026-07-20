@@ -85,6 +85,32 @@ async function handleAppointmentPaymentCompleted(
   console.log(`[StripeWebhook] Appointment paid — id: ${appointmentId}`);
 }
 
+async function handleAppointmentPaymentExpired(
+  session: Stripe.Checkout.Session
+): Promise<void> {
+  const appointmentId = session.metadata?.appointment_id;
+  if (!appointmentId) return;
+
+  const supabase = await createAdminClient();
+  const db = supabase as any;
+
+  // Ne réinitialise que si le paiement est toujours en attente pour cette
+  // session précise — évite d'écraser un paiement déjà confirmé entre-temps.
+  const { error } = await db
+    .from("appointments")
+    .update({ payment_status: "unpaid", stripe_checkout_session_id: null })
+    .eq("id", appointmentId)
+    .eq("stripe_checkout_session_id", session.id)
+    .eq("payment_status", "pending");
+
+  if (error) {
+    console.error("[StripeWebhook] Failed to reset expired appointment payment:", error.message);
+    return;
+  }
+
+  console.log(`[StripeWebhook] Appointment payment session expired — id: ${appointmentId}`);
+}
+
 async function handleCheckoutSessionCompleted(
   session: Stripe.Checkout.Session
 ): Promise<void> {
