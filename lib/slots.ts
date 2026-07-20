@@ -1,5 +1,5 @@
-import { addMinutes, format, parseISO, isBefore, isAfter, startOfDay } from "date-fns";
-import { formatInTimeZone, toZonedTime } from "date-fns-tz";
+import { format, parseISO, isBefore, isAfter } from "date-fns";
+import { formatInTimeZone, fromZonedTime, toZonedTime } from "date-fns-tz";
 import type { AvailabilityRule, BlockedDate, Appointment } from "@/types";
 import { timeToMinutes, minutesToTime } from "./utils";
 
