@@ -39,6 +39,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
   }
 
+  if (event.type === "checkout.session.expired") {
+    const session = event.data.object as Stripe.Checkout.Session;
+    if (session.metadata?.type === "appointment_payment") {
+      await handleAppointmentPaymentExpired(session);
+    }
+  }
+
   if (event.type === "customer.subscription.deleted") {
     const subscription = event.data.object as Stripe.Subscription;
     await handleSubscriptionDeleted(subscription);
