@@ -38,6 +38,10 @@ export async function createService(
   data: ServiceInput
 ): Promise<ApiResponse<{ id: string }>> {
   const db = await getDB();
+  const userClinicId = await getAuthenticatedClinicId(db);
+  if (!userClinicId || userClinicId !== clinicId) {
+    return { success: false, error: "Unauthorized" };
+  }
   const validated = serviceSchema.safeParse(data);
   if (!validated.success) {
     return { success: false, error: validated.error.errors[0].message };
