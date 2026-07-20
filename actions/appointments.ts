@@ -11,6 +11,13 @@ import type { z } from "zod";
 
 type AppointmentInput = z.infer<typeof appointmentSchema>;
 
+const OVERLAP_CONSTRAINT_MESSAGE = "Ce créneau chevauche un autre rendez-vous actif de la clinique.";
+
+function isOverlapConstraintViolation(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  return error.code === "23P01" || (error.message ?? "").includes("appointments_no_overlap");
+}
+
 async function getDB() {
   return (await createClient()) as any;
 }
