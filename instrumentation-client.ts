@@ -24,9 +24,11 @@ Sentry.init({
   // Define how likely Replay events are sampled when an error occurs.
   replaysOnErrorSampleRate: 1.0,
 
-  // Enable sending user PII (Personally Identifiable Information)
+  // sendDefaultPii désactivé : application médicale, pas d'IP/cookies par défaut.
   // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
-  sendDefaultPii: true,
+  sendDefaultPii: false,
+
+  beforeSend: (event) => scrubSentryEvent(event),
 });
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
