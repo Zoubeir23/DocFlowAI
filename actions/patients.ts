@@ -3,6 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from "@/lib/supabase/server";
 import { patientSchema } from "@/lib/validations";
+import { sanitizePostgrestSearchTerm } from "@/lib/security/sanitize-postgrest-search";
 import type { ApiResponse, PaginatedResult, Patient } from "@/types";
 import type { z } from "zod";
 
