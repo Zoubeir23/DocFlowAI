@@ -118,7 +118,19 @@ export async function updatePatient(
   // C5 fix: scope update to caller's clinic
   const userClinicId = await getAuthenticatedClinicId(db);
   if (!userClinicId) return { success: false, error: "Not authenticated" };
-  const { error } = await db.from("patients").update(data).eq("id", patientId).eq("clinic_id", userClinicId);
+
+  const validated = patientSchema.partial().safeParse(data);
+  if (!validated.success) {
+    return { success: false, error: validated.error.errors[0].message };
+  }
+  // clinic_id/id ne font pas partie du schéma patient — exclus explicitement
+  // pour empêcher un déplacement de patient vers une autre clinique.
+  const { clinic_id: _clinicId, id: _id, ...safeData } = validated.data as Partial<PatientInput> & {
+    clinic_id?: string;
+    id?: string;
+  };
+
+  const { error } = await db.from("patients").update(safeData).eq("id", patientId).eq("clinic_id", userClinicId);
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
