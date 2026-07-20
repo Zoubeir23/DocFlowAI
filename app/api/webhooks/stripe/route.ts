@@ -30,6 +30,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
+  // Idempotence explicite : on vérifie d'abord si cet event.id a déjà été
+  // traité avec succès (rejeu Stripe). L'enregistrement n'est écrit qu'APRÈS
+  // un traitement réussi (voir plus bas) — un échec (handled=false, réponse
+  // 500) laisse l'event.id "libre" pour que le retry Stripe soit réellement
+  // retraité, au lieu d'être avalé comme un doublon.
+  const supabaseIdem = await createAdminClient();
+  const dbIdem = supabaseIdem as any;
+  const { data: alreadyProcessed } = await dbIdem
+    .from("stripe_webhook_events")
+    .select("event_id")
+    .eq("event_id", event.id)
+    .maybeSingle();
+
+  if (alreadyProcessed) {
+    return NextResponse.json({ received: true, duplicate: true });
+  }
+
   // Chaque handler renvoie false en cas d'échec d'écriture DB : on répond alors
   // 500 pour que Stripe considère la livraison échouée et retente l'événement
   // plus tard, au lieu de le perdre silencieusement (voir handlers ci-dessous).
@@ -66,6 +83,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   if (!handled) {
     return NextResponse.json({ error: "Processing failed, retry requested" }, { status: 500 });
+  }
+
+  const { error: markProcessedError } = await dbIdem
+    .from("stripe_webhook_events")
+    .insert({ event_id: event.id, event_type: event.type });
+  if (markProcessedError && markProcessedError.code !== "23505") {
+    console.error("[StripeWebhook] Failed to record processed event:", markProcessedError.message);
   }
 
   return NextResponse.json({ received: true });
