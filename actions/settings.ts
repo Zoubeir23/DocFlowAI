@@ -129,6 +129,9 @@ export async function removeBlockedDate(blockedDateId: string): Promise<ApiRespo
 
 export async function getClinicSettings(clinicId: string): Promise<ClinicSettings | null> {
   const db = await getDB();
+  // C5 fix: ownership check
+  const userClinicId = await getAuthenticatedClinicId(db);
+  if (!userClinicId || userClinicId !== clinicId) return null;
   const { data } = await db
     .from("clinic_settings")
     .select("*")
