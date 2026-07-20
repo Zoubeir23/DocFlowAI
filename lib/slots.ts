@@ -86,8 +86,8 @@ export function generateAvailableSlots(input: SlotInput): Slot[] {
     });
 
     if (!hasConflict) {
-      const startFormatted = format(slotStartDate, "h:mm a");
-      const endFormatted = format(slotEndDate, "h:mm a");
+      const startFormatted = formatInTimeZone(slotStartDate, timezone, "h:mm a");
+      const endFormatted = formatInTimeZone(slotEndDate, timezone, "h:mm a");
       slots.push({
         start: slotStartTime,
         end: slotEndTime,
