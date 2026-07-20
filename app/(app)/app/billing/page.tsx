@@ -72,6 +72,8 @@ async function fetchSubscription() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function BillingPage() {
   const t = useTranslations("billing");
+  const queryClient = useQueryClient();
+  const [planChangedMessage, setPlanChangedMessage] = useState<string | null>(null);
   const [selectedCryptoPlan, setSelectedCryptoPlan] = useState<CryptoPlan | null>(null);
   const [showEnterpriseModal, setShowEnterpriseModal] = useState(false);
   const [hasMetaMask, setHasMetaMask] = useState(false);
