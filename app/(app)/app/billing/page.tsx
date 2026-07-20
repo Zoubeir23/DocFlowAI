@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { createStripeCheckoutSession, type StripePlan } from "@/actions/stripe-checkout";
 import { getClinicQuotaUsage, type QuotaUsage } from "@/actions/quota";
@@ -72,6 +72,8 @@ async function fetchSubscription() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function BillingPage() {
   const t = useTranslations("billing");
+  const queryClient = useQueryClient();
+  const [planChangedMessage, setPlanChangedMessage] = useState<string | null>(null);
   const [selectedCryptoPlan, setSelectedCryptoPlan] = useState<CryptoPlan | null>(null);
   const [showEnterpriseModal, setShowEnterpriseModal] = useState(false);
   const [hasMetaMask, setHasMetaMask] = useState(false);
@@ -89,7 +91,23 @@ export default function BillingPage() {
     setStripeStatus(params.get("stripe"));
   }, []);
 
-  const { data: subscription, isSuccess: subscriptionLoaded } = useQuery({ queryKey: ["subscription"], queryFn: fetchSubscription });
+  // Plafonne le polling déclenché par un retour "success" : au bout de 15s
+  // le webhook a largement eu le temps d'arriver, inutile de continuer.
+  useEffect(() => {
+    if (stripeStatus !== "success") return;
+    const timer = setTimeout(() => setStripeStatus(null), 15000);
+    return () => clearTimeout(timer);
+  }, [stripeStatus]);
+
+  // Stripe redirige vers success_url avant l'arrivée du webhook
+  // checkout.session.completed qui met réellement à jour la subscription :
+  // on poll brièvement tant que le retour est "success" pour éviter d'afficher
+  // un bandeau de succès à côté d'un plan encore périmé.
+  const { data: subscription, isSuccess: subscriptionLoaded } = useQuery({
+    queryKey: ["subscription"],
+    queryFn: fetchSubscription,
+    refetchInterval: stripeStatus === "success" ? 2000 : false,
+  });
   const { data: quotaUsage } = useQuery<QuotaUsage | null>({ queryKey: ["quotaUsage"], queryFn: getClinicQuotaUsage });
 
   const effectivePlan = subscriptionLoaded
@@ -98,12 +116,18 @@ export default function BillingPage() {
 
   const handleStripeCheckout = (plan: StripePlan) => {
     setStripeError(null);
+    setPlanChangedMessage(null);
     setStripeLoadingPlan(plan);
     startTransition(async () => {
       const result = await createStripeCheckoutSession(plan);
       setStripeLoadingPlan(null);
       if (result.error) {
         setStripeError(result.error);
+        return;
+      }
+      if (result.updatedDirectly) {
+        setPlanChangedMessage(t("planChangedSuccess"));
+        queryClient.invalidateQueries({ queryKey: ["subscription"] });
         return;
       }
       if (result.checkoutUrl) {
@@ -146,6 +170,12 @@ export default function BillingPage() {
         <div className="flex items-start gap-3 p-4 status-cancelled rounded-xl">
           <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
           <p className="text-sm font-medium">{stripeError}</p>
+        </div>
+      )}
+      {planChangedMessage && (
+        <div className="flex items-center gap-3 p-4 status-confirmed rounded-xl">
+          <CheckCircle className="w-5 h-5 flex-shrink-0" />
+          <p className="text-sm font-medium">{planChangedMessage}</p>
         </div>
       )}
 

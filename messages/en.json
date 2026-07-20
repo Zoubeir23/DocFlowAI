@@ -367,6 +367,7 @@
     "stripeSuccess": "Stripe payment successful!",
     "stripeSuccessDesc": "Your subscription will be activated within seconds.",
     "stripeCancelled": "Payment cancelled. You can try again anytime.",
+    "planChangedSuccess": "Your plan was successfully changed on your existing subscription.",
     "stripeCardDesc": "Visa, Mastercard, SEPA · Prices in Euros · Automatic monthly billing",
     "cryptoFastLowFees": "Fast · Low fees",
     "metamaskNotDetected": "MetaMask not detected",

@@ -119,7 +119,7 @@ export default async function PortailDashboardPage({
               const config = STATUS_CONFIG[appointment.status] ?? STATUS_CONFIG.booked;
               const StatusIcon = config.icon;
               const canCancel = ["booked", "confirmed"].includes(appointment.status) && isFuture(new Date(appointment.start_at));
-              const canPay = (service?.price ?? 0) > 0 && appointment.payment_status !== "paid" && appointment.payment_status !== "not_required" && appointment.payment_status !== "pending";
+              const canPay = (service?.price ?? 0) > 0 && appointment.payment_status === "unpaid";
 
               return (
                 <div key={appointment.id} className="bg-card border border-border rounded-2xl p-4">

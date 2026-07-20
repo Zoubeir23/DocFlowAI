@@ -24,7 +24,11 @@ export async function checkAppointmentQuota(clinicId: string, db: any): Promise<
     .maybeSingle();
 
   const rawPlan = sub?.plan as PlanName | undefined;
-  const plan: PlanName = rawPlan && rawPlan in PLAN_LIMITS ? rawPlan : "free";
+  // Un abonnement annulé/impayé ne conserve pas les quotas payants, quelle
+  // que soit la valeur de `plan` restée en base tant qu'aucun downgrade
+  // explicite n'a été appliqué.
+  const isActive = sub?.status === "active";
+  const plan: PlanName = isActive && rawPlan && rawPlan in PLAN_LIMITS ? rawPlan : "free";
 
   const planLimits = PLAN_LIMITS[plan];
   const limit = planLimits.appointments;
@@ -33,12 +37,19 @@ export async function checkAppointmentQuota(clinicId: string, db: any): Promise<
     return { allowed: true, current: 0, limit: null, plan };
   }
 
+  // Le plan gratuit n'a pas de cycle de facturation qui se renouvelle : sa
+  // current_period_end (fixée une fois à l'onboarding, +14 jours) reste figée
+  // dans le passé indéfiniment, ce qui excluait tout RDV créé après coup du
+  // comptage (.lte(periodEnd)) et désactivait silencieusement la limite.
+  // On utilise donc une fenêtre glissante de 30 jours pour le plan gratuit.
   const periodStart =
-    sub?.current_period_start ??
-    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    plan === "free"
+      ? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+      : sub?.current_period_start ?? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const periodEnd =
-    sub?.current_period_end ??
-    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    plan === "free"
+      ? new Date().toISOString()
+      : sub?.current_period_end ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
   const { count } = await db
     .from("appointments")
@@ -66,12 +77,13 @@ export async function checkAppointmentQuota(clinicId: string, db: any): Promise<
 export async function checkStaffQuota(clinicId: string, db: any): Promise<QuotaResult> {
   const { data: sub } = await db
     .from("subscriptions")
-    .select("plan")
+    .select("plan, status")
     .eq("clinic_id", clinicId)
     .maybeSingle();
 
   const rawPlan = sub?.plan as PlanName | undefined;
-  const plan: PlanName = rawPlan && rawPlan in PLAN_LIMITS ? rawPlan : "free";
+  const isActive = sub?.status === "active";
+  const plan: PlanName = isActive && rawPlan && rawPlan in PLAN_LIMITS ? rawPlan : "free";
 
   const planLimits = PLAN_LIMITS[plan];
   const limit = planLimits.staff;

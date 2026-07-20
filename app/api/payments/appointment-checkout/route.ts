@@ -55,6 +55,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (appointment.payment_status === "pending") {
     return NextResponse.json({ error: "Un paiement est déjà en cours pour ce rendez-vous" }, { status: 400 });
   }
+  if (appointment.payment_status !== "unpaid") {
+    return NextResponse.json({ error: "Ce rendez-vous n'accepte pas de paiement en ligne" }, { status: 400 });
+  }
 
   const price = appointment.services?.price;
   if (!price || price <= 0) {
@@ -103,7 +106,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       stripe_checkout_session_id: session.id,
     })
     .eq("id", appointmentId)
-    .eq("payment_status", "not_required");
+    .eq("payment_status", "unpaid");
 
   if (updateError) {
     console.error("[Checkout] Failed to update appointment payment status:", updateError.message);

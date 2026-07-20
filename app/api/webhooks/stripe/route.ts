@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { getStripeServerClient } from "@/lib/stripe/client";
+import { getStripeServerClient, STRIPE_PLAN_PRICE_IDS } from "@/lib/stripe/client";
 import { createAdminClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -30,23 +30,66 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
+  // Idempotence explicite : on vérifie d'abord si cet event.id a déjà été
+  // traité avec succès (rejeu Stripe). L'enregistrement n'est écrit qu'APRÈS
+  // un traitement réussi (voir plus bas) — un échec (handled=false, réponse
+  // 500) laisse l'event.id "libre" pour que le retry Stripe soit réellement
+  // retraité, au lieu d'être avalé comme un doublon.
+  const supabaseIdem = await createAdminClient();
+  const dbIdem = supabaseIdem as any;
+  const { data: alreadyProcessed } = await dbIdem
+    .from("stripe_webhook_events")
+    .select("event_id")
+    .eq("event_id", event.id)
+    .maybeSingle();
+
+  if (alreadyProcessed) {
+    return NextResponse.json({ received: true, duplicate: true });
+  }
+
+  // Chaque handler renvoie false en cas d'échec d'écriture DB : on répond alors
+  // 500 pour que Stripe considère la livraison échouée et retente l'événement
+  // plus tard, au lieu de le perdre silencieusement (voir handlers ci-dessous).
+  let handled = true;
+
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
+    handled = session.metadata?.type === "appointment_payment"
+      ? await handleAppointmentPaymentCompleted(session)
+      : await handleCheckoutSessionCompleted(session);
+  }
+
+  if (event.type === "checkout.session.expired") {
+    const session = event.data.object as Stripe.Checkout.Session;
     if (session.metadata?.type === "appointment_payment") {
-      await handleAppointmentPaymentCompleted(session);
-    } else {
-      await handleCheckoutSessionCompleted(session);
+      handled = await handleAppointmentPaymentExpired(session);
     }
   }
 
   if (event.type === "customer.subscription.deleted") {
     const subscription = event.data.object as Stripe.Subscription;
-    await handleSubscriptionDeleted(subscription);
+    handled = await handleSubscriptionDeleted(subscription);
   }
 
-  if (event.type === "customer.subscription.updated" || event.type === "invoice.payment_succeeded") {
+  if (event.type === "customer.subscription.updated") {
+    // invoice.payment_succeeded a été retiré de ce chemin : son event.data.object
+    // est un Stripe.Invoice (metadata de facture vide, id de facture ≠ id
+    // d'abonnement), pas un Stripe.Subscription — le cast précédent faisait
+    // échouer silencieusement le .update() (0 ligne affectée). Le renouvellement
+    // est déjà couvert par customer.subscription.updated.
     const sub = event.data.object as Stripe.Subscription;
-    await handleSubscriptionRenewed(sub);
+    handled = await handleSubscriptionRenewed(sub);
+  }
+
+  if (!handled) {
+    return NextResponse.json({ error: "Processing failed, retry requested" }, { status: 500 });
+  }
+
+  const { error: markProcessedError } = await dbIdem
+    .from("stripe_webhook_events")
+    .insert({ event_id: event.id, event_type: event.type });
+  if (markProcessedError && markProcessedError.code !== "23505") {
+    console.error("[StripeWebhook] Failed to record processed event:", markProcessedError.message);
   }
 
   return NextResponse.json({ received: true });
@@ -54,11 +97,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
 async function handleAppointmentPaymentCompleted(
   session: Stripe.Checkout.Session
-): Promise<void> {
+): Promise<boolean> {
   const appointmentId = session.metadata?.appointment_id;
   if (!appointmentId) {
     console.error("[StripeWebhook] Missing appointment_id in session metadata");
-    return;
+    return true; // métadonnées absentes : un retry ne changera rien
   }
 
   const supabase = await createAdminClient();
@@ -72,21 +115,49 @@ async function handleAppointmentPaymentCompleted(
 
   if (error) {
     console.error("[StripeWebhook] Failed to mark appointment as paid:", error.message);
-    return;
+    return false;
   }
 
   console.log(`[StripeWebhook] Appointment paid — id: ${appointmentId}`);
+  return true;
+}
+
+async function handleAppointmentPaymentExpired(
+  session: Stripe.Checkout.Session
+): Promise<boolean> {
+  const appointmentId = session.metadata?.appointment_id;
+  if (!appointmentId) return true;
+
+  const supabase = await createAdminClient();
+  const db = supabase as any;
+
+  // Ne réinitialise que si le paiement est toujours en attente pour cette
+  // session précise — évite d'écraser un paiement déjà confirmé entre-temps.
+  const { error } = await db
+    .from("appointments")
+    .update({ payment_status: "unpaid", stripe_checkout_session_id: null })
+    .eq("id", appointmentId)
+    .eq("stripe_checkout_session_id", session.id)
+    .eq("payment_status", "pending");
+
+  if (error) {
+    console.error("[StripeWebhook] Failed to reset expired appointment payment:", error.message);
+    return false;
+  }
+
+  console.log(`[StripeWebhook] Appointment payment session expired — id: ${appointmentId}`);
+  return true;
 }
 
 async function handleCheckoutSessionCompleted(
   session: Stripe.Checkout.Session
-): Promise<void> {
+): Promise<boolean> {
   const clinicId = session.metadata?.clinic_id;
   const plan = session.metadata?.plan as "starter" | "professional" | "enterprise" | undefined;
 
   if (!clinicId || !plan) {
     console.error("[StripeWebhook] Missing clinic_id or plan in session metadata");
-    return;
+    return true; // métadonnées absentes : un retry ne changera rien
   }
 
   const stripeSubscriptionId =
@@ -156,6 +227,7 @@ async function handleCheckoutSessionCompleted(
 
     if (error) {
       console.error("[StripeWebhook] Failed to update subscription:", error.message);
+      return false;
     }
   } else {
     const { error } = await db.from("subscriptions").insert({
@@ -171,17 +243,44 @@ async function handleCheckoutSessionCompleted(
 
     if (error) {
       console.error("[StripeWebhook] Failed to insert subscription:", error.message);
+      return false;
     }
   }
 
   console.log(`[StripeWebhook] Subscription activated — clinic: ${clinicId}, plan: ${plan}`);
+  return true;
+}
+
+// Mappe le statut Stripe (plus fin) vers les valeurs acceptées par la colonne
+// subscriptions.status (CHECK 'active' | 'inactive' | 'cancelled' | 'past_due').
+function mapStripeStatus(stripeStatus: Stripe.Subscription.Status): "active" | "inactive" | "cancelled" | "past_due" {
+  switch (stripeStatus) {
+    case "active":
+    case "trialing":
+      return "active";
+    case "past_due":
+    case "unpaid":
+      return "past_due";
+    case "canceled":
+      return "cancelled";
+    default:
+      return "inactive";
+  }
+}
+
+// Retrouve le plan à partir du price Stripe de l'abonnement — la metadata
+// peut être absente (ex: modification manuelle dans le Dashboard Stripe).
+function resolvePlanFromPriceId(priceId: string | undefined): "starter" | "professional" | "enterprise" | undefined {
+  if (!priceId) return undefined;
+  const entry = Object.entries(STRIPE_PLAN_PRICE_IDS).find(([, id]) => id === priceId);
+  return entry?.[0] as "starter" | "professional" | "enterprise" | undefined;
 }
 
 async function handleSubscriptionRenewed(
   stripeSubscription: Stripe.Subscription
-): Promise<void> {
+): Promise<boolean> {
   const clinicId = stripeSubscription.metadata?.clinic_id;
-  if (!clinicId) return;
+  if (!clinicId) return true;
 
   const firstItem = stripeSubscription.items?.data?.[0];
   const itemPeriod = firstItem?.current_period_start && firstItem?.current_period_end
@@ -196,6 +295,12 @@ async function handleSubscriptionRenewed(
     ? new Date(itemPeriod.end * 1000).toISOString()
     : new Date(subAny.current_period_end * 1000).toISOString();
 
+  // Resynchronise `plan` : couvre les changements faits hors de l'app
+  // (Dashboard Stripe, dunning) que le flux applicatif ne verrait jamais.
+  const plan =
+    (stripeSubscription.metadata?.plan as "starter" | "professional" | "enterprise" | undefined) ??
+    resolvePlanFromPriceId(firstItem?.price?.id);
+
   const supabase = await createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
@@ -203,7 +308,8 @@ async function handleSubscriptionRenewed(
   const { error } = await db
     .from("subscriptions")
     .update({
-      status: stripeSubscription.status === "active" ? "active" : "cancelled",
+      ...(plan ? { plan } : {}),
+      status: mapStripeStatus(stripeSubscription.status),
       current_period_start: periodStart,
       current_period_end: periodEnd,
     })
@@ -211,12 +317,14 @@ async function handleSubscriptionRenewed(
 
   if (error) {
     console.error("[StripeWebhook] Failed to renew subscription:", error.message);
+    return false;
   }
+  return true;
 }
 
 async function handleSubscriptionDeleted(
   stripeSubscription: Stripe.Subscription
-): Promise<void> {
+): Promise<boolean> {
   const subscriptionId = stripeSubscription.id;
   const supabase = await createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -229,8 +337,9 @@ async function handleSubscriptionDeleted(
 
   if (error) {
     console.error("[StripeWebhook] Failed to cancel subscription:", error.message);
-    return;
+    return false;
   }
 
   console.log(`[StripeWebhook] Subscription cancelled — stripe_id: ${subscriptionId}`);
+  return true;
 }

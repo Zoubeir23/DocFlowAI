@@ -179,18 +179,30 @@ export async function updateClinicPlan(
   const periodStart = now.toISOString();
   const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
-  const { error } = await db
+  // Supabase-js ne renvoie pas d'erreur quand un update() ne matche aucune
+  // ligne (error: null, 0 ligne affectée) : on vérifie explicitement
+  // l'existence de la ligne plutôt que de se fier au retour d'erreur de
+  // l'update pour décider d'un insert de secours.
+  const { data: existing } = await db
     .from("subscriptions")
-    .update({
-      plan,
-      status: "active",
-      current_period_start: periodStart,
-      current_period_end: periodEnd,
-    })
-    .eq("clinic_id", clinicId);
+    .select("id")
+    .eq("clinic_id", clinicId)
+    .maybeSingle();
 
-  if (error) {
-    const { error: insertError } = await db
+  if (existing) {
+    const { error } = await db
+      .from("subscriptions")
+      .update({
+        plan,
+        status: "active",
+        current_period_start: periodStart,
+        current_period_end: periodEnd,
+      })
+      .eq("clinic_id", clinicId);
+
+    if (error) return { success: false, error: "Erreur lors de la mise à jour du plan" };
+  } else {
+    const { error } = await db
       .from("subscriptions")
       .insert({
         clinic_id: clinicId,
@@ -200,7 +212,7 @@ export async function updateClinicPlan(
         current_period_end: periodEnd,
       });
 
-    if (insertError) return { success: false, error: "Erreur lors de la mise à jour du plan" };
+    if (error) return { success: false, error: "Erreur lors de la mise à jour du plan" };
   }
 
   return { success: true };
