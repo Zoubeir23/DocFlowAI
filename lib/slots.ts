@@ -68,8 +68,10 @@ export function generateAvailableSlots(input: SlotInput): Slot[] {
     const slotStartTime = `${date}T${minutesToTime(current)}:00`;
     const slotEndTime = `${date}T${minutesToTime(slotEnd)}:00`;
 
-    const slotStartDate = parseISO(slotStartTime);
-    const slotEndDate = parseISO(slotEndTime);
+    // Le créneau est exprimé en heure locale de la clinique : on le convertit
+    // en instant UTC réel avant toute comparaison (fuseau serveur ≠ fuseau clinique).
+    const slotStartDate = fromZonedTime(slotStartTime, timezone);
+    const slotEndDate = fromZonedTime(slotEndTime, timezone);
 
     const now = new Date();
     if (isBefore(slotStartDate, now)) {
