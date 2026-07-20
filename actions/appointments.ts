@@ -201,7 +201,12 @@ export async function updateAppointmentTime(
     .update({ start_at: startAt, end_at: endAt })
     .eq("id", appointmentId)
     .eq("clinic_id", userData.clinic_id);
-  if (error) return { success: false, error: "Erreur lors de la mise à jour." };
+  if (error) {
+    if (isOverlapConstraintViolation(error)) {
+      return { success: false, error: OVERLAP_CONSTRAINT_MESSAGE };
+    }
+    return { success: false, error: "Erreur lors de la mise à jour." };
+  }
   return { success: true };
 }
 
