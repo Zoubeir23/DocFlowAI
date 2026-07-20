@@ -73,11 +73,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
 async function handleAppointmentPaymentCompleted(
   session: Stripe.Checkout.Session
-): Promise<void> {
+): Promise<boolean> {
   const appointmentId = session.metadata?.appointment_id;
   if (!appointmentId) {
     console.error("[StripeWebhook] Missing appointment_id in session metadata");
-    return;
+    return true; // métadonnées absentes : un retry ne changera rien
   }
 
   const supabase = await createAdminClient();
@@ -91,10 +91,11 @@ async function handleAppointmentPaymentCompleted(
 
   if (error) {
     console.error("[StripeWebhook] Failed to mark appointment as paid:", error.message);
-    return;
+    return false;
   }
 
   console.log(`[StripeWebhook] Appointment paid — id: ${appointmentId}`);
+  return true;
 }
 
 async function handleAppointmentPaymentExpired(
