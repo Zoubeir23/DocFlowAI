@@ -127,13 +127,13 @@ async function handleAppointmentPaymentExpired(
 
 async function handleCheckoutSessionCompleted(
   session: Stripe.Checkout.Session
-): Promise<void> {
+): Promise<boolean> {
   const clinicId = session.metadata?.clinic_id;
   const plan = session.metadata?.plan as "starter" | "professional" | "enterprise" | undefined;
 
   if (!clinicId || !plan) {
     console.error("[StripeWebhook] Missing clinic_id or plan in session metadata");
-    return;
+    return true; // métadonnées absentes : un retry ne changera rien
   }
 
   const stripeSubscriptionId =
