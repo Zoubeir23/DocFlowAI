@@ -182,9 +182,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const { data: existing } = await db
     .from("subscriptions")
-    .select("id")
+    .select("id, stripe_subscription_id, payment_provider")
     .eq("clinic_id", clinicId)
     .maybeSingle();
+
+  // La clinique passe au paiement crypto : annuler l'abonnement Stripe actif
+  // pour éviter un double prélèvement (carte + crypto) en parallèle.
+  if (existing?.payment_provider === "stripe" && existing.stripe_subscription_id) {
+    try {
+      const stripe = getStripeServerClient();
+      await stripe.subscriptions.cancel(existing.stripe_subscription_id);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Erreur Stripe inconnue";
+      console.error("[CryptoWebhook] Failed to cancel existing Stripe subscription:", message);
+    }
+  }
 
   const subscriptionData = {
     plan,
