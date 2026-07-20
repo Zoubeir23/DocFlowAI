@@ -3,6 +3,7 @@
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
 import * as Sentry from "@sentry/nextjs";
+import { scrubSentryEvent } from "@/lib/security/sentry-scrub";
 
 Sentry.init({
   dsn: "https://0eb4aa5642b50e31a98e805885a8144b@o4511429080449024.ingest.de.sentry.io/4511486838112336",
