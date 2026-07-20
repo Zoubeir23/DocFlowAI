@@ -100,12 +100,18 @@ export default function BillingPage() {
 
   const handleStripeCheckout = (plan: StripePlan) => {
     setStripeError(null);
+    setPlanChangedMessage(null);
     setStripeLoadingPlan(plan);
     startTransition(async () => {
       const result = await createStripeCheckoutSession(plan);
       setStripeLoadingPlan(null);
       if (result.error) {
         setStripeError(result.error);
+        return;
+      }
+      if (result.updatedDirectly) {
+        setPlanChangedMessage(t("planChangedSuccess"));
+        queryClient.invalidateQueries({ queryKey: ["subscription"] });
         return;
       }
       if (result.checkoutUrl) {
