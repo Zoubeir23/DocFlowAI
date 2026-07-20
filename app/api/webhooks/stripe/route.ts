@@ -30,25 +30,28 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
+  // Chaque handler renvoie false en cas d'échec d'écriture DB : on répond alors
+  // 500 pour que Stripe considère la livraison échouée et retente l'événement
+  // plus tard, au lieu de le perdre silencieusement (voir handlers ci-dessous).
+  let handled = true;
+
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
-    if (session.metadata?.type === "appointment_payment") {
-      await handleAppointmentPaymentCompleted(session);
-    } else {
-      await handleCheckoutSessionCompleted(session);
-    }
+    handled = session.metadata?.type === "appointment_payment"
+      ? await handleAppointmentPaymentCompleted(session)
+      : await handleCheckoutSessionCompleted(session);
   }
 
   if (event.type === "checkout.session.expired") {
     const session = event.data.object as Stripe.Checkout.Session;
     if (session.metadata?.type === "appointment_payment") {
-      await handleAppointmentPaymentExpired(session);
+      handled = await handleAppointmentPaymentExpired(session);
     }
   }
 
   if (event.type === "customer.subscription.deleted") {
     const subscription = event.data.object as Stripe.Subscription;
-    await handleSubscriptionDeleted(subscription);
+    handled = await handleSubscriptionDeleted(subscription);
   }
 
   if (event.type === "customer.subscription.updated") {
@@ -58,7 +61,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // échouer silencieusement le .update() (0 ligne affectée). Le renouvellement
     // est déjà couvert par customer.subscription.updated.
     const sub = event.data.object as Stripe.Subscription;
-    await handleSubscriptionRenewed(sub);
+    handled = await handleSubscriptionRenewed(sub);
+  }
+
+  if (!handled) {
+    return NextResponse.json({ error: "Processing failed, retry requested" }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });
