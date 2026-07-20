@@ -8,6 +8,8 @@ export type StripePlan = "starter" | "professional" | "enterprise";
 export interface CreateStripeCheckoutSessionResult {
   checkoutUrl: string | null;
   error: string | null;
+  /** true si le plan a été changé immédiatement sur l'abonnement Stripe existant (pas de redirection nécessaire). */
+  updatedDirectly?: boolean;
 }
 
 export async function createStripeCheckoutSession(
