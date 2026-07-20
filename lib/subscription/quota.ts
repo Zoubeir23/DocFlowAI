@@ -70,12 +70,13 @@ export async function checkAppointmentQuota(clinicId: string, db: any): Promise<
 export async function checkStaffQuota(clinicId: string, db: any): Promise<QuotaResult> {
   const { data: sub } = await db
     .from("subscriptions")
-    .select("plan")
+    .select("plan, status")
     .eq("clinic_id", clinicId)
     .maybeSingle();
 
   const rawPlan = sub?.plan as PlanName | undefined;
-  const plan: PlanName = rawPlan && rawPlan in PLAN_LIMITS ? rawPlan : "free";
+  const isActive = sub?.status === "active";
+  const plan: PlanName = isActive && rawPlan && rawPlan in PLAN_LIMITS ? rawPlan : "free";
 
   const planLimits = PLAN_LIMITS[plan];
   const limit = planLimits.staff;
