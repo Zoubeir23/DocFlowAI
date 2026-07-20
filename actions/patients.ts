@@ -119,18 +119,15 @@ export async function updatePatient(
   const userClinicId = await getAuthenticatedClinicId(db);
   if (!userClinicId) return { success: false, error: "Not authenticated" };
 
+  // patientSchema n'accepte que full_name/phone/email/notes : Zod élimine
+  // silencieusement toute autre clé (dont clinic_id), donc aucun champ hors
+  // schéma ne peut atteindre l'update.
   const validated = patientSchema.partial().safeParse(data);
   if (!validated.success) {
     return { success: false, error: validated.error.errors[0].message };
   }
-  // clinic_id/id ne font pas partie du schéma patient — exclus explicitement
-  // pour empêcher un déplacement de patient vers une autre clinique.
-  const { clinic_id: _clinicId, id: _id, ...safeData } = validated.data as Partial<PatientInput> & {
-    clinic_id?: string;
-    id?: string;
-  };
 
-  const { error } = await db.from("patients").update(safeData).eq("id", patientId).eq("clinic_id", userClinicId);
+  const { error } = await db.from("patients").update(validated.data).eq("id", patientId).eq("clinic_id", userClinicId);
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
