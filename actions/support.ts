@@ -103,8 +103,8 @@ export async function sendSupportTicket(
           <tr><td style="padding:6px 0;color:#64748b;font-size:13px">Priorité</td><td style="padding:6px 0;font-size:13px;font-weight:600">${priorityLabel[data.priority]}</td></tr>
         </table>
         <div style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:16px">
-          <p style="margin:0 0 8px;font-weight:700;color:#1e293b">${data.subject}</p>
-          <p style="margin:0;color:#475569;font-size:14px;white-space:pre-wrap">${data.message}</p>
+          <p style="margin:0 0 8px;font-weight:700;color:#1e293b">${safeSubject}</p>
+          <p style="margin:0;color:#475569;font-size:14px;white-space:pre-wrap">${safeMessage}</p>
         </div>
       </div>
     </div>
