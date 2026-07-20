@@ -82,6 +82,9 @@ export async function upsertAvailabilityRule(
 
 export async function getBlockedDates(clinicId: string): Promise<BlockedDate[]> {
   const db = await getDB();
+  // C5 fix: ownership check
+  const userClinicId = await getAuthenticatedClinicId(db);
+  if (!userClinicId || userClinicId !== clinicId) return [];
   const { data } = await db
     .from("blocked_dates")
     .select("*")
