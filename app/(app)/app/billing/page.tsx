@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { createStripeCheckoutSession, type StripePlan } from "@/actions/stripe-checkout";
 import { getClinicQuotaUsage, type QuotaUsage } from "@/actions/quota";
