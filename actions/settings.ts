@@ -136,6 +136,11 @@ export async function updateClinicSettings(
   data: z.infer<typeof clinicSettingsSchema>
 ): Promise<ApiResponse> {
   const db = await getDB();
+  // C5 fix: ownership check
+  const userClinicId = await getAuthenticatedClinicId(db);
+  if (!userClinicId || userClinicId !== clinicId) {
+    return { success: false, error: "Unauthorized" };
+  }
   const validated = clinicSettingsSchema.safeParse(data);
   if (!validated.success) {
     return { success: false, error: validated.error.errors[0].message };
