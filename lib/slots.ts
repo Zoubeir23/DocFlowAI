@@ -1,5 +1,5 @@
-import { addMinutes, format, parseISO, isBefore, isAfter, startOfDay } from "date-fns";
-import { formatInTimeZone, toZonedTime } from "date-fns-tz";
+import { format, parseISO, isBefore, isAfter } from "date-fns";
+import { formatInTimeZone, fromZonedTime, toZonedTime } from "date-fns-tz";
 import type { AvailabilityRule, BlockedDate, Appointment } from "@/types";
 import { timeToMinutes, minutesToTime } from "./utils";
 
@@ -28,8 +28,10 @@ export function generateAvailableSlots(input: SlotInput): Slot[] {
     timezone,
   } = input;
 
-  const dateObj = parseISO(date);
-  const dayOfWeek = dateObj.getDay();
+  // parseISO(date).getDay() dépend du fuseau du serveur d'exécution : on dérive
+  // le jour de semaine directement des composants UTC pour rester déterministe.
+  const [year, month, day] = date.split("-").map(Number);
+  const dayOfWeek = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
 
   const isBlocked = blockedDates.some((bd) => bd.date === date);
   if (isBlocked) return [];
@@ -68,8 +70,10 @@ export function generateAvailableSlots(input: SlotInput): Slot[] {
     const slotStartTime = `${date}T${minutesToTime(current)}:00`;
     const slotEndTime = `${date}T${minutesToTime(slotEnd)}:00`;
 
-    const slotStartDate = parseISO(slotStartTime);
-    const slotEndDate = parseISO(slotEndTime);
+    // Le créneau est exprimé en heure locale de la clinique : on le convertit
+    // en instant UTC réel avant toute comparaison (fuseau serveur ≠ fuseau clinique).
+    const slotStartDate = fromZonedTime(slotStartTime, timezone);
+    const slotEndDate = fromZonedTime(slotEndTime, timezone);
 
     const now = new Date();
     if (isBefore(slotStartDate, now)) {
@@ -84,8 +88,8 @@ export function generateAvailableSlots(input: SlotInput): Slot[] {
     });
 
     if (!hasConflict) {
-      const startFormatted = format(slotStartDate, "h:mm a");
-      const endFormatted = format(slotEndDate, "h:mm a");
+      const startFormatted = formatInTimeZone(slotStartDate, timezone, "h:mm a");
+      const endFormatted = formatInTimeZone(slotEndDate, timezone, "h:mm a");
       slots.push({
         start: slotStartTime,
         end: slotEndTime,
@@ -102,10 +106,12 @@ export function generateAvailableSlots(input: SlotInput): Slot[] {
 export function getNextAvailableDates(
   availabilityRules: AvailabilityRule[],
   blockedDates: BlockedDate[],
-  daysToCheck = 30
+  daysToCheck = 30,
+  timezone = "UTC"
 ): string[] {
   const available: string[] = [];
-  const today = new Date();
+  // "Aujourd'hui" doit être la date calendaire côté clinique, pas côté serveur.
+  const todayInClinicTz = toZonedTime(new Date(), timezone);
   const activeDays = availabilityRules
     .filter((r) => r.is_active)
     .map((r) => r.day_of_week);
@@ -113,7 +119,7 @@ export function getNextAvailableDates(
   const blockedSet = new Set(blockedDates.map((b) => b.date));
 
   for (let i = 0; i < daysToCheck; i++) {
-    const d = new Date(today);
+    const d = new Date(todayInClinicTz);
     d.setDate(d.getDate() + i);
     const dateStr = format(d, "yyyy-MM-dd");
     const dow = d.getDay();

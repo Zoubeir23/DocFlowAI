@@ -19,6 +19,9 @@ async function getAuthenticatedClinicId(db: any): Promise<string | null> {
 
 export async function getAvailabilityRules(clinicId: string): Promise<AvailabilityRule[]> {
   const db = await getDB();
+  // C5 fix: ownership check
+  const userClinicId = await getAuthenticatedClinicId(db);
+  if (!userClinicId || userClinicId !== clinicId) return [];
   const { data } = await db
     .from("availability_rules")
     .select("*")
@@ -79,6 +82,9 @@ export async function upsertAvailabilityRule(
 
 export async function getBlockedDates(clinicId: string): Promise<BlockedDate[]> {
   const db = await getDB();
+  // C5 fix: ownership check
+  const userClinicId = await getAuthenticatedClinicId(db);
+  if (!userClinicId || userClinicId !== clinicId) return [];
   const { data } = await db
     .from("blocked_dates")
     .select("*")
@@ -123,6 +129,9 @@ export async function removeBlockedDate(blockedDateId: string): Promise<ApiRespo
 
 export async function getClinicSettings(clinicId: string): Promise<ClinicSettings | null> {
   const db = await getDB();
+  // C5 fix: ownership check
+  const userClinicId = await getAuthenticatedClinicId(db);
+  if (!userClinicId || userClinicId !== clinicId) return null;
   const { data } = await db
     .from("clinic_settings")
     .select("*")
@@ -136,6 +145,11 @@ export async function updateClinicSettings(
   data: z.infer<typeof clinicSettingsSchema>
 ): Promise<ApiResponse> {
   const db = await getDB();
+  // C5 fix: ownership check
+  const userClinicId = await getAuthenticatedClinicId(db);
+  if (!userClinicId || userClinicId !== clinicId) {
+    return { success: false, error: "Unauthorized" };
+  }
   const validated = clinicSettingsSchema.safeParse(data);
   if (!validated.success) {
     return { success: false, error: validated.error.errors[0].message };

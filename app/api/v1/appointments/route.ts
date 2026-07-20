@@ -131,6 +131,10 @@ export async function POST(req: NextRequest) {
     patient = newPatient;
   }
 
+  // "pending" est un statut de contrat API public ; la table appointments
+  // n'accepte que 'booked' comme statut initial (CHECK constraint 001_schema.sql).
+  const dbStatus = parsed.data.status === "pending" ? "booked" : parsed.data.status;
+
   const { data: appointment, error } = await db
     .from("appointments")
     .insert({
@@ -139,13 +143,22 @@ export async function POST(req: NextRequest) {
       service_id: parsed.data.service_id,
       start_at: parsed.data.start_at,
       end_at: parsed.data.end_at,
-      status: parsed.data.status,
+      status: dbStatus,
       notes: parsed.data.notes ?? null,
     })
     .select("id, start_at, end_at, status, created_at")
     .maybeSingle();
 
   if (error) {
+    if (error.code === "23P01" || (error.message ?? "").includes("appointments_no_overlap")) {
+      return NextResponse.json(
+        { error: "Ce créneau chevauche un autre rendez-vous actif de la clinique." },
+        { status: 409 }
+      );
+    }
+    if ((error.message ?? "").includes("quota_exceeded")) {
+      return NextResponse.json({ error: "Quota de rendez-vous atteint." }, { status: 429 });
+    }
     return NextResponse.json({ error: "Failed to create appointment" }, { status: 500 });
   }
 

@@ -3,6 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from "@/lib/supabase/server";
 import { patientSchema } from "@/lib/validations";
+import { sanitizePostgrestSearchTerm } from "@/lib/security/sanitize-postgrest-search";
 import type { ApiResponse, PaginatedResult, Patient } from "@/types";
 import type { z } from "zod";
 
@@ -41,7 +42,10 @@ export async function getPatients(
     .order("created_at", { ascending: false });
 
   if (search) {
-    query = query.or(`full_name.ilike.%${search}%,phone.ilike.%${search}%,email.ilike.%${search}%`);
+    const safeSearch = sanitizePostgrestSearchTerm(search);
+    if (safeSearch) {
+      query = query.or(`full_name.ilike.%${safeSearch}%,phone.ilike.%${safeSearch}%,email.ilike.%${safeSearch}%`);
+    }
   }
 
   const { data, count, error } = await query.range(from, to);
@@ -114,7 +118,16 @@ export async function updatePatient(
   // C5 fix: scope update to caller's clinic
   const userClinicId = await getAuthenticatedClinicId(db);
   if (!userClinicId) return { success: false, error: "Not authenticated" };
-  const { error } = await db.from("patients").update(data).eq("id", patientId).eq("clinic_id", userClinicId);
+
+  // patientSchema n'accepte que full_name/phone/email/notes : Zod élimine
+  // silencieusement toute autre clé (dont clinic_id), donc aucun champ hors
+  // schéma ne peut atteindre l'update.
+  const validated = patientSchema.partial().safeParse(data);
+  if (!validated.success) {
+    return { success: false, error: validated.error.errors[0].message };
+  }
+
+  const { error } = await db.from("patients").update(validated.data).eq("id", patientId).eq("clinic_id", userClinicId);
   if (error) return { success: false, error: error.message };
   return { success: true };
 }

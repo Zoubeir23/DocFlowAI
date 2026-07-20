@@ -25,7 +25,9 @@ const appSecurityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+      // 'unsafe-eval' n'est nécessaire qu'au HMR de Next.js en développement ;
+      // le bundle de production n'en a pas besoin, donc on ne l'y autorise pas.
+      `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV !== "production" ? " 'unsafe-eval'" : ""}`,
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com",
       "font-src 'self' data: https://fonts.gstatic.com",
       // Allow images from Supabase storage, Google user avatars, and common CDNs
@@ -55,7 +57,9 @@ const widgetHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+      // 'unsafe-eval' n'est nécessaire qu'au HMR de Next.js en développement ;
+      // le bundle de production n'en a pas besoin, donc on ne l'y autorise pas.
+      `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV !== "production" ? " 'unsafe-eval'" : ""}`,
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob: https://*.supabase.co https:",

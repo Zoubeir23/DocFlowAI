@@ -11,6 +11,18 @@ import type { z } from "zod";
 
 type AppointmentInput = z.infer<typeof appointmentSchema>;
 
+const OVERLAP_CONSTRAINT_MESSAGE = "Ce créneau chevauche un autre rendez-vous actif de la clinique.";
+
+function isOverlapConstraintViolation(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  return error.code === "23P01" || (error.message ?? "").includes("appointments_no_overlap");
+}
+
+function isQuotaTriggerViolation(error: { message?: string } | null): boolean {
+  if (!error) return false;
+  return (error.message ?? "").includes("quota_exceeded");
+}
+
 async function getDB() {
   return (await createClient()) as any;
 }
@@ -99,7 +111,15 @@ export async function createAppointment(
     .select()
     .maybeSingle();
 
-  if (error) return { success: false, error: error.message };
+  if (error) {
+    if (isOverlapConstraintViolation(error)) {
+      return { success: false, error: OVERLAP_CONSTRAINT_MESSAGE };
+    }
+    if (isQuotaTriggerViolation(error)) {
+      return { success: false, error: "Quota de rendez-vous atteint." };
+    }
+    return { success: false, error: error.message };
+  }
 
   const { data: fullAppt } = await db
     .from("appointments")
@@ -189,7 +209,12 @@ export async function updateAppointmentTime(
     .update({ start_at: startAt, end_at: endAt })
     .eq("id", appointmentId)
     .eq("clinic_id", userData.clinic_id);
-  if (error) return { success: false, error: "Erreur lors de la mise à jour." };
+  if (error) {
+    if (isOverlapConstraintViolation(error)) {
+      return { success: false, error: OVERLAP_CONSTRAINT_MESSAGE };
+    }
+    return { success: false, error: "Erreur lors de la mise à jour." };
+  }
   return { success: true };
 }
 

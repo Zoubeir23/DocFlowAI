@@ -4,6 +4,15 @@
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { sendRawEmail } from "@/lib/email/router";
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
 export type SupportPriority = "low" | "normal" | "high" | "urgent";
 
 export interface SupportTicketData {
@@ -60,6 +69,13 @@ export async function sendSupportTicket(
   const context = await getAuthenticatedUserContext();
   if (!context) return { success: false, error: "Non authentifié" };
 
+  if (!data.subject?.trim() || !data.message?.trim()) {
+    return { success: false, error: "Le sujet et le message sont requis." };
+  }
+  if (data.subject.length > 200 || data.message.length > 5000) {
+    return { success: false, error: "Sujet ou message trop long." };
+  }
+
   const isPriority = ["professional", "enterprise"].includes(context.plan);
   const ticketId = `TKT-${Date.now().toString(36).toUpperCase()}`;
   const supportEmail = process.env.SUPPORT_EMAIL ?? process.env.NEXT_PUBLIC_EMAIL_FROM ?? "support@docflow.ai";
@@ -74,6 +90,9 @@ export async function sendSupportTicket(
   const subjectLine = isPriority
     ? `[PRIORITAIRE][${context.plan.toUpperCase()}] ${data.subject} — #${ticketId}`
     : `[Support] ${data.subject} — #${ticketId}`;
+
+  const safeSubject = escapeHtml(data.subject);
+  const safeMessage = escapeHtml(data.message);
 
   const htmlBody = `
     <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
@@ -91,8 +110,8 @@ export async function sendSupportTicket(
           <tr><td style="padding:6px 0;color:#64748b;font-size:13px">Priorité</td><td style="padding:6px 0;font-size:13px;font-weight:600">${priorityLabel[data.priority]}</td></tr>
         </table>
         <div style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:16px">
-          <p style="margin:0 0 8px;font-weight:700;color:#1e293b">${data.subject}</p>
-          <p style="margin:0;color:#475569;font-size:14px;white-space:pre-wrap">${data.message}</p>
+          <p style="margin:0 0 8px;font-weight:700;color:#1e293b">${safeSubject}</p>
+          <p style="margin:0;color:#475569;font-size:14px;white-space:pre-wrap">${safeMessage}</p>
         </div>
       </div>
     </div>
