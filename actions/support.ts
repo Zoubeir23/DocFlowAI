@@ -84,6 +84,9 @@ export async function sendSupportTicket(
     ? `[PRIORITAIRE][${context.plan.toUpperCase()}] ${data.subject} — #${ticketId}`
     : `[Support] ${data.subject} — #${ticketId}`;
 
+  const safeSubject = escapeHtml(data.subject);
+  const safeMessage = escapeHtml(data.message);
+
   const htmlBody = `
     <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
       <div style="background:${isPriority ? "#7c3aed" : "#2563eb"};padding:20px 24px;border-radius:12px 12px 0 0">
