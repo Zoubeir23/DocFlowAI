@@ -19,6 +19,9 @@ async function getAuthenticatedClinicId(db: any): Promise<string | null> {
 
 export async function getAvailabilityRules(clinicId: string): Promise<AvailabilityRule[]> {
   const db = await getDB();
+  // C5 fix: ownership check
+  const userClinicId = await getAuthenticatedClinicId(db);
+  if (!userClinicId || userClinicId !== clinicId) return [];
   const { data } = await db
     .from("availability_rules")
     .select("*")
