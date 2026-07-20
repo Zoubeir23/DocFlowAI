@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { getStripeServerClient } from "@/lib/stripe/client";
+import { getStripeServerClient, STRIPE_PLAN_PRICE_IDS } from "@/lib/stripe/client";
 import { createAdminClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -215,6 +215,31 @@ async function handleCheckoutSessionCompleted(
   console.log(`[StripeWebhook] Subscription activated — clinic: ${clinicId}, plan: ${plan}`);
 }
 
+// Mappe le statut Stripe (plus fin) vers les valeurs acceptées par la colonne
+// subscriptions.status (CHECK 'active' | 'inactive' | 'cancelled' | 'past_due').
+function mapStripeStatus(stripeStatus: Stripe.Subscription.Status): "active" | "inactive" | "cancelled" | "past_due" {
+  switch (stripeStatus) {
+    case "active":
+    case "trialing":
+      return "active";
+    case "past_due":
+    case "unpaid":
+      return "past_due";
+    case "canceled":
+      return "cancelled";
+    default:
+      return "inactive";
+  }
+}
+
+// Retrouve le plan à partir du price Stripe de l'abonnement — la metadata
+// peut être absente (ex: modification manuelle dans le Dashboard Stripe).
+function resolvePlanFromPriceId(priceId: string | undefined): "starter" | "professional" | "enterprise" | undefined {
+  if (!priceId) return undefined;
+  const entry = Object.entries(STRIPE_PLAN_PRICE_IDS).find(([, id]) => id === priceId);
+  return entry?.[0] as "starter" | "professional" | "enterprise" | undefined;
+}
+
 async function handleSubscriptionRenewed(
   stripeSubscription: Stripe.Subscription
 ): Promise<void> {
@@ -234,6 +259,12 @@ async function handleSubscriptionRenewed(
     ? new Date(itemPeriod.end * 1000).toISOString()
     : new Date(subAny.current_period_end * 1000).toISOString();
 
+  // Resynchronise `plan` : couvre les changements faits hors de l'app
+  // (Dashboard Stripe, dunning) que le flux applicatif ne verrait jamais.
+  const plan =
+    (stripeSubscription.metadata?.plan as "starter" | "professional" | "enterprise" | undefined) ??
+    resolvePlanFromPriceId(firstItem?.price?.id);
+
   const supabase = await createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
@@ -241,7 +272,8 @@ async function handleSubscriptionRenewed(
   const { error } = await db
     .from("subscriptions")
     .update({
-      status: stripeSubscription.status === "active" ? "active" : "cancelled",
+      ...(plan ? { plan } : {}),
+      status: mapStripeStatus(stripeSubscription.status),
       current_period_start: periodStart,
       current_period_end: periodEnd,
     })
