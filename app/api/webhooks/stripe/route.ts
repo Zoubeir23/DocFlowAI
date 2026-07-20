@@ -51,7 +51,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     await handleSubscriptionDeleted(subscription);
   }
 
-  if (event.type === "customer.subscription.updated" || event.type === "invoice.payment_succeeded") {
+  if (event.type === "customer.subscription.updated") {
+    // invoice.payment_succeeded a été retiré de ce chemin : son event.data.object
+    // est un Stripe.Invoice (metadata de facture vide, id de facture ≠ id
+    // d'abonnement), pas un Stripe.Subscription — le cast précédent faisait
+    // échouer silencieusement le .update() (0 ligne affectée). Le renouvellement
+    // est déjà couvert par customer.subscription.updated.
     const sub = event.data.object as Stripe.Subscription;
     await handleSubscriptionRenewed(sub);
   }
