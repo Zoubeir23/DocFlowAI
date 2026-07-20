@@ -24,7 +24,11 @@ export async function checkAppointmentQuota(clinicId: string, db: any): Promise<
     .maybeSingle();
 
   const rawPlan = sub?.plan as PlanName | undefined;
-  const plan: PlanName = rawPlan && rawPlan in PLAN_LIMITS ? rawPlan : "free";
+  // Un abonnement annulé/impayé ne conserve pas les quotas payants, quelle
+  // que soit la valeur de `plan` restée en base tant qu'aucun downgrade
+  // explicite n'a été appliqué.
+  const isActive = sub?.status === "active";
+  const plan: PlanName = isActive && rawPlan && rawPlan in PLAN_LIMITS ? rawPlan : "free";
 
   const planLimits = PLAN_LIMITS[plan];
   const limit = planLimits.appointments;
