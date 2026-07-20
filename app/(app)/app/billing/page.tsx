@@ -91,7 +91,15 @@ export default function BillingPage() {
     setStripeStatus(params.get("stripe"));
   }, []);
 
-  const { data: subscription, isSuccess: subscriptionLoaded } = useQuery({ queryKey: ["subscription"], queryFn: fetchSubscription });
+  // Stripe redirige vers success_url avant l'arrivée du webhook
+  // checkout.session.completed qui met réellement à jour la subscription :
+  // on poll brièvement tant que le retour est "success" pour éviter d'afficher
+  // un bandeau de succès à côté d'un plan encore périmé.
+  const { data: subscription, isSuccess: subscriptionLoaded } = useQuery({
+    queryKey: ["subscription"],
+    queryFn: fetchSubscription,
+    refetchInterval: stripeStatus === "success" ? 2000 : false,
+  });
   const { data: quotaUsage } = useQuery<QuotaUsage | null>({ queryKey: ["quotaUsage"], queryFn: getClinicQuotaUsage });
 
   const effectivePlan = subscriptionLoaded
