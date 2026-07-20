@@ -156,6 +156,9 @@ export async function POST(req: NextRequest) {
         { status: 409 }
       );
     }
+    if ((error.message ?? "").includes("quota_exceeded")) {
+      return NextResponse.json({ error: "Quota de rendez-vous atteint." }, { status: 429 });
+    }
     return NextResponse.json({ error: "Failed to create appointment" }, { status: 500 });
   }
 
