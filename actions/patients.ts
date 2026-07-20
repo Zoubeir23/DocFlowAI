@@ -42,7 +42,10 @@ export async function getPatients(
     .order("created_at", { ascending: false });
 
   if (search) {
-    query = query.or(`full_name.ilike.%${search}%,phone.ilike.%${search}%,email.ilike.%${search}%`);
+    const safeSearch = sanitizePostgrestSearchTerm(search);
+    if (safeSearch) {
+      query = query.or(`full_name.ilike.%${safeSearch}%,phone.ilike.%${safeSearch}%,email.ilike.%${safeSearch}%`);
+    }
   }
 
   const { data, count, error } = await query.range(from, to);
