@@ -106,7 +106,12 @@ export async function createAppointment(
     .select()
     .maybeSingle();
 
-  if (error) return { success: false, error: error.message };
+  if (error) {
+    if (isOverlapConstraintViolation(error)) {
+      return { success: false, error: OVERLAP_CONSTRAINT_MESSAGE };
+    }
+    return { success: false, error: error.message };
+  }
 
   const { data: fullAppt } = await db
     .from("appointments")
