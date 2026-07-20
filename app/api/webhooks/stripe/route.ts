@@ -100,9 +100,9 @@ async function handleAppointmentPaymentCompleted(
 
 async function handleAppointmentPaymentExpired(
   session: Stripe.Checkout.Session
-): Promise<void> {
+): Promise<boolean> {
   const appointmentId = session.metadata?.appointment_id;
-  if (!appointmentId) return;
+  if (!appointmentId) return true;
 
   const supabase = await createAdminClient();
   const db = supabase as any;
@@ -118,10 +118,11 @@ async function handleAppointmentPaymentExpired(
 
   if (error) {
     console.error("[StripeWebhook] Failed to reset expired appointment payment:", error.message);
-    return;
+    return false;
   }
 
   console.log(`[StripeWebhook] Appointment payment session expired — id: ${appointmentId}`);
+  return true;
 }
 
 async function handleCheckoutSessionCompleted(
