@@ -39,19 +39,19 @@ const bookingActionSchema = z.object({
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
   if (!(await checkWidgetChatRateLimit(ip))) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    return withWidgetCors(NextResponse.json({ error: "Too many requests" }, { status: 429 }));
   }
 
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return withWidgetCors(NextResponse.json({ error: "Invalid JSON" }, { status: 400 }));
   }
 
   const parsed = requestSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 });
+    return withWidgetCors(NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 }));
   }
 
   const { message, conversationId, patientTempId, clinicSlug, locale } = parsed.data;
@@ -65,11 +65,11 @@ export async function POST(req: NextRequest) {
     .maybeSingle() as { data: { id: string; name: string; timezone: string; is_active: boolean } | null };
 
   if (!clinic || !clinic.is_active) {
-    return NextResponse.json({ error: "Clinic not found" }, { status: 404 });
+    return withWidgetCors(NextResponse.json({ error: "Clinic not found" }, { status: 404 }));
   }
 
   if (!(await checkWidgetChatClinicRateLimit(clinic.id))) {
-    return NextResponse.json({ error: "Trop de requêtes pour cette clinique. Réessayez plus tard." }, { status: 429 });
+    return withWidgetCors(NextResponse.json({ error: "Trop de requêtes pour cette clinique. Réessayez plus tard." }, { status: 429 }));
   }
 
   const [settingsRes, servicesRes, availabilityRes, blockedRes] = await Promise.all([
@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (!conversation) {
-    return NextResponse.json({ error: "Failed to create conversation" }, { status: 500 });
+    return withWidgetCors(NextResponse.json({ error: "Failed to create conversation" }, { status: 500 }));
   }
 
   const historyMessages = (conversation.messages as AIMessage[]).slice(-20);
