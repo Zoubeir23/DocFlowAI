@@ -11,6 +11,7 @@
     "test:run": "vitest run",
     "db:generate": "supabase gen types typescript --local > types/supabase.ts",
     "db:migrate": "supabase db push",
+    "db:migrate:neon": "tsx scripts/migrate-neon.ts",
     "seed": "tsx scripts/seed.ts",
     "clear": "rm -rf node_modules package-lock.json .next"
   },
