@@ -39,6 +39,15 @@ export async function createStripeCheckoutSession(
     return { checkoutUrl: null, error: "Données utilisateur introuvables" };
   }
 
+  // Défense en profondeur : ne pas dépendre uniquement de la protection de
+  // route middleware (canAccessRoute sur /app/billing) — cette action modifie
+  // directement la facturation de la clinique et doit revérifier le rôle
+  // elle-même, comme le fait déjà actions/team.ts pour les opérations
+  // sensibles équivalentes.
+  if (!isOwnerOrAbove(userData.role as UserRole)) {
+    return { checkoutUrl: null, error: "Non autorisé" };
+  }
+
   const priceId = STRIPE_PLAN_PRICE_IDS[plan];
   if (!priceId || priceId.startsWith("price_...") || priceId === "price_") {
     return {
