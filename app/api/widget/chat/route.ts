@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { widgetCorsResponse, withWidgetCors } from "@/lib/cors";
-import { checkWidgetChatRateLimit } from "@/lib/rate-limit";
+import { checkWidgetChatRateLimit, checkWidgetBookRateLimit } from "@/lib/rate-limit";
 
 export async function OPTIONS() {
   return widgetCorsResponse();
