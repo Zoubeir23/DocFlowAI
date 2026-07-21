@@ -17,6 +17,7 @@ interface ActionResult<T = void> {
 }
 
 interface UserContext {
+  userId: string;
   clinicId: string;
   role: string;
 }
@@ -32,7 +33,7 @@ async function resolveUserContext(): Promise<UserContext | null> {
     .maybeSingle();
   const row = data as { clinic_id: string; role: string } | null;
   if (!row?.clinic_id) return null;
-  return { clinicId: row.clinic_id, role: row.role };
+  return { userId: user.id, clinicId: row.clinic_id, role: row.role };
 }
 
 async function resolveClinicId(): Promise<string | null> {
