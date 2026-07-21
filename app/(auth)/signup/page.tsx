@@ -52,6 +52,11 @@ export default function SignupPage() {
         toast.error("Something went wrong. Please try again.");
         return;
       }
+      if (!authData.session) {
+        toast.success("Compte créé ! Vérifiez votre boîte mail pour confirmer votre adresse avant de continuer.");
+        router.push("/login?confirm=1");
+        return;
+      }
       toast.success("Account created! Let's set up your clinic.");
       router.push("/onboarding");
     } catch {
