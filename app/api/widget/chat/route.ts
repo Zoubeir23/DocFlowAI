@@ -13,6 +13,7 @@ import { generateAIResponse } from "@/lib/ai/router";
 import type { AIMessage } from "@/lib/ai/types";
 import { generateAvailableSlots, getNextAvailableDates } from "@/lib/slots";
 import { sendNotification } from "@/lib/notifications";
+import { dispatchWebhookEvent } from "@/lib/webhooks";
 import type { AvailabilityRule, BlockedDate, Appointment } from "@/types";
 
 const requestSchema = z.object({
