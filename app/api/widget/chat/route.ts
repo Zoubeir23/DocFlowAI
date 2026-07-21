@@ -23,6 +23,18 @@ const requestSchema = z.object({
   locale: z.enum(["fr", "en"]).optional().default("fr"),
 });
 
+// Même contrat que /api/widget/book : les données d'action renvoyées par le
+// LLM ne sont pas plus dignes de confiance qu'une entrée utilisateur brute.
+const bookingActionSchema = z.object({
+  patientName: z.string().min(1).max(200),
+  patientPhone: z.string().min(1).max(30),
+  patientEmail: z.string().email().optional().or(z.literal("")),
+  serviceId: z.string().optional(),
+  serviceName: z.string().optional(),
+  startAt: z.string(),
+  endAt: z.string(),
+});
+
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
   if (!(await checkWidgetChatRateLimit(ip))) {
