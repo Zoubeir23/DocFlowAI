@@ -150,7 +150,7 @@ export async function importPatientCarnet(
   data: PatientInput
 ): Promise<ApiResponse<{ id: string }>> {
   const db = await getDB();
-  const userClinicId = await getAuthenticatedClinicId(db);
+  const userClinicId = await getAuthenticatedClinicIdForMedicalRole(db);
   if (!userClinicId || userClinicId !== clinicId) {
     return { success: false, error: "Unauthorized" };
   }
