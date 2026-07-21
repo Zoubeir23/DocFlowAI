@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendNotification } from "@/lib/notifications";
+import { dispatchWebhookEvent } from "@/lib/webhooks";
 import { checkAppointmentQuota } from "@/lib/subscription/quota";
 import { widgetCorsResponse, withWidgetCors } from "@/lib/cors";
 import { checkWidgetBookRateLimit } from "@/lib/rate-limit";
