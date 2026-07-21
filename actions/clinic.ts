@@ -25,6 +25,20 @@ export async function createOnboarding(
   // Use admin client (service role) to bypass RLS for all inserts during onboarding
   const db = (await createAdminClient()) as any;
 
+  // C1 fix: un utilisateur déjà rattaché à une clinique ne doit pas pouvoir
+  // relancer l'onboarding — sans ce garde-fou, users.clinic_id est écrasé
+  // silencieusement (perte d'accès à l'ancienne clinique) et le quota de
+  // 5 cliniques réservé au plan Entreprise (clinics.ts) est contourné.
+  const { data: existingUser } = await db
+    .from("users")
+    .select("clinic_id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (existingUser?.clinic_id) {
+    return { success: false, error: "Vous avez déjà une clinique. Utilisez la création de clinique multiple depuis les paramètres." };
+  }
+
   const { data: clinic, error: clinicError } = await db
     .from("clinics")
     .insert({
