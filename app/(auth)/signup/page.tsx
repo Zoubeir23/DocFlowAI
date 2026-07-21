@@ -36,13 +36,29 @@ export default function SignupPage() {
       const { data: authData, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
-        options: { data: { full_name: data.fullName } },
+        options: {
+          data: {
+            full_name: data.fullName,
+            // Horodatage persisté dans user_metadata et revérifié côté serveur
+            // par createOnboarding — évite qu'un appel direct à signUp() sans
+            // passer par la case à cocher crée un compte considéré comme
+            // ayant accepté les CGU / le traitement de données de santé.
+            terms_accepted_at: new Date().toISOString(),
+          },
+        },
       });
       if (error) { toast.error(error.message); return; }
-      if (authData.user) {
-        toast.success("Account created! Let's set up your clinic.");
-        router.push("/onboarding");
+      if (!authData.user) {
+        toast.error("Something went wrong. Please try again.");
+        return;
       }
+      if (!authData.session) {
+        toast.success("Compte créé ! Vérifiez votre boîte mail pour confirmer votre adresse avant de continuer.");
+        router.push("/login?confirm=1");
+        return;
+      }
+      toast.success("Account created! Let's set up your clinic.");
+      router.push("/onboarding");
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {

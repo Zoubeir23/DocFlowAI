@@ -2,6 +2,7 @@
 
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { getStripeServerClient, STRIPE_PLAN_PRICE_IDS } from "@/lib/stripe/client";
+import { isOwnerOrAbove, type UserRole } from "@/lib/rbac";
 
 export type StripePlan = "starter" | "professional" | "enterprise";
 
@@ -30,12 +31,21 @@ export async function createStripeCheckoutSession(
 
   const { data: userData, error: userError } = await db
     .from("users")
-    .select("clinic_id, email, full_name")
+    .select("clinic_id, email, full_name, role")
     .eq("id", user.id)
     .maybeSingle();
 
   if (userError || !userData) {
     return { checkoutUrl: null, error: "Données utilisateur introuvables" };
+  }
+
+  // Défense en profondeur : ne pas dépendre uniquement de la protection de
+  // route middleware (canAccessRoute sur /app/billing) — cette action modifie
+  // directement la facturation de la clinique et doit revérifier le rôle
+  // elle-même, comme le fait déjà actions/team.ts pour les opérations
+  // sensibles équivalentes.
+  if (!isOwnerOrAbove(userData.role as UserRole)) {
+    return { checkoutUrl: null, error: "Non autorisé" };
   }
 
   const priceId = STRIPE_PLAN_PRICE_IDS[plan];
