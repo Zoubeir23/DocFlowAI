@@ -41,7 +41,7 @@ export async function listApiKeys(): Promise<ApiKeyRecord[]> {
   const db = (await createClient()) as any;
   const { data } = await db
     .from("api_keys")
-    .select("id, name, key_prefix, is_active, created_at, last_used_at")
+    .select("id, name, key_prefix, is_active, created_at, last_used_at, expires_at")
     .eq("clinic_id", auth.clinicId)
     .order("created_at", { ascending: false });
 
