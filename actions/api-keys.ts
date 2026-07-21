@@ -82,6 +82,7 @@ export async function createApiKey(
       name: trimmedName,
       key_hash: keyHash,
       key_prefix: keyPrefix,
+      expires_at: new Date(Date.now() + API_KEY_LIFETIME_MS).toISOString(),
     })
     .select("id")
     .maybeSingle();
