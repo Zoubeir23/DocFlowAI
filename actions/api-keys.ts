@@ -13,7 +13,10 @@ export interface ApiKeyRecord {
   is_active: boolean;
   created_at: string;
   last_used_at: string | null;
+  expires_at: string | null;
 }
+
+const API_KEY_LIFETIME_MS = 365 * 24 * 60 * 60 * 1000;
 
 async function getOwnerClinicId(): Promise<{ clinicId: string } | null> {
   const db = (await createClient()) as any;
