@@ -60,11 +60,11 @@ export async function POST(req: NextRequest) {
 
   const { data: clinic } = await db
     .from("clinics")
-    .select("id, name, timezone")
+    .select("id, name, timezone, is_active")
     .eq("slug", clinicSlug)
-    .maybeSingle() as { data: { id: string; name: string; timezone: string } | null };
+    .maybeSingle() as { data: { id: string; name: string; timezone: string; is_active: boolean } | null };
 
-  if (!clinic) {
+  if (!clinic || !clinic.is_active) {
     return NextResponse.json({ error: "Clinic not found" }, { status: 404 });
   }
 
