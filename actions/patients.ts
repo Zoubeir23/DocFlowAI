@@ -20,6 +20,18 @@ async function getAuthenticatedClinicId(db: any): Promise<string | null> {
   return userData?.clinic_id ?? null;
 }
 
+// H3 fix: le carnet médical partagé (diagnostics, prescriptions,
+// traitements) contient des données de santé sensibles — seul le rôle owner
+// (seul rôle assimilable à du personnel médical dans l'enum actuel) doit
+// pouvoir le lier ou le consulter, pas receptionist/assistant.
+async function getAuthenticatedClinicIdForMedicalRole(db: any): Promise<string | null> {
+  const { data: authData } = await db.auth.getUser();
+  if (!authData.user) return null;
+  const { data: userData } = await db.from("users").select("clinic_id, role").eq("id", authData.user.id).maybeSingle();
+  if (!userData || !["owner", "super_admin"].includes(userData.role)) return null;
+  return userData.clinic_id ?? null;
+}
+
 export async function getPatients(
   clinicId: string,
   page = 1,
