@@ -4,6 +4,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { patientSchema } from "@/lib/validations";
 import { sanitizePostgrestSearchTerm } from "@/lib/security/sanitize-postgrest-search";
+import { checkAuthenticatedRateLimit } from "@/lib/rate-limit";
 import type { ApiResponse, PaginatedResult, Patient } from "@/types";
 import type { z } from "zod";
 
