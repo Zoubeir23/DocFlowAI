@@ -156,6 +156,14 @@ export async function importPatientCarnet(
     return { success: false, error: "Unauthorized" };
   }
 
+  // M fix: pas de rate limiting jusqu'ici — un code à 64 bits d'entropie
+  // n'est pas brute-forçable en pratique, mais limiter le débit reste une
+  // défense en profondeur peu coûteuse sur une action qui donne accès à un
+  // historique médical complet.
+  if (!(await checkAuthenticatedRateLimit(clinicId, "import-carnet"))) {
+    return { success: false, error: "Trop de tentatives. Réessayez dans une minute." };
+  }
+
   // 1. Find the carnet by public code. To bypass RLS (since they don't have a patient linked yet),
   // we could just try to insert with a subquery, or we use a service role client.
   // Actually, wait: our RLS policy says "staff can SELECT patient_carnets if they have a patient linked to it".
