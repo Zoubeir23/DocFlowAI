@@ -32,6 +32,74 @@ export interface ClinicTemplate {
 
 export const clinicTemplates: ClinicTemplate[] = [
   {
+    id: "lumiere-privee",
+    name: "Lumière Privée",
+    description:
+      "Design luxe et confidentiel pour cabinets et cliniques privées haut de gamme. Fond noir profond, or antique, typographie serif italique raffinée et mise en page épurée sans fioritures.",
+    category: "Clinique privée & Spécialiste",
+    thumbnail:
+      "https://images.unsplash.com/photo-1550831107-1553da8c8464?q=80&w=800&h=600&fit=crop",
+    data: {
+      hero_data: {
+        title: "Une médecine d'exception, en toute confidentialité",
+        subtitle:
+          "Un accompagnement médical d'excellence, sur rendez-vous, dans un cadre pensé pour votre sérénité.",
+        ctaPrimary: "Prendre rendez-vous",
+        ctaSecondary: "Découvrir le cabinet",
+        bgImage: "",
+      },
+      style_config: {
+        primary: "#C6A15B",
+        primaryDark: "#D9BC80",
+        secondary: "#8A7248",
+        secondaryDark: "#B09863",
+        accent: "#C6A15B",
+        accentDark: "#D9BC80",
+        background: "#0B0A08",
+        backgroundDark: "#0B0A08",
+        fontBody: "Manrope",
+        fontHead: "Fraunces",
+        radius: "0px",
+        shadow: "none",
+        style: "lumiere-privee",
+      },
+    },
+  },
+  {
+    id: "structure-brut",
+    name: "Structure Brut",
+    description:
+      "Design brutaliste et confiant pour cliniques modernes qui veulent se démarquer. Blanc/noir contrastés, accent cobalt franc, typographie massive et bordures épaisses.",
+    category: "Clinique moderne & Multi-spécialités",
+    thumbnail:
+      "https://images.unsplash.com/photo-1629909613654-28e377c37b09?q=80&w=800&h=600&fit=crop",
+    data: {
+      hero_data: {
+        title: "Votre santé sans compromis",
+        subtitle:
+          "Un accompagnement médical direct, sans détour, disponible 24h/24 pour votre bien-être.",
+        ctaPrimary: "Prendre rendez-vous",
+        ctaSecondary: "Voir nos services",
+        bgImage: "",
+      },
+      style_config: {
+        primary: "#0038FF",
+        primaryDark: "#3D63FF",
+        secondary: "#0A0A0A",
+        secondaryDark: "#F7F7F2",
+        accent: "#0038FF",
+        accentDark: "#3D63FF",
+        background: "#F7F7F2",
+        backgroundDark: "#0A0A0A",
+        fontBody: "Work Sans",
+        fontHead: "Anton",
+        radius: "0px",
+        shadow: "hard",
+        style: "structure-brut",
+      },
+    },
+  },
+  {
     id: "oracare-editorial",
     name: "Cabinet Éditorial",
     description:

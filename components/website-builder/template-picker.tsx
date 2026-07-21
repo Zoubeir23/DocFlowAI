@@ -2,21 +2,23 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { clinicTemplates } from "@/data/clinic-templates";
-import { Globe, Sparkles, Palette, Type, Layers } from "lucide-react";
+import { clinicTemplates, type ClinicTemplate } from "@/data/clinic-templates";
+import { Globe, Sparkles, Check } from "lucide-react";
 import { toast } from "sonner";
 import { initializeClinicWebsite } from "@/actions/website";
+import { cn } from "@/lib/utils";
 
 export function TemplatePicker({ onComplete }: { onComplete: (website: any) => void }) {
   const t = useTranslations("websiteBuilder");
   const [isCreating, setIsCreating] = useState(false);
+  const [selectedId, setSelectedId] = useState<string>(clinicTemplates[0].id);
 
-  const template = clinicTemplates[0];
+  const selectedTemplate = clinicTemplates.find((tpl) => tpl.id === selectedId) ?? clinicTemplates[0];
 
   const handleCreate = async () => {
     try {
       setIsCreating(true);
-      const res = await initializeClinicWebsite(template.id);
+      const res = await initializeClinicWebsite(selectedTemplate.id);
       if (res.success && res.data) {
         toast.success(t("toastSuccess"));
         onComplete(res.data);
@@ -31,7 +33,7 @@ export function TemplatePicker({ onComplete }: { onComplete: (website: any) => v
   };
 
   return (
-    <div className="p-8 max-w-[800px] mx-auto space-y-10 animate-in fade-in-0 duration-300">
+    <div className="p-8 max-w-[1100px] mx-auto space-y-10 animate-in fade-in-0 duration-300">
 
       {/* Header */}
       <div className="text-center space-y-3">
@@ -40,67 +42,20 @@ export function TemplatePicker({ onComplete }: { onComplete: (website: any) => v
         </div>
         <h1 className="text-3xl font-bold tracking-tight">{t("createTitle")}</h1>
         <p className="text-muted-foreground max-w-xl mx-auto text-base">
-          Votre site sera créé avec notre design éditorial. Vous pourrez personnaliser les couleurs, textes et images depuis l'éditeur.
+          Choisissez le design de votre site. Vous pourrez personnaliser les couleurs, textes et images depuis l'éditeur.
         </p>
       </div>
 
-      {/* Template preview card */}
-      <div className="rounded-3xl border-2 border-primary overflow-hidden shadow-xl ring-4 ring-primary/10">
-        {/* Image */}
-        <div className="aspect-[16/7] w-full overflow-hidden relative">
-          <img
-            src={template.thumbnail}
-            alt={template.name}
-            className="w-full h-full object-cover"
+      {/* Template grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        {clinicTemplates.map((template) => (
+          <TemplateCard
+            key={template.id}
+            template={template}
+            selected={template.id === selectedId}
+            onSelect={() => setSelectedId(template.id)}
           />
-          {/* Overlay showing the design aesthetic */}
-          <div className="absolute inset-0 flex items-end p-6" style={{ background: "linear-gradient(to top, rgba(26,26,46,0.8), transparent)" }}>
-            <div>
-              <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider mb-2" style={{ backgroundColor: "#FF2D78", color: "#fff" }}>
-                {template.category}
-              </span>
-              <h2 className="text-2xl font-bold text-white">{template.name}</h2>
-            </div>
-          </div>
-        </div>
-
-        {/* Info */}
-        <div className="p-6 space-y-5 bg-background">
-          <p className="text-muted-foreground text-sm leading-relaxed">
-            {template.description}
-          </p>
-
-          {/* Design features */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              {
-                icon: Palette,
-                title: "Palette ORACARE",
-                desc: "Crème · Rose vif · Teal",
-              },
-              {
-                icon: Type,
-                title: "Typographie éditoriale",
-                desc: "Bebas Neue + Playfair Display",
-              },
-              {
-                icon: Layers,
-                title: "Layout asymétrique",
-                desc: "Cartes flottantes, overlays",
-              },
-            ].map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="flex items-start gap-3 p-3 rounded-xl bg-muted/50">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                  <Icon className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold">{title}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Create button */}
@@ -119,5 +74,53 @@ export function TemplatePicker({ onComplete }: { onComplete: (website: any) => v
         </button>
       </div>
     </div>
+  );
+}
+
+function TemplateCard({
+  template,
+  selected,
+  onSelect,
+}: {
+  template: ClinicTemplate;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const { primary, background, style } = template.data.style_config;
+  const badgeTextColor = style === "lumiere-privee" || style === "oracare-editorial" ? "#fff" : background;
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={cn(
+        "text-left rounded-3xl overflow-hidden border-2 transition-all duration-200 bg-background",
+        selected ? "border-primary shadow-xl ring-4 ring-primary/10 -translate-y-1" : "border-border hover:border-primary/40 hover:-translate-y-0.5"
+      )}
+    >
+      {/* Image */}
+      <div className="aspect-[4/3] w-full overflow-hidden relative">
+        <img src={template.thumbnail} alt={template.name} className="w-full h-full object-cover" />
+        <div className="absolute inset-0 flex items-end p-4" style={{ background: `linear-gradient(to top, ${background}cc, transparent)` }}>
+          <span
+            className="inline-block px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider"
+            style={{ backgroundColor: primary, color: badgeTextColor }}
+          >
+            {template.category}
+          </span>
+        </div>
+        {selected && (
+          <div className="absolute top-3 right-3 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg">
+            <Check className="w-4 h-4" />
+          </div>
+        )}
+      </div>
+
+      {/* Info */}
+      <div className="p-5 space-y-2">
+        <h3 className="font-bold text-base">{template.name}</h3>
+        <p className="text-muted-foreground text-[13px] leading-relaxed line-clamp-3">{template.description}</p>
+      </div>
+    </button>
   );
 }
