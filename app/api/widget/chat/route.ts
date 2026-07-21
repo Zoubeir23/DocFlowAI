@@ -68,6 +68,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Clinic not found" }, { status: 404 });
   }
 
+  if (!(await checkWidgetChatClinicRateLimit(clinic.id))) {
+    return NextResponse.json({ error: "Trop de requêtes pour cette clinique. Réessayez plus tard." }, { status: 429 });
+  }
+
   const [settingsRes, servicesRes, availabilityRes, blockedRes] = await Promise.all([
     db.from("clinic_settings").select("*").eq("clinic_id", clinic.id).maybeSingle(),
     db.from("services").select("*").eq("clinic_id", clinic.id).eq("is_active", true),
