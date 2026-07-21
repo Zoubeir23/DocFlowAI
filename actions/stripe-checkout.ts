@@ -2,6 +2,7 @@
 
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { getStripeServerClient, STRIPE_PLAN_PRICE_IDS } from "@/lib/stripe/client";
+import { isOwnerOrAbove, type UserRole } from "@/lib/rbac";
 
 export type StripePlan = "starter" | "professional" | "enterprise";
 
