@@ -101,7 +101,13 @@ export function checkAuthenticatedRateLimit(userId: string, bucket: string): Pro
   return checkRateLimit(`auth:${bucket}:${userId}`, AUTHENTICATED_WRITE_LIMIT);
 }
 
-/** Extrait l'IP client de l'en-tête x-forwarded-for (première valeur). */
+/**
+ * Extrait l'IP client. x-real-ip est écrit directement par l'edge Vercel
+ * (une seule valeur, non falsifiable par le client), on le préfère à
+ * x-forwarded-for dont le contenu dépend de la chaîne de proxys en amont.
+ */
 export function getClientIp(request: Request): string {
+  const realIp = request.headers.get("x-real-ip");
+  if (realIp) return realIp.trim();
   return request.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
 }
