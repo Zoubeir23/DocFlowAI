@@ -29,11 +29,11 @@ export async function GET(req: NextRequest) {
 
   const { data: clinic } = await db
     .from("clinics")
-    .select("id, timezone")
+    .select("id, timezone, is_active")
     .eq("slug", clinicSlug)
-    .maybeSingle() as { data: { id: string; timezone: string } | null };
+    .maybeSingle() as { data: { id: string; timezone: string; is_active: boolean } | null };
 
-  if (!clinic) {
+  if (!clinic || !clinic.is_active) {
     return NextResponse.json({ error: "Clinic not found" }, { status: 404 });
   }
 
