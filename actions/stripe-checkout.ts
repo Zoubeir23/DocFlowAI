@@ -31,7 +31,7 @@ export async function createStripeCheckoutSession(
 
   const { data: userData, error: userError } = await db
     .from("users")
-    .select("clinic_id, email, full_name")
+    .select("clinic_id, email, full_name, role")
     .eq("id", user.id)
     .maybeSingle();
 
