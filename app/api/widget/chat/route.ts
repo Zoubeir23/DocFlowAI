@@ -236,6 +236,16 @@ export async function POST(req: NextRequest) {
               serviceName: service.name,
               startAt: data.startAt,
             });
+
+            dispatchWebhookEvent(clinic.id, "appointment.created", {
+              id: resultData.appointment_id,
+              start_at: data.startAt,
+              end_at: data.endAt,
+              status: "booked",
+              patient_name: data.patientName,
+              patient_phone: data.patientPhone,
+              service_name: service.name,
+            }).catch(() => {});
           } else {
             bookingResult = { success: false, error: error?.message || "Booking failed" };
           }
