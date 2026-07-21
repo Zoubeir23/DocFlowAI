@@ -176,18 +176,36 @@ export async function POST(req: NextRequest) {
     let bookingResult: { success: boolean; appointmentId?: string; patientId?: string; error?: string } | null = null;
 
     if (action && action.intent === "create_booking" && action.data) {
-      const data = action.data as Record<string, string>;
       // M6 fix: never log patient PII — log intent only
       console.log("[booking] create_booking action received");
 
-      if (data.patientName && data.patientPhone && data.startAt && data.endAt) {
+      const validated = bookingActionSchema.safeParse(action.data);
+      // Le LLM n'est pas plus digne de confiance qu'un input utilisateur brut :
+      // en plus de la validation Zod, on impose la même limite dédiée aux
+      // réservations que /api/widget/book, et on vérifie que le créneau
+      // proposé correspond exactement à un créneau réellement disponible
+      // calculé côté serveur (pas seulement la règle textuelle du prompt).
+      if (!validated.success) {
+        bookingResult = { success: false, error: "Données de réservation invalides" };
+      } else if (!(await checkWidgetBookRateLimit(ip))) {
+        bookingResult = { success: false, error: "Trop de tentatives de réservation. Réessayez dans une minute." };
+      } else {
+        const data = validated.data;
         const service = (services as any[]).find(
           (s) =>
             s.id === data.serviceId ||
             s.name.toLowerCase() === (data.serviceName || "").toLowerCase()
         );
 
-        if (service) {
+        const slotIsReallyAvailable = slotsPerDate.some((d) =>
+          d.slots.some((slot) => slot.start === data.startAt && slot.end === data.endAt)
+        );
+
+        if (!service) {
+          bookingResult = { success: false, error: "Service not found" };
+        } else if (!slotIsReallyAvailable) {
+          bookingResult = { success: false, error: "Ce créneau n'est plus disponible." };
+        } else {
           const { data: result, error } = await db.rpc("create_booking_from_widget", {
             p_clinic_id: clinic.id,
             p_patient_name: data.patientName,
@@ -220,8 +238,6 @@ export async function POST(req: NextRequest) {
           } else {
             bookingResult = { success: false, error: error?.message || "Booking failed" };
           }
-        } else {
-          bookingResult = { success: false, error: "Service not found" };
         }
       }
     }
