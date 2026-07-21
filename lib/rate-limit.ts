@@ -72,6 +72,16 @@ export async function checkWidgetSlotsRateLimit(ip: string): Promise<boolean> {
   return success;
 }
 
+// Le quota métier (RDV créés) ne couvre pas le coût des appels LLM eux-mêmes :
+// une attaque distribuée sur plusieurs IP contre UNE clinique peut faire
+// exploser la facture du provider IA sans jamais aboutir à une réservation.
+// Limite globale par clinique, indépendante du rate limit par IP.
+const WIDGET_CHAT_CLINIC_LIMIT: RateLimitConfig = { requests: 300, windowSeconds: 3600 };
+
+export async function checkWidgetChatClinicRateLimit(clinicId: string): Promise<boolean> {
+  return checkRateLimit(`chat-clinic:${clinicId}`, WIDGET_CHAT_CLINIC_LIMIT);
+}
+
 // ── Limiters génériques (endpoints hors widget) ───────────────────────────────
 // Requêtes API par IP : appliqué AVANT la validation de clé, donc protège aussi
 // contre le brute-force de clés d'API (une clé invalide n'a pas de keyId).
