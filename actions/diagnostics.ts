@@ -170,8 +170,11 @@ export async function validateDiagnostic(
   const context = await resolveUserContext();
   if (!context) return { success: false, error: "Non autorisé" };
 
-  const { clinicId, role } = context;
-  const ALLOWED_VALIDATION_ROLES = ["owner", "doctor", "admin"];
+  const { userId, clinicId, role } = context;
+  // C2 fix: 'doctor'/'admin' n'existent pas dans l'enum user_role
+  // (owner|receptionist|assistant|super_admin) — seul owner/super_admin peut
+  // en pratique valider un diagnostic aujourd'hui.
+  const ALLOWED_VALIDATION_ROLES = ["owner", "super_admin"];
   if (!ALLOWED_VALIDATION_ROLES.includes(role)) {
     return { success: false, error: "Seul un médecin peut valider un diagnostic" };
   }
@@ -183,6 +186,9 @@ export async function validateDiagnostic(
       validated_diagnosis_code: validatedCode,
       validated_diagnosis_name: validatedName,
       validated_by: validatedBy,
+      // C2 fix: le libellé texte reste affiché sur le document, mais chaque
+      // validation est désormais imputable à un compte réel et vérifiable.
+      validated_by_user_id: userId,
       validated_at: new Date().toISOString(),
       rejection_reason: rejectionReason ?? null,
     })
