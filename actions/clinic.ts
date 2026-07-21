@@ -22,6 +22,16 @@ export async function createOnboarding(
 
   const user = authData.user;
 
+  // Défense en profondeur : la case CGU/politique de confidentialité côté
+  // client ne fait que bloquer le bouton — un appel direct à supabase.auth.signUp()
+  // la contourne. On exige donc ici la présence de l'horodatage de consentement
+  // écrit dans user_metadata lors du signUp (voir app/(auth)/signup/page.tsx),
+  // ce qui empêche la création d'une clinique (donc l'accès effectif à
+  // l'application) pour un compte n'ayant jamais accepté les conditions.
+  if (!user.user_metadata?.terms_accepted_at) {
+    return { success: false, error: "Vous devez accepter les CGU et la politique de confidentialité avant de continuer." };
+  }
+
   // Use admin client (service role) to bypass RLS for all inserts during onboarding
   const db = (await createAdminClient()) as any;
 
