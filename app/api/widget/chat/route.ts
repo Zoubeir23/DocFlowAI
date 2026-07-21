@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { widgetCorsResponse, withWidgetCors } from "@/lib/cors";
-import { checkWidgetChatRateLimit, checkWidgetBookRateLimit } from "@/lib/rate-limit";
+import { checkWidgetChatRateLimit, checkWidgetBookRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function OPTIONS() {
   return widgetCorsResponse();
@@ -37,7 +37,7 @@ const bookingActionSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
+  const ip = getClientIp(req);
   if (!(await checkWidgetChatRateLimit(ip))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
