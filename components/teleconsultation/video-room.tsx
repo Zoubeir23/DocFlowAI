@@ -13,7 +13,11 @@ export function VideoRoom({ roomUrl, displayName, onClose }: VideoRoomProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const encodedName = encodeURIComponent(displayName);
-  const iframeSrc = `${roomUrl}#userInfo.displayName="${encodedName}"&config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&interfaceConfig.SHOW_JITSI_WATERMARK=false&interfaceConfig.SHOW_BRAND_WATERMARK=false`;
+  // M fix: prejoinPageEnabled reste à sa valeur par défaut (true) — la page
+  // de pré-connexion est la seule barrière disponible sans déploiement Jitsi
+  // JWT dédié contre un tiers qui rejoindrait directement une consultation
+  // médicale avec la seule URL.
+  const iframeSrc = `${roomUrl}#userInfo.displayName="${encodedName}"&config.startWithAudioMuted=false&config.startWithVideoMuted=false&interfaceConfig.SHOW_JITSI_WATERMARK=false&interfaceConfig.SHOW_BRAND_WATERMARK=false`;
 
   return (
     <div
