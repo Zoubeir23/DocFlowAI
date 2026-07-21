@@ -151,6 +151,27 @@ Il combine un tableau de bord médical complet, un agent IA multi-fournisseurs c
 
 ---
 
+## Base de données : Supabase (production) vs Neon (dev/staging)
+
+**Supabase est le seul provider supporté pour faire tourner l'application.** Ce n'est pas qu'une base Postgres : Supabase fournit aussi l'authentification (Auth, sessions, `auth.uid()`), le stockage de fichiers (Storage) et le moteur qui exécute les policies **Row Level Security** de `supabase/migrations/`. Ces policies reposent sur `auth.uid()` et le schéma `auth`, qui n'existent que sur la plateforme Supabase — retirer Supabase casserait l'authentification, l'upload de fichiers et l'isolation entre cliniques (RLS).
+
+**Neon peut être utilisé en complément, uniquement pour le schéma SQL brut**, en dev/staging — par exemple pour explorer la structure des tables, tester des migrations avant de les pousser sur Supabase, ou faire tourner des requêtes d'analyse sur une copie du schéma sans toucher aux données de production. Neon ne remplace pas Supabase : login, upload de fichiers et RLS ne fonctionneront pas sur une base Neon nue, faute d'équivalent à Supabase Auth/Storage.
+
+```bash
+# 1. Créer un projet sur https://console.neon.tech/
+# 2. Récupérer la chaîne de connexion (Dashboard → Connection string)
+# 3. Dans .env.local :
+DATABASE_PROVIDER="neon"
+NEON_DATABASE_URL="postgres://user:password@ep-xxxx.region.aws.neon.tech/dbname?sslmode=require"
+
+# 4. Appliquer le schéma SQL sur Neon (garde-fou : refuse si DATABASE_PROVIDER != "neon")
+npm run db:migrate:neon
+```
+
+Le script (`scripts/migrate-neon.ts`) applique chaque fichier de `supabase/migrations/` dans l'ordre, garde une table `_neon_migrations` pour ne jamais rejouer une migration déjà appliquée, et s'arrête proprement à la première erreur. Certaines migrations référencent `auth.users`/`auth.uid()` (fournis par Supabase Auth) : elles échoueront sur une base Neon qui n'a pas ce schéma — le script l'indique explicitement dans son message d'erreur plutôt que d'échouer silencieusement.
+
+---
+
 ## Prérequis
 
 | Outil | Version minimale | Lien |
