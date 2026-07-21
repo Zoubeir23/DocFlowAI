@@ -197,7 +197,7 @@ export async function importPatientCarnet(
 
 export async function getPatientCarnetHistory(patientId: string) {
   const db = await getDB();
-  const clinicId = await getAuthenticatedClinicId(db);
+  const clinicId = await getAuthenticatedClinicIdForMedicalRole(db);
   if (!clinicId) return [];
 
   // First, verify the patient belongs to the caller's clinic and get their carnet_id
