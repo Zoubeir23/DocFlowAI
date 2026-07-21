@@ -48,10 +48,12 @@ export default function SignupPage() {
         },
       });
       if (error) { toast.error(error.message); return; }
-      if (authData.user) {
-        toast.success("Account created! Let's set up your clinic.");
-        router.push("/onboarding");
+      if (!authData.user) {
+        toast.error("Something went wrong. Please try again.");
+        return;
       }
+      toast.success("Account created! Let's set up your clinic.");
+      router.push("/onboarding");
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {
