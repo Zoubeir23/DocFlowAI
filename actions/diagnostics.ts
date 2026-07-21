@@ -206,8 +206,9 @@ export async function updateDiagnosticPrescription(
   prescription: PrescriptionInput
 ): Promise<ActionResult> {
   const supabase = await createClient();
-  const clinicId = await resolveClinicId();
-  if (!clinicId) return { success: false, error: "Non autorisé" };
+  const context = await resolveUserContext();
+  if (!context) return { success: false, error: "Non autorisé" };
+  const { userId, clinicId } = context;
 
   const { error } = await (supabase as any)
     .from("diagnostics")
@@ -220,6 +221,9 @@ export async function updateDiagnosticPrescription(
       practitioner_name: prescription.practitioner_name,
       practitioner_title: prescription.practitioner_title,
       practitioner_rpps: prescription.practitioner_rpps,
+      // C2 fix: le libellé reste modifiable, mais la prescription est
+      // désormais imputable à un compte réel et vérifiable.
+      prescribed_by_user_id: userId,
       icf_codes: prescription.icf_codes ?? [],
       current_step: 6,
     })
