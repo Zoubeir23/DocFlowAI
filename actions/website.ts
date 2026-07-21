@@ -90,15 +90,43 @@ export async function initializeClinicWebsite(templateId: string = "medical-mode
   return { success: true, data };
 }
 
+// M fix: allowlist explicite — le payload vient du client (server action =
+// endpoint HTTP appelable directement) et ne doit jamais pouvoir écrire id,
+// clinic_id, views_count, published_at ou created_at.
+const EDITABLE_WEBSITE_FIELDS = [
+  "template_id",
+  "hero_data",
+  "about_data",
+  "gallery",
+  "testimonials",
+  "experience",
+  "blog_posts",
+  "style_config",
+  "contact_data",
+  "show_chat_widget",
+  "show_services",
+  "show_gallery",
+  "show_testimonials",
+  "show_blog",
+  "meta_title",
+  "meta_description",
+  "is_published",
+] as const;
+
 export async function updateClinicWebsite(updates: any) {
   const db = (await createClient()) as any;
   const clinic = await getCurrentClinic();
-  
+
   if (!clinic) return { success: false, error: "No clinic found" };
+
+  const safeUpdates: Record<string, unknown> = {};
+  for (const field of EDITABLE_WEBSITE_FIELDS) {
+    if (field in updates) safeUpdates[field] = updates[field];
+  }
 
   const { data, error } = await db
     .from("clinic_websites")
-    .update({ ...updates, updated_at: new Date().toISOString() })
+    .update({ ...safeUpdates, updated_at: new Date().toISOString() })
     .eq("clinic_id", clinic.id)
     .select()
     .maybeSingle();

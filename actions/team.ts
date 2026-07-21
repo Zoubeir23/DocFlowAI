@@ -307,6 +307,14 @@ export async function getMyRole(): Promise<{ role: string; clinicId: string } | 
 export async function getInvitationByToken(
   token: string
 ): Promise<{ role: StaffRole; clinic_name: string; expires_at: string } | null> {
+  const { headers } = await import("next/headers");
+  const { checkRateLimit } = await import("@/lib/rate-limit");
+  const headersList = await headers();
+  const ip = headersList.get("x-real-ip") ?? headersList.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  if (!(await checkRateLimit(`invitation-lookup:${ip}`, { requests: 20, windowSeconds: 60 }))) {
+    return null;
+  }
+
   const supabase = await createClient();
   const db = supabase as any;
 

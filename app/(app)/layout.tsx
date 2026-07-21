@@ -22,14 +22,14 @@ export default async function AppLayout({
   const db = supabase as any;
   const { data: userData } = await db
     .from("users")
-    .select("full_name, email, role, clinic:clinics(name, slug)")
+    .select("full_name, email, role, clinic:clinics(name, slug, is_active)")
     .eq("id", user.id)
     .maybeSingle() as {
     data: {
       full_name: string;
       email: string;
       role: string;
-      clinic: { name: string; slug: string } | null;
+      clinic: { name: string; slug: string; is_active: boolean } | null;
     } | null;
   };
 
@@ -41,6 +41,10 @@ export default async function AppLayout({
   if (!clinic && userData.role === "super_admin") redirect("/admin");
 
   if (!clinic) redirect("/onboarding");
+
+  // C7 fix: une clinique désactivée par le super-admin ne doit plus être
+  // accessible au staff — jusqu'ici seul users.is_active était vérifié.
+  if (!clinic.is_active) redirect("/blocked");
 
   return (
     <div className="flex h-screen overflow-hidden bg-muted/30 dark:bg-background">

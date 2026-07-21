@@ -25,72 +25,32 @@ export async function createOnboarding(
   // Use admin client (service role) to bypass RLS for all inserts during onboarding
   const db = (await createAdminClient()) as any;
 
-  const { data: clinic, error: clinicError } = await db
-    .from("clinics")
-    .insert({
-      name: data.clinicName,
-      slug: data.slug,
-      timezone: data.timezone,
-      owner_id: user.id,
-    })
-    .select()
-    .maybeSingle();
+  // C1 fix + HIGH fix: l'onboarding entier (clinique, profil, réglages,
+  // abonnement, services, horaires) s'exécute dans une seule transaction
+  // Postgres (RPC create_clinic_onboarding) — soit tout réussit, soit rien
+  // n'est créé. La RPC vérifie aussi elle-même qu'aucune clinique n'est déjà
+  // rattachée à l'utilisateur (défense en profondeur contre la race
+  // condition d'un double-clic sur le formulaire d'onboarding).
+  const { data: result, error } = await db.rpc("create_clinic_onboarding", {
+    p_user_id: user.id,
+    p_clinic_name: data.clinicName,
+    p_slug: data.slug,
+    p_timezone: data.timezone,
+    p_full_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Doctor",
+    p_email: user.email!,
+  });
 
-  if (clinicError) {
-    if (clinicError.code === "23505") {
+  if (error) {
+    if (error.message?.includes("already_onboarded")) {
+      return { success: false, error: "Vous avez déjà une clinique. Utilisez la création de clinique multiple depuis les paramètres." };
+    }
+    if (error.code === "23505") {
       return { success: false, error: "This clinic URL is already taken. Please choose another." };
     }
-    return { success: false, error: clinicError.message };
+    return { success: false, error: error.message };
   }
 
-  await db.from("users").upsert({
-    id: user.id,
-    clinic_id: clinic.id,
-    role: "owner",
-    full_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Doctor",
-    email: user.email!,
-  });
-
-  await db.from("clinic_settings").insert({
-    clinic_id: clinic.id,
-    widget_color: "#2563eb",
-    welcome_message: `Welcome to ${data.clinicName}! I'm your AI booking assistant. How can I help you today?`,
-    faq: [],
-    slot_duration_minutes: 15,
-    tone: "professional and friendly",
-    booking_behavior: "Guide patients through booking smoothly. Always suggest the nearest available slot.",
-  });
-
-  await db.from("subscriptions").insert({
-    clinic_id: clinic.id,
-    plan: "free",
-    status: "active",
-    current_period_start: new Date().toISOString(),
-    current_period_end: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-  });
-
-  const defaultServices = [
-    { name: "General Consultation", duration_minutes: 30, price: null, is_active: true },
-    { name: "Follow Up Visit", duration_minutes: 15, price: null, is_active: true },
-  ];
-
-  await db.from("services").insert(
-    defaultServices.map((s: any) => ({ ...s, clinic_id: clinic.id }))
-  );
-
-  const defaultAvailability = [1, 2, 3, 4, 5].map((day) => ({
-    clinic_id: clinic.id,
-    day_of_week: day,
-    start_time: "09:00",
-    end_time: "17:00",
-    break_start: "12:00",
-    break_end: "13:00",
-    is_active: true,
-  }));
-
-  await db.from("availability_rules").insert(defaultAvailability);
-
-  return { success: true, data: { clinicId: clinic.id } };
+  return { success: true, data: { clinicId: (result as { clinic_id: string }).clinic_id } };
 }
 
 export async function getCurrentClinic() {

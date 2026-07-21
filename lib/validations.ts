@@ -69,7 +69,10 @@ export const clinicSettingsSchema = z.object({
   welcome_message: z.string().min(10, "Welcome message is required"),
   slot_duration_minutes: z.coerce.number().min(5).max(120),
   tone: z.string().min(2),
-  booking_behavior: z.string(),
+  // M-fix: envoyé tel quel dans le prompt système à chaque message de chaque
+  // visiteur — sans limite, un champ mal rempli (notes internes collées par
+  // erreur) fuiterait indéfiniment vers le LLM tiers configuré.
+  booking_behavior: z.string().max(1000),
   faq: z.array(
     z.object({
       question: z.string().min(5),

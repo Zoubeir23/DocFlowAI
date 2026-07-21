@@ -71,11 +71,16 @@ export async function switchActiveClinic(
     return { success: false, error: "Accès non autorisé à cette clinique" };
   }
 
+  // M fix: un rôle inattendu en base doit faire échouer explicitement
+  // l'opération plutôt que retomber silencieusement sur "receptionist", qui
+  // masquerait une incohérence de données au lieu de la signaler.
   const allowedRoles = ["owner", "receptionist", "assistant"] as const;
   type AllowedRole = (typeof allowedRoles)[number];
-  const sanitizedRole: AllowedRole = allowedRoles.includes(accessEntry.role as AllowedRole)
-    ? (accessEntry.role as AllowedRole)
-    : "receptionist";
+  if (!allowedRoles.includes(accessEntry.role as AllowedRole)) {
+    console.error("[switchActiveClinic] unexpected role in user_clinic_access:", accessEntry.role);
+    return { success: false, error: "Rôle d'accès invalide pour cette clinique." };
+  }
+  const sanitizedRole: AllowedRole = accessEntry.role as AllowedRole;
 
   const adminDb = (await createAdminClient()) as any;
   const { error } = await adminDb
@@ -135,18 +140,6 @@ export async function createNewClinic(
     };
   }
 
-  const { count: existingCount } = await db
-    .from("user_clinic_access")
-    .select("clinic_id", { count: "exact", head: true })
-    .eq("user_id", user.id);
-
-  if ((existingCount ?? 0) >= 5) {
-    return {
-      success: false,
-      error: "Maximum 5 cliniques par compte Entreprise",
-    };
-  }
-
   const slug = trimmedName
     .toLowerCase()
     .normalize("NFD")
@@ -159,46 +152,26 @@ export async function createNewClinic(
 
   const adminDb = (await createAdminClient()) as any;
 
-  const { data: clinic, error: clinicError } = await adminDb
-    .from("clinics")
-    .insert({
-      name: trimmedName,
-      slug: uniqueSlug,
-      timezone: "UTC",
-      owner_id: user.id,
-    })
-    .select()
-    .maybeSingle();
+  // M fix: quota de 5 cliniques + création (clinics, clinic_settings,
+  // subscriptions, user_clinic_access) exécutés dans une seule transaction
+  // verrouillée par utilisateur — élimine la race condition d'un double-clic
+  // et garantit qu'aucun état partiel n'est créé en cas d'échec.
+  const { data: result, error } = await adminDb.rpc("create_enterprise_clinic", {
+    p_user_id: user.id,
+    p_name: trimmedName,
+    p_slug: uniqueSlug,
+  });
 
-  if (clinicError) {
-    console.error("[createNewClinic] insert error:", clinicError.code);
+  if (error) {
+    if (error.message?.includes("clinic_quota_exceeded")) {
+      return { success: false, error: "Maximum 5 cliniques par compte Entreprise" };
+    }
+    console.error("[createNewClinic] rpc error:", error.code ?? error.message);
     return { success: false, error: "Erreur lors de la création de la clinique" };
   }
 
-  await adminDb.from("clinic_settings").insert({
-    clinic_id: clinic.id,
-    widget_color: "#2563eb",
-    welcome_message: `Bienvenue à ${clinicName} ! Je suis votre assistant de réservation IA. Comment puis-je vous aider ?`,
-    faq: [],
-    slot_duration_minutes: 15,
-    tone: "professionnel et amical",
-    booking_behavior: "Guide les patients vers le rendez-vous le plus proche disponible.",
-  });
-
-  await adminDb.from("subscriptions").insert({
-    clinic_id: clinic.id,
-    plan: "enterprise",
-    status: "active",
-    current_period_start: new Date().toISOString(),
-    current_period_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-  });
-
-  await adminDb.from("user_clinic_access").insert({
-    user_id: user.id,
-    clinic_id: clinic.id,
-    role: "owner",
-  });
+  const { clinic_id: clinicId } = result as { clinic_id: string; slug: string };
 
   revalidatePath("/app/clinics");
-  return { success: true, data: { clinicId: clinic.id, slug: uniqueSlug } };
+  return { success: true, data: { clinicId, slug: uniqueSlug } };
 }

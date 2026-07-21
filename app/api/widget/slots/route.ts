@@ -4,14 +4,14 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { generateAvailableSlots } from "@/lib/slots";
 import type { AvailabilityRule, BlockedDate, Appointment } from "@/types";
 import { widgetCorsResponse } from "@/lib/cors";
-import { checkWidgetSlotsRateLimit } from "@/lib/rate-limit";
+import { checkWidgetSlotsRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function OPTIONS() {
   return widgetCorsResponse();
 }
 
 export async function GET(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
+  const ip = getClientIp(req);
   if (!(await checkWidgetSlotsRateLimit(ip))) {
     return NextResponse.json({ error: "Trop de requêtes. Réessayez dans une minute." }, { status: 429 });
   }
@@ -29,11 +29,11 @@ export async function GET(req: NextRequest) {
 
   const { data: clinic } = await db
     .from("clinics")
-    .select("id, timezone")
+    .select("id, timezone, is_active")
     .eq("slug", clinicSlug)
-    .maybeSingle() as { data: { id: string; timezone: string } | null };
+    .maybeSingle() as { data: { id: string; timezone: string; is_active: boolean } | null };
 
-  if (!clinic) {
+  if (!clinic || !clinic.is_active) {
     return NextResponse.json({ error: "Clinic not found" }, { status: 404 });
   }
 

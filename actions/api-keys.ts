@@ -13,7 +13,10 @@ export interface ApiKeyRecord {
   is_active: boolean;
   created_at: string;
   last_used_at: string | null;
+  expires_at: string | null;
 }
+
+const API_KEY_LIFETIME_MS = 365 * 24 * 60 * 60 * 1000;
 
 async function getOwnerClinicId(): Promise<{ clinicId: string } | null> {
   const db = (await createClient()) as any;
@@ -38,7 +41,7 @@ export async function listApiKeys(): Promise<ApiKeyRecord[]> {
   const db = (await createClient()) as any;
   const { data } = await db
     .from("api_keys")
-    .select("id, name, key_prefix, is_active, created_at, last_used_at")
+    .select("id, name, key_prefix, is_active, created_at, last_used_at, expires_at")
     .eq("clinic_id", auth.clinicId)
     .order("created_at", { ascending: false });
 
@@ -79,6 +82,7 @@ export async function createApiKey(
       name: trimmedName,
       key_hash: keyHash,
       key_prefix: keyPrefix,
+      expires_at: new Date(Date.now() + API_KEY_LIFETIME_MS).toISOString(),
     })
     .select("id")
     .maybeSingle();

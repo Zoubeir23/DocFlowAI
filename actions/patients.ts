@@ -4,6 +4,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { patientSchema } from "@/lib/validations";
 import { sanitizePostgrestSearchTerm } from "@/lib/security/sanitize-postgrest-search";
+import { checkAuthenticatedRateLimit } from "@/lib/rate-limit";
 import type { ApiResponse, PaginatedResult, Patient } from "@/types";
 import type { z } from "zod";
 
@@ -18,6 +19,18 @@ async function getAuthenticatedClinicId(db: any): Promise<string | null> {
   if (!authData.user) return null;
   const { data: userData } = await db.from("users").select("clinic_id").eq("id", authData.user.id).maybeSingle();
   return userData?.clinic_id ?? null;
+}
+
+// H3 fix: le carnet médical partagé (diagnostics, prescriptions,
+// traitements) contient des données de santé sensibles — seul le rôle owner
+// (seul rôle assimilable à du personnel médical dans l'enum actuel) doit
+// pouvoir le lier ou le consulter, pas receptionist/assistant.
+async function getAuthenticatedClinicIdForMedicalRole(db: any): Promise<string | null> {
+  const { data: authData } = await db.auth.getUser();
+  if (!authData.user) return null;
+  const { data: userData } = await db.from("users").select("clinic_id, role").eq("id", authData.user.id).maybeSingle();
+  if (!userData || !["owner", "super_admin"].includes(userData.role)) return null;
+  return userData.clinic_id ?? null;
 }
 
 export async function getPatients(
@@ -138,9 +151,17 @@ export async function importPatientCarnet(
   data: PatientInput
 ): Promise<ApiResponse<{ id: string }>> {
   const db = await getDB();
-  const userClinicId = await getAuthenticatedClinicId(db);
+  const userClinicId = await getAuthenticatedClinicIdForMedicalRole(db);
   if (!userClinicId || userClinicId !== clinicId) {
     return { success: false, error: "Unauthorized" };
+  }
+
+  // M fix: pas de rate limiting jusqu'ici — un code à 64 bits d'entropie
+  // n'est pas brute-forçable en pratique, mais limiter le débit reste une
+  // défense en profondeur peu coûteuse sur une action qui donne accès à un
+  // historique médical complet.
+  if (!(await checkAuthenticatedRateLimit(clinicId, "import-carnet"))) {
+    return { success: false, error: "Trop de tentatives. Réessayez dans une minute." };
   }
 
   // 1. Find the carnet by public code. To bypass RLS (since they don't have a patient linked yet),
@@ -185,7 +206,7 @@ export async function importPatientCarnet(
 
 export async function getPatientCarnetHistory(patientId: string) {
   const db = await getDB();
-  const clinicId = await getAuthenticatedClinicId(db);
+  const clinicId = await getAuthenticatedClinicIdForMedicalRole(db);
   if (!clinicId) return [];
 
   // First, verify the patient belongs to the caller's clinic and get their carnet_id

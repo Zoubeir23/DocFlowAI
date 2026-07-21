@@ -121,7 +121,25 @@ export async function updateUserRole(
     return { success: false, error: "Impossible de modifier le rôle d'un super admin" };
   }
 
-  const { error } = await db.from("users").update({ role }).eq("id", userId);
+  // H2 fix: empêcher qu'un super_admin se rétrograde lui-même s'il est le
+  // dernier — sinon plus personne ne peut accéder au panel d'administration.
+  const isLosingSuperAdmin = target.role === "super_admin" && role !== "super_admin";
+  if (isLosingSuperAdmin) {
+    const { count } = await db
+      .from("users")
+      .select("id", { count: "exact", head: true })
+      .eq("role", "super_admin");
+    if ((count ?? 0) <= 1) {
+      return { success: false, error: "Impossible de rétrograder le dernier super admin." };
+    }
+  }
+
+  // M5 fix: role et is_super_admin encodaient la même notion sans être
+  // synchronisés — is_super_admin suit désormais systématiquement role.
+  const { error } = await db
+    .from("users")
+    .update({ role, is_super_admin: role === "super_admin" })
+    .eq("id", userId);
   if (error) return { success: false, error: "Erreur lors de la mise à jour du rôle" };
 
   return { success: true };

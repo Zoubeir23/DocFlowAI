@@ -21,12 +21,13 @@ export async function validateApiKey(
 
   const { data: apiKey } = await db
     .from("api_keys")
-    .select("id, clinic_id")
+    .select("id, clinic_id, expires_at")
     .eq("key_hash", hash)
     .eq("is_active", true)
     .maybeSingle();
 
   if (!apiKey) return null;
+  if (apiKey.expires_at && new Date(apiKey.expires_at) < new Date()) return null;
 
   // Fire-and-forget last_used_at update
   db.from("api_keys")

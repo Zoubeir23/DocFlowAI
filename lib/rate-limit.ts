@@ -72,6 +72,16 @@ export async function checkWidgetSlotsRateLimit(ip: string): Promise<boolean> {
   return success;
 }
 
+// Le quota métier (RDV créés) ne couvre pas le coût des appels LLM eux-mêmes :
+// une attaque distribuée sur plusieurs IP contre UNE clinique peut faire
+// exploser la facture du provider IA sans jamais aboutir à une réservation.
+// Limite globale par clinique, indépendante du rate limit par IP.
+const WIDGET_CHAT_CLINIC_LIMIT: RateLimitConfig = { requests: 300, windowSeconds: 3600 };
+
+export async function checkWidgetChatClinicRateLimit(clinicId: string): Promise<boolean> {
+  return checkRateLimit(`chat-clinic:${clinicId}`, WIDGET_CHAT_CLINIC_LIMIT);
+}
+
 // ── Limiters génériques (endpoints hors widget) ───────────────────────────────
 // Requêtes API par IP : appliqué AVANT la validation de clé, donc protège aussi
 // contre le brute-force de clés d'API (une clé invalide n'a pas de keyId).
@@ -101,7 +111,13 @@ export function checkAuthenticatedRateLimit(userId: string, bucket: string): Pro
   return checkRateLimit(`auth:${bucket}:${userId}`, AUTHENTICATED_WRITE_LIMIT);
 }
 
-/** Extrait l'IP client de l'en-tête x-forwarded-for (première valeur). */
+/**
+ * Extrait l'IP client. x-real-ip est écrit directement par l'edge Vercel
+ * (une seule valeur, non falsifiable par le client), on le préfère à
+ * x-forwarded-for dont le contenu dépend de la chaîne de proxys en amont.
+ */
 export function getClientIp(request: Request): string {
+  const realIp = request.headers.get("x-real-ip");
+  if (realIp) return realIp.trim();
   return request.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
 }

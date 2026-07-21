@@ -52,3 +52,6 @@ feature.md
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Neon CLI (neonctl) — config locale, peut contenir des credentials
+.neon/

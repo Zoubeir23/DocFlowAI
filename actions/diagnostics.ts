@@ -17,6 +17,7 @@ interface ActionResult<T = void> {
 }
 
 interface UserContext {
+  userId: string;
   clinicId: string;
   role: string;
 }
@@ -32,7 +33,7 @@ async function resolveUserContext(): Promise<UserContext | null> {
     .maybeSingle();
   const row = data as { clinic_id: string; role: string } | null;
   if (!row?.clinic_id) return null;
-  return { clinicId: row.clinic_id, role: row.role };
+  return { userId: user.id, clinicId: row.clinic_id, role: row.role };
 }
 
 async function resolveClinicId(): Promise<string | null> {
@@ -48,6 +49,22 @@ export async function createDiagnosticDraft(
   const supabase = await createClient();
   const clinicId = await resolveClinicId();
   if (!clinicId) return { success: false, error: "Non autorisé" };
+
+  // C1 fix: patient_id vient du client — vérifier qu'il appartient bien à la
+  // clinique de l'appelant avant insertion, sinon le trigger auto_link_diagnostic_carnet
+  // (SECURITY DEFINER, sans filtre de clinique) rattacherait le diagnostic au
+  // carnet partagé d'un patient d'une autre clinique.
+  if (profile.patient_id) {
+    const { data: patientCheck } = await (supabase as any)
+      .from("patients")
+      .select("id")
+      .eq("id", profile.patient_id)
+      .eq("clinic_id", clinicId)
+      .maybeSingle();
+    if (!patientCheck) {
+      return { success: false, error: "Patient introuvable ou n'appartient pas à cette clinique." };
+    }
+  }
 
   const { data, error } = await (supabase as any)
     .from("diagnostics")
@@ -153,8 +170,11 @@ export async function validateDiagnostic(
   const context = await resolveUserContext();
   if (!context) return { success: false, error: "Non autorisé" };
 
-  const { clinicId, role } = context;
-  const ALLOWED_VALIDATION_ROLES = ["owner", "doctor", "admin"];
+  const { userId, clinicId, role } = context;
+  // C2 fix: 'doctor'/'admin' n'existent pas dans l'enum user_role
+  // (owner|receptionist|assistant|super_admin) — seul owner/super_admin peut
+  // en pratique valider un diagnostic aujourd'hui.
+  const ALLOWED_VALIDATION_ROLES = ["owner", "super_admin"];
   if (!ALLOWED_VALIDATION_ROLES.includes(role)) {
     return { success: false, error: "Seul un médecin peut valider un diagnostic" };
   }
@@ -166,6 +186,9 @@ export async function validateDiagnostic(
       validated_diagnosis_code: validatedCode,
       validated_diagnosis_name: validatedName,
       validated_by: validatedBy,
+      // C2 fix: le libellé texte reste affiché sur le document, mais chaque
+      // validation est désormais imputable à un compte réel et vérifiable.
+      validated_by_user_id: userId,
       validated_at: new Date().toISOString(),
       rejection_reason: rejectionReason ?? null,
     })
@@ -183,8 +206,9 @@ export async function updateDiagnosticPrescription(
   prescription: PrescriptionInput
 ): Promise<ActionResult> {
   const supabase = await createClient();
-  const clinicId = await resolveClinicId();
-  if (!clinicId) return { success: false, error: "Non autorisé" };
+  const context = await resolveUserContext();
+  if (!context) return { success: false, error: "Non autorisé" };
+  const { userId, clinicId } = context;
 
   const { error } = await (supabase as any)
     .from("diagnostics")
@@ -197,6 +221,9 @@ export async function updateDiagnosticPrescription(
       practitioner_name: prescription.practitioner_name,
       practitioner_title: prescription.practitioner_title,
       practitioner_rpps: prescription.practitioner_rpps,
+      // C2 fix: le libellé reste modifiable, mais la prescription est
+      // désormais imputable à un compte réel et vérifiable.
+      prescribed_by_user_id: userId,
       icf_codes: prescription.icf_codes ?? [],
       current_step: 6,
     })

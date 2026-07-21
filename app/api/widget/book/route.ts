@@ -3,9 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendNotification } from "@/lib/notifications";
+import { dispatchWebhookEvent } from "@/lib/webhooks";
 import { checkAppointmentQuota } from "@/lib/subscription/quota";
 import { widgetCorsResponse, withWidgetCors } from "@/lib/cors";
-import { checkWidgetBookRateLimit } from "@/lib/rate-limit";
+import { checkWidgetBookRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function OPTIONS() {
   return widgetCorsResponse();
@@ -22,7 +23,7 @@ const bookingSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
+  const ip = getClientIp(req);
   if (!(await checkWidgetBookRateLimit(ip))) {
     return NextResponse.json({ error: "Trop de requêtes. Réessayez dans une minute." }, { status: 429 });
   }
@@ -45,11 +46,11 @@ export async function POST(req: NextRequest) {
 
   const { data: clinic } = await db
     .from("clinics")
-    .select("id, name, owner_id")
+    .select("id, name, owner_id, is_active")
     .eq("slug", clinicSlug)
-    .maybeSingle() as { data: { id: string; name: string; owner_id: string } | null };
+    .maybeSingle() as { data: { id: string; name: string; owner_id: string; is_active: boolean } | null };
 
-  if (!clinic) {
+  if (!clinic || !clinic.is_active) {
     return NextResponse.json({ error: "Clinic not found" }, { status: 404 });
   }
 
@@ -106,6 +107,16 @@ export async function POST(req: NextRequest) {
     startAt,
     doctorEmail: ownerUser?.email || undefined,
   });
+
+  dispatchWebhookEvent(clinic.id, "appointment.created", {
+    id: resultData.appointment_id,
+    start_at: startAt,
+    end_at: endAt,
+    status: "booked",
+    patient_name: patientName,
+    patient_phone: patientPhone,
+    service_name: service.name,
+  }).catch(() => {});
 
   return withWidgetCors(NextResponse.json({
     success: true,

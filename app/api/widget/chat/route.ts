@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { widgetCorsResponse, withWidgetCors } from "@/lib/cors";
-import { checkWidgetChatRateLimit } from "@/lib/rate-limit";
+import { checkWidgetChatRateLimit, checkWidgetBookRateLimit, checkWidgetChatClinicRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function OPTIONS() {
   return widgetCorsResponse();
@@ -13,6 +13,7 @@ import { generateAIResponse } from "@/lib/ai/router";
 import type { AIMessage } from "@/lib/ai/types";
 import { generateAvailableSlots, getNextAvailableDates } from "@/lib/slots";
 import { sendNotification } from "@/lib/notifications";
+import { dispatchWebhookEvent } from "@/lib/webhooks";
 import type { AvailabilityRule, BlockedDate, Appointment } from "@/types";
 
 const requestSchema = z.object({
@@ -23,22 +24,34 @@ const requestSchema = z.object({
   locale: z.enum(["fr", "en"]).optional().default("fr"),
 });
 
+// Même contrat que /api/widget/book : les données d'action renvoyées par le
+// LLM ne sont pas plus dignes de confiance qu'une entrée utilisateur brute.
+const bookingActionSchema = z.object({
+  patientName: z.string().min(1).max(200),
+  patientPhone: z.string().min(1).max(30),
+  patientEmail: z.string().email().optional().or(z.literal("")),
+  serviceId: z.string().optional(),
+  serviceName: z.string().optional(),
+  startAt: z.string(),
+  endAt: z.string(),
+});
+
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
+  const ip = getClientIp(req);
   if (!(await checkWidgetChatRateLimit(ip))) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    return withWidgetCors(NextResponse.json({ error: "Too many requests" }, { status: 429 }));
   }
 
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return withWidgetCors(NextResponse.json({ error: "Invalid JSON" }, { status: 400 }));
   }
 
   const parsed = requestSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 });
+    return withWidgetCors(NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 }));
   }
 
   const { message, conversationId, patientTempId, clinicSlug, locale } = parsed.data;
@@ -47,12 +60,16 @@ export async function POST(req: NextRequest) {
 
   const { data: clinic } = await db
     .from("clinics")
-    .select("id, name, timezone")
+    .select("id, name, timezone, is_active")
     .eq("slug", clinicSlug)
-    .maybeSingle() as { data: { id: string; name: string; timezone: string } | null };
+    .maybeSingle() as { data: { id: string; name: string; timezone: string; is_active: boolean } | null };
 
-  if (!clinic) {
-    return NextResponse.json({ error: "Clinic not found" }, { status: 404 });
+  if (!clinic || !clinic.is_active) {
+    return withWidgetCors(NextResponse.json({ error: "Clinic not found" }, { status: 404 }));
+  }
+
+  if (!(await checkWidgetChatClinicRateLimit(clinic.id))) {
+    return withWidgetCors(NextResponse.json({ error: "Trop de requêtes pour cette clinique. Réessayez plus tard." }, { status: 429 }));
   }
 
   const [settingsRes, servicesRes, availabilityRes, blockedRes] = await Promise.all([
@@ -106,6 +123,9 @@ export async function POST(req: NextRequest) {
       .select("*")
       .eq("id", conversationId)
       .eq("clinic_id", clinic.id)
+      // Empêche un visiteur qui devinerait/récupérerait un conversationId de
+      // reprendre la conversation d'un autre patient de la même clinique.
+      .eq("patient_temp_id", patientTempId)
       .maybeSingle();
     if (data) {
       conversation = { id: data.id, messages: data.messages as unknown[] };
@@ -128,7 +148,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (!conversation) {
-    return NextResponse.json({ error: "Failed to create conversation" }, { status: 500 });
+    return withWidgetCors(NextResponse.json({ error: "Failed to create conversation" }, { status: 500 }));
   }
 
   const historyMessages = (conversation.messages as AIMessage[]).slice(-20);
@@ -161,18 +181,36 @@ export async function POST(req: NextRequest) {
     let bookingResult: { success: boolean; appointmentId?: string; patientId?: string; error?: string } | null = null;
 
     if (action && action.intent === "create_booking" && action.data) {
-      const data = action.data as Record<string, string>;
       // M6 fix: never log patient PII — log intent only
       console.log("[booking] create_booking action received");
 
-      if (data.patientName && data.patientPhone && data.startAt && data.endAt) {
+      const validated = bookingActionSchema.safeParse(action.data);
+      // Le LLM n'est pas plus digne de confiance qu'un input utilisateur brut :
+      // en plus de la validation Zod, on impose la même limite dédiée aux
+      // réservations que /api/widget/book, et on vérifie que le créneau
+      // proposé correspond exactement à un créneau réellement disponible
+      // calculé côté serveur (pas seulement la règle textuelle du prompt).
+      if (!validated.success) {
+        bookingResult = { success: false, error: "Données de réservation invalides" };
+      } else if (!(await checkWidgetBookRateLimit(ip))) {
+        bookingResult = { success: false, error: "Trop de tentatives de réservation. Réessayez dans une minute." };
+      } else {
+        const data = validated.data;
         const service = (services as any[]).find(
           (s) =>
             s.id === data.serviceId ||
             s.name.toLowerCase() === (data.serviceName || "").toLowerCase()
         );
 
-        if (service) {
+        const slotIsReallyAvailable = slotsPerDate.some((d) =>
+          d.slots.some((slot) => slot.start === data.startAt && slot.end === data.endAt)
+        );
+
+        if (!service) {
+          bookingResult = { success: false, error: "Service not found" };
+        } else if (!slotIsReallyAvailable) {
+          bookingResult = { success: false, error: "Ce créneau n'est plus disponible." };
+        } else {
           const { data: result, error } = await db.rpc("create_booking_from_widget", {
             p_clinic_id: clinic.id,
             p_patient_name: data.patientName,
@@ -202,11 +240,19 @@ export async function POST(req: NextRequest) {
               serviceName: service.name,
               startAt: data.startAt,
             });
+
+            dispatchWebhookEvent(clinic.id, "appointment.created", {
+              id: resultData.appointment_id,
+              start_at: data.startAt,
+              end_at: data.endAt,
+              status: "booked",
+              patient_name: data.patientName,
+              patient_phone: data.patientPhone,
+              service_name: service.name,
+            }).catch(() => {});
           } else {
             bookingResult = { success: false, error: error?.message || "Booking failed" };
           }
-        } else {
-          bookingResult = { success: false, error: "Service not found" };
         }
       }
     }
