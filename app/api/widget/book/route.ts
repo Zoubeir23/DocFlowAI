@@ -108,6 +108,16 @@ export async function POST(req: NextRequest) {
     doctorEmail: ownerUser?.email || undefined,
   });
 
+  dispatchWebhookEvent(clinic.id, "appointment.created", {
+    id: resultData.appointment_id,
+    start_at: startAt,
+    end_at: endAt,
+    status: "booked",
+    patient_name: patientName,
+    patient_phone: patientPhone,
+    service_name: service.name,
+  }).catch(() => {});
+
   return withWidgetCors(NextResponse.json({
     success: true,
     appointmentId: resultData.appointment_id,
