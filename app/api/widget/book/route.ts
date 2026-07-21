@@ -6,7 +6,7 @@ import { sendNotification } from "@/lib/notifications";
 import { dispatchWebhookEvent } from "@/lib/webhooks";
 import { checkAppointmentQuota } from "@/lib/subscription/quota";
 import { widgetCorsResponse, withWidgetCors } from "@/lib/cors";
-import { checkWidgetBookRateLimit } from "@/lib/rate-limit";
+import { checkWidgetBookRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function OPTIONS() {
   return widgetCorsResponse();
@@ -23,7 +23,7 @@ const bookingSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
+  const ip = getClientIp(req);
   if (!(await checkWidgetBookRateLimit(ip))) {
     return NextResponse.json({ error: "Trop de requêtes. Réessayez dans une minute." }, { status: 429 });
   }
