@@ -71,11 +71,16 @@ export async function switchActiveClinic(
     return { success: false, error: "Accès non autorisé à cette clinique" };
   }
 
+  // M fix: un rôle inattendu en base doit faire échouer explicitement
+  // l'opération plutôt que retomber silencieusement sur "receptionist", qui
+  // masquerait une incohérence de données au lieu de la signaler.
   const allowedRoles = ["owner", "receptionist", "assistant"] as const;
   type AllowedRole = (typeof allowedRoles)[number];
-  const sanitizedRole: AllowedRole = allowedRoles.includes(accessEntry.role as AllowedRole)
-    ? (accessEntry.role as AllowedRole)
-    : "receptionist";
+  if (!allowedRoles.includes(accessEntry.role as AllowedRole)) {
+    console.error("[switchActiveClinic] unexpected role in user_clinic_access:", accessEntry.role);
+    return { success: false, error: "Rôle d'accès invalide pour cette clinique." };
+  }
+  const sanitizedRole: AllowedRole = accessEntry.role as AllowedRole;
 
   const adminDb = (await createAdminClient()) as any;
   const { error } = await adminDb
