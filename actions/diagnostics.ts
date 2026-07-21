@@ -49,6 +49,22 @@ export async function createDiagnosticDraft(
   const clinicId = await resolveClinicId();
   if (!clinicId) return { success: false, error: "Non autorisé" };
 
+  // C1 fix: patient_id vient du client — vérifier qu'il appartient bien à la
+  // clinique de l'appelant avant insertion, sinon le trigger auto_link_diagnostic_carnet
+  // (SECURITY DEFINER, sans filtre de clinique) rattacherait le diagnostic au
+  // carnet partagé d'un patient d'une autre clinique.
+  if (profile.patient_id) {
+    const { data: patientCheck } = await (supabase as any)
+      .from("patients")
+      .select("id")
+      .eq("id", profile.patient_id)
+      .eq("clinic_id", clinicId)
+      .maybeSingle();
+    if (!patientCheck) {
+      return { success: false, error: "Patient introuvable ou n'appartient pas à cette clinique." };
+    }
+  }
+
   const { data, error } = await (supabase as any)
     .from("diagnostics")
     .insert({
