@@ -118,6 +118,9 @@ export async function POST(req: NextRequest) {
       .select("*")
       .eq("id", conversationId)
       .eq("clinic_id", clinic.id)
+      // Empêche un visiteur qui devinerait/récupérerait un conversationId de
+      // reprendre la conversation d'un autre patient de la même clinique.
+      .eq("patient_temp_id", patientTempId)
       .maybeSingle();
     if (data) {
       conversation = { id: data.id, messages: data.messages as unknown[] };
