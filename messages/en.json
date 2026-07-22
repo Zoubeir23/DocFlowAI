@@ -350,6 +350,7 @@
     },
     "planStatus": {
       "active": "Active",
+      "trialing": "Free trial",
       "inactive": "Inactive",
       "cancelled": "Cancelled",
       "pastDue": "Past Due"
@@ -694,8 +695,10 @@
     "titleHighlight": "your practice",
     "subtitle": "Start free. Upgrade as you grow. No hidden fees, no surprises.",
     "mostPopular": "Most Popular",
+    "free": "Free",
     "forever": "forever",
     "perMonth": "per month",
+    "trialNote": "14-day free trial, no credit card required",
     "plans": {
       "free": {
         "name": "Free",

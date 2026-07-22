@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Image from 'next/image'
-import { Building2, Loader2, CheckCircle2 } from 'lucide-react'
+import { Building2, Loader2, CheckCircle2, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'
 import { onboardingSchema, type OnboardingInput } from '@/lib/validations'
@@ -41,9 +41,24 @@ const TIMEZONES = [
 ]
 
 export default function OnboardingPage() {
+  return (
+    <Suspense fallback={null}>
+      <OnboardingForm />
+    </Suspense>
+  )
+}
+
+const TRIAL_PLAN_LABELS: Record<string, string> = {
+  starter: 'Starter',
+  professional: 'Professional',
+}
+
+function OnboardingForm() {
   const t = useTranslations('onboarding')
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
+  const trialPlanLabel = TRIAL_PLAN_LABELS[searchParams.get('plan') ?? '']
 
   const BENEFITS = [
     t('benefit1'),
@@ -75,7 +90,11 @@ export default function OnboardingPage() {
     try {
       const result = await createOnboarding(data)
       if (result.success) {
-        toast.success(t('setupSuccess'))
+        toast.success(
+          result.data?.trial
+            ? `Essai gratuit de 14 jours démarré — profitez du plan ${TRIAL_PLAN_LABELS[result.data.plan] ?? result.data.plan} !`
+            : t('setupSuccess')
+        )
         router.push('/app/dashboard')
       } else {
         toast.error(result.error || t('setupFailed'))
@@ -142,6 +161,13 @@ export default function OnboardingPage() {
             <h1 className="text-2xl font-medium text-foreground tracking-tight">{t('pageHeading')}</h1>
             <p className="text-foreground/60 mt-1 text-sm">{t('pageSubheading')}</p>
           </div>
+
+          {trialPlanLabel && (
+            <div className="mb-6 flex items-center gap-2.5 px-4 py-3 border border-[#14b8a6]/30 bg-[#14b8a6]/5 text-[13px] font-medium text-foreground/80">
+              <Sparkles className="w-4 h-4 text-[#14b8a6] shrink-0" />
+              Vous démarrez un essai gratuit de 14 jours du plan {trialPlanLabel}, sans carte bancaire.
+            </div>
+          )}
 
           <div className="glass-card rounded-none p-7">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">

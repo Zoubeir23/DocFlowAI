@@ -350,6 +350,7 @@
     },
     "planStatus": {
       "active": "Actif",
+      "trialing": "Essai gratuit",
       "inactive": "Inactif",
       "cancelled": "Annulé",
       "pastDue": "En retard"
@@ -694,8 +695,10 @@
     "titleHighlight": "votre cabinet",
     "subtitle": "Commencez gratuitement. Évoluez à votre rythme. Aucun frais caché.",
     "mostPopular": "Le plus populaire",
+    "free": "Gratuit",
     "forever": "pour toujours",
     "perMonth": "par mois",
+    "trialNote": "14 jours d'essai gratuit, sans carte bancaire",
     "plans": {
       "free": {
         "name": "Gratuit",

@@ -46,7 +46,7 @@ const pricingJsonLd = {
 const PLAN_KEYS = ['free', 'starter', 'professional', 'enterprise'] as const
 const PRICES = { free: 0, starter: 49, professional: 99, enterprise: 299 }
 const HIGHLIGHTED = { free: false, starter: false, professional: true, enterprise: false }
-const HREFS = { free: '/signup', starter: '/signup', professional: '/signup', enterprise: '/signup' }
+const HREFS = { free: '/signup', starter: '/signup?plan=starter', professional: '/signup?plan=professional', enterprise: '/signup' }
 
 export default async function PricingPage() {
   const t = await getTranslations('pricing')
@@ -149,6 +149,11 @@ export default async function PricingPage() {
                       /{period}
                     </span>
                   </div>
+                  {(key === 'starter' || key === 'professional') && (
+                    <p className="font-sans font-normal text-[13px] text-[#14b8a6] mt-2">
+                      {t('trialNote')}
+                    </p>
+                  )}
                 </div>
 
                 <ul className="flex-1 space-y-4 mb-10">

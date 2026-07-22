@@ -18,6 +18,16 @@ import { Button } from "@/components/ui/button";
 import { format, parseISO, differenceInDays, isPast } from "date-fns";
 import { useTranslations } from "next-intl";
 
+// Traduit un statut brut de subscriptions.status (snake_case côté DB pour
+// past_due) vers la clé camelCase de billing.planStatus.
+const PLAN_STATUS_KEYS: Record<string, string> = {
+  active: "active",
+  trialing: "trialing",
+  inactive: "inactive",
+  cancelled: "cancelled",
+  past_due: "pastDue",
+};
+
 // ── Plans ─────────────────────────────────────────────────────────────────────
 const PLANS = [
   {
@@ -240,9 +250,13 @@ export default function BillingPage() {
                   </span>
                 )}
                 <span className={`text-xs font-semibold px-3 py-1.5 rounded-lg border capitalize ${
-                  isExpired ? "status-cancelled" : subscription.status === "active" ? "status-confirmed" : "status-cancelled"
+                  isExpired
+                    ? "status-cancelled"
+                    : subscription.status === "active" || subscription.status === "trialing"
+                      ? "status-confirmed"
+                      : "status-cancelled"
                 }`}>
-                  {isExpired ? t("expired") : subscription.status}
+                  {isExpired ? t("expired") : PLAN_STATUS_KEYS[subscription.status] ? t(`planStatus.${PLAN_STATUS_KEYS[subscription.status]}`) : subscription.status}
                 </span>
               </div>
             </div>
@@ -431,8 +445,8 @@ export default function BillingPage() {
                         </Button>
                       );
                     })()
-                  ) : isCurrentPlan ? (
-                    // Paid plan — currently active
+                  ) : isCurrentPlan && subscription?.status !== "trialing" ? (
+                    // Paid plan — currently active (real paid subscription)
                     <Button
                       className="w-full h-11 rounded-xl font-semibold text-sm bg-muted text-muted-foreground cursor-default hover:bg-muted border-none shadow-none"
                       disabled
@@ -440,7 +454,10 @@ export default function BillingPage() {
                       {t("currentPlanBadge")}
                     </Button>
                   ) : (
-                    // Paid plan — not active, show upgrade buttons
+                    // Paid plan not active, OR currently on a free trial of this
+                    // very plan (aucune carte requise pour l'essai) — on garde les
+                    // boutons de paiement visibles pour permettre de convertir
+                    // l'essai en abonnement payant à tout moment.
                     <>
                       <Button
                         className={`w-full h-11 rounded-xl font-semibold text-sm shadow-sm transition-all duration-200 ${

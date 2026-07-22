@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
@@ -14,12 +14,28 @@ import { useTranslations } from "next-intl";
 import { GoogleOAuthButton } from "@/components/auth/google-oauth-button";
 
 export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupForm />
+    </Suspense>
+  );
+}
+
+const TRIAL_ELIGIBLE_PLANS = ["starter", "professional"] as const;
+
+function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const t = useTranslations("auth.signup");
+
+  const requestedPlan = searchParams.get("plan");
+  const selectedPlan = (TRIAL_ELIGIBLE_PLANS as readonly string[]).includes(requestedPlan ?? "")
+    ? (requestedPlan as (typeof TRIAL_ELIGIBLE_PLANS)[number])
+    : "free";
 
   const { register, handleSubmit, formState: { errors } } = useForm<SignupInput>({
     resolver: zodResolver(signupSchema),
@@ -44,6 +60,10 @@ export default function SignupPage() {
             // passer par la case à cocher crée un compte considéré comme
             // ayant accepté les CGU / le traitement de données de santé.
             terms_accepted_at: new Date().toISOString(),
+            // Voyage jusqu'à createOnboarding (actions/clinic.ts), qui revalide
+            // cette valeur avant de démarrer un essai — survit à la confirmation
+            // email puisqu'il est porté par le compte Supabase, pas par l'URL.
+            selected_plan: selectedPlan,
           },
           // Sans ceci, Supabase redirige après confirmation vers le Site URL
           // par défaut (souvent "/") avec les tokens dans le fragment d'URL —
@@ -62,7 +82,7 @@ export default function SignupPage() {
         return;
       }
       toast.success("Account created! Let's set up your clinic.");
-      router.push("/onboarding");
+      router.push(selectedPlan === "free" ? "/onboarding" : `/onboarding?plan=${selectedPlan}`);
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {

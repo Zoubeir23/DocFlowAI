@@ -11,7 +11,7 @@ async function getDB() {
 
 export async function createOnboarding(
   data: OnboardingInput
-): Promise<ApiResponse<{ clinicId: string }>> {
+): Promise<ApiResponse<{ clinicId: string; plan: string; trial: boolean }>> {
   // Use regular client only to verify the authenticated user
   const authDb = await getDB();
   const { data: authData, error: authError } = await authDb.auth.getUser();
@@ -35,6 +35,15 @@ export async function createOnboarding(
   // Use admin client (service role) to bypass RLS for all inserts during onboarding
   const db = (await createAdminClient()) as any;
 
+  // Le plan choisi sur /pricing voyage dans user_metadata (écrit au signUp,
+  // voir app/(auth)/signup/page.tsx) plutôt que par un paramètre client de
+  // cette action — il survit ainsi au détour par la confirmation email, et
+  // ne peut pas être falsifié après coup par un appel direct à cette action
+  // server-side. La RPC elle-même revalide que seuls 'starter'/'professional'
+  // déclenchent un essai (migration 021).
+  const selectedPlan = user.user_metadata?.selected_plan;
+  const p_plan = selectedPlan === "starter" || selectedPlan === "professional" ? selectedPlan : "free";
+
   // C1 fix + HIGH fix: l'onboarding entier (clinique, profil, réglages,
   // abonnement, services, horaires) s'exécute dans une seule transaction
   // Postgres (RPC create_clinic_onboarding) — soit tout réussit, soit rien
@@ -48,6 +57,7 @@ export async function createOnboarding(
     p_timezone: data.timezone,
     p_full_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Doctor",
     p_email: user.email!,
+    p_plan,
   });
 
   if (error) {
@@ -60,7 +70,8 @@ export async function createOnboarding(
     return { success: false, error: error.message };
   }
 
-  return { success: true, data: { clinicId: (result as { clinic_id: string }).clinic_id } };
+  const rpcResult = result as { clinic_id: string; plan: string; trial: boolean };
+  return { success: true, data: { clinicId: rpcResult.clinic_id, plan: rpcResult.plan, trial: rpcResult.trial } };
 }
 
 export async function getCurrentClinic() {
