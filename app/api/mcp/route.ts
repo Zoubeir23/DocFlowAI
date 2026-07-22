@@ -6,6 +6,7 @@ import { validateApiKey, extractApiKey } from "@/lib/api-auth";
 import { sanitizePostgrestSearchTerm } from "@/lib/security/sanitize-postgrest-search";
 import { checkApiIpRateLimit, getClientIp } from "@/lib/rate-limit";
 import { parseToolLimit } from "@/lib/api-pagination";
+import { checkAppointmentQuota } from "@/lib/subscription/quota";
 
 function unauthorized() {
   return NextResponse.json(
@@ -179,6 +180,14 @@ async function executeTool(name: string, args: Record<string, any>, clinicId: st
     }).safeParse(args);
 
     if (!parsed.success) return `Validation error: ${parsed.error.errors[0].message}`;
+
+    // Pré-vérification pour un message clair : le trigger DB
+    // trg_enforce_appointment_quota reste l'autorité finale (protège aussi
+    // les autres canaux d'insertion), mais sans ce check l'assistant IA
+    // reçoit l'erreur Postgres brute "quota_exceeded" au lieu d'un message
+    // actionnable.
+    const quota = await checkAppointmentQuota(clinicId, db);
+    if (!quota.allowed) return `Error: ${quota.reason ?? "Quota de rendez-vous atteint."}`;
 
     const { data: service } = await db
       .from("services").select("id, name").eq("id", parsed.data.service_id).eq("clinic_id", clinicId).eq("is_active", true).maybeSingle();
