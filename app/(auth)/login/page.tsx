@@ -113,6 +113,12 @@ function LoginForm() {
             </Link>
           </div>
 
+          {awaitingEmailConfirmation && (
+            <div className="mb-6 px-4 py-3 border border-[#14b8a6]/30 bg-[#14b8a6]/5 text-[13px] font-sans text-foreground/80 text-center">
+              Compte créé ! Vérifiez votre boîte mail et cliquez sur le lien de confirmation pour activer votre compte, puis connectez-vous ci-dessous.
+            </div>
+          )}
+
           <div className="mb-10 text-center">
             <h1 className="font-cormorant font-normal text-[32px] text-foreground tracking-tight mb-2">{t('welcomeBack')}</h1>
             <p className="font-sans font-normal text-foreground/80 text-[14px]">{t('dashboardSubtitle')}</p>
