@@ -18,6 +18,16 @@ import { Button } from "@/components/ui/button";
 import { format, parseISO, differenceInDays, isPast } from "date-fns";
 import { useTranslations } from "next-intl";
 
+// Traduit un statut brut de subscriptions.status (snake_case côté DB pour
+// past_due) vers la clé camelCase de billing.planStatus.
+const PLAN_STATUS_KEYS: Record<string, string> = {
+  active: "active",
+  trialing: "trialing",
+  inactive: "inactive",
+  cancelled: "cancelled",
+  past_due: "pastDue",
+};
+
 // ── Plans ─────────────────────────────────────────────────────────────────────
 const PLANS = [
   {
@@ -240,9 +250,13 @@ export default function BillingPage() {
                   </span>
                 )}
                 <span className={`text-xs font-semibold px-3 py-1.5 rounded-lg border capitalize ${
-                  isExpired ? "status-cancelled" : subscription.status === "active" ? "status-confirmed" : "status-cancelled"
+                  isExpired
+                    ? "status-cancelled"
+                    : subscription.status === "active" || subscription.status === "trialing"
+                      ? "status-confirmed"
+                      : "status-cancelled"
                 }`}>
-                  {isExpired ? t("expired") : subscription.status}
+                  {isExpired ? t("expired") : PLAN_STATUS_KEYS[subscription.status] ? t(`planStatus.${PLAN_STATUS_KEYS[subscription.status]}`) : subscription.status}
                 </span>
               </div>
             </div>
