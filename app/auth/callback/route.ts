@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 
 // N'autorise qu'un chemin relatif interne (ex: "/app/dashboard", "/onboarding").
