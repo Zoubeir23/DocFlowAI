@@ -445,8 +445,8 @@ export default function BillingPage() {
                         </Button>
                       );
                     })()
-                  ) : isCurrentPlan ? (
-                    // Paid plan — currently active
+                  ) : isCurrentPlan && subscription?.status !== "trialing" ? (
+                    // Paid plan — currently active (real paid subscription)
                     <Button
                       className="w-full h-11 rounded-xl font-semibold text-sm bg-muted text-muted-foreground cursor-default hover:bg-muted border-none shadow-none"
                       disabled
@@ -454,7 +454,10 @@ export default function BillingPage() {
                       {t("currentPlanBadge")}
                     </Button>
                   ) : (
-                    // Paid plan — not active, show upgrade buttons
+                    // Paid plan not active, OR currently on a free trial of this
+                    // very plan (aucune carte requise pour l'essai) — on garde les
+                    // boutons de paiement visibles pour permettre de convertir
+                    // l'essai en abonnement payant à tout moment.
                     <>
                       <Button
                         className={`w-full h-11 rounded-xl font-semibold text-sm shadow-sm transition-all duration-200 ${
