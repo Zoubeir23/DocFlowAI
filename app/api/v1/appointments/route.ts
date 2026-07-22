@@ -6,6 +6,7 @@ import { validateApiKey, extractApiKey } from "@/lib/api-auth";
 import { checkAppointmentQuota } from "@/lib/subscription/quota";
 import { dispatchWebhookEvent } from "@/lib/webhooks";
 import { checkApiIpRateLimit, getClientIp } from "@/lib/rate-limit";
+import { parsePaginationParams } from "@/lib/api-pagination";
 
 function unauthorized() {
   return NextResponse.json(
@@ -30,8 +31,11 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
-  const limit = Math.min(parseInt(searchParams.get("limit") ?? "50"), 100);
-  const offset = parseInt(searchParams.get("offset") ?? "0");
+  const pagination = parsePaginationParams(searchParams, { defaultLimit: 50, maxLimit: 100 });
+  if ("error" in pagination) {
+    return NextResponse.json({ error: pagination.error }, { status: 400 });
+  }
+  const { limit, offset } = pagination;
 
   const db = (await createAdminClient()) as any;
 
