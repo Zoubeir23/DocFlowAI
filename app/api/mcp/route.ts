@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { validateApiKey, extractApiKey } from "@/lib/api-auth";
 import { sanitizePostgrestSearchTerm } from "@/lib/security/sanitize-postgrest-search";
 import { checkApiIpRateLimit, getClientIp } from "@/lib/rate-limit";
+import { parseToolLimit } from "@/lib/api-pagination";
 
 function unauthorized() {
   return NextResponse.json(
