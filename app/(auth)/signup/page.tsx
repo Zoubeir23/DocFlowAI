@@ -45,6 +45,10 @@ export default function SignupPage() {
             // ayant accepté les CGU / le traitement de données de santé.
             terms_accepted_at: new Date().toISOString(),
           },
+          // Sans ceci, Supabase redirige après confirmation vers le Site URL
+          // par défaut (souvent "/") avec les tokens dans le fragment d'URL —
+          // aucune page ne les consomme et l'utilisateur n'est jamais connecté.
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
         },
       });
       if (error) { toast.error(error.message); return; }
