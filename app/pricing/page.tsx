@@ -149,6 +149,11 @@ export default async function PricingPage() {
                       /{period}
                     </span>
                   </div>
+                  {(key === 'starter' || key === 'professional') && (
+                    <p className="font-sans font-normal text-[13px] text-[#14b8a6] mt-2">
+                      {t('trialNote')}
+                    </p>
+                  )}
                 </div>
 
                 <ul className="flex-1 space-y-4 mb-10">
