@@ -60,6 +60,10 @@ function SignupForm() {
             // passer par la case à cocher crée un compte considéré comme
             // ayant accepté les CGU / le traitement de données de santé.
             terms_accepted_at: new Date().toISOString(),
+            // Voyage jusqu'à createOnboarding (actions/clinic.ts), qui revalide
+            // cette valeur avant de démarrer un essai — survit à la confirmation
+            // email puisqu'il est porté par le compte Supabase, pas par l'URL.
+            selected_plan: selectedPlan,
           },
         },
       });
@@ -74,7 +78,7 @@ function SignupForm() {
         return;
       }
       toast.success("Account created! Let's set up your clinic.");
-      router.push("/onboarding");
+      router.push(selectedPlan === "free" ? "/onboarding" : `/onboarding?plan=${selectedPlan}`);
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {
