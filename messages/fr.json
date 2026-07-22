@@ -350,6 +350,7 @@
     },
     "planStatus": {
       "active": "Actif",
+      "trialing": "Essai gratuit",
       "inactive": "Inactif",
       "cancelled": "Annulé",
       "pastDue": "En retard"

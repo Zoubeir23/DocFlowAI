@@ -350,6 +350,7 @@
     },
     "planStatus": {
       "active": "Active",
+      "trialing": "Free trial",
       "inactive": "Inactive",
       "cancelled": "Cancelled",
       "pastDue": "Past Due"
