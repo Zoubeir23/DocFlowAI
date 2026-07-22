@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Image from 'next/image'
@@ -14,11 +14,21 @@ import { useTranslations } from 'next-intl'
 import { GoogleOAuthButton } from '@/components/auth/google-oauth-button'
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  )
+}
+
+function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const t = useTranslations('auth.login')
+  const awaitingEmailConfirmation = searchParams.get('confirm') === '1'
 
   const {
     register,
@@ -102,6 +112,12 @@ export default function LoginPage() {
               <Image src="/logo.png" alt="DocFlow IA" width={140} height={38} className="object-contain dark:brightness-0 dark:invert" />
             </Link>
           </div>
+
+          {awaitingEmailConfirmation && (
+            <div className="mb-6 px-4 py-3 border border-[#14b8a6]/30 bg-[#14b8a6]/5 text-[13px] font-sans text-foreground/80 text-center">
+              Compte créé ! Vérifiez votre boîte mail et cliquez sur le lien de confirmation pour activer votre compte, puis connectez-vous ci-dessous.
+            </div>
+          )}
 
           <div className="mb-10 text-center">
             <h1 className="font-cormorant font-normal text-[32px] text-foreground tracking-tight mb-2">{t('welcomeBack')}</h1>
