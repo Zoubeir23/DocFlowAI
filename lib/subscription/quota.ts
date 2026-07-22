@@ -15,6 +15,18 @@ export interface QuotaResult {
   reason?: string;
 }
 
+// Un essai 'trialing' non expiré donne accès aux quotas du plan payant
+// souscrit ; un essai expiré (ou tout statut hors 'active') retombe sur le
+// plan gratuit — même logique que le trigger DB enforce_appointment_quota
+// (migration 021), qui protège les insertions faites hors de cette action.
+function isSubscriptionEligible(status: string | undefined, currentPeriodEnd: string | undefined): boolean {
+  if (status === "active") return true;
+  if (status === "trialing" && currentPeriodEnd) {
+    return new Date(currentPeriodEnd).getTime() > Date.now();
+  }
+  return false;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function checkAppointmentQuota(clinicId: string, db: any): Promise<QuotaResult> {
   const { data: sub } = await db
