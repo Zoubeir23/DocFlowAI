@@ -102,7 +102,8 @@ async function executeTool(name: string, args: Record<string, any>, clinicId: st
   }
 
   if (name === "list_appointments") {
-    const limit = Math.min(Math.max(parseInt(args.limit ?? "20"), 1), 50);
+    const limit = parseToolLimit(args.limit);
+    if (limit === null) return "Validation error: limit must be a positive integer (1-50).";
     let query = db
       .from("appointments")
       .select("id, start_at, end_at, status, notes, patient:patients(full_name, phone, email), service:services(name, duration_minutes)")
@@ -118,7 +119,8 @@ async function executeTool(name: string, args: Record<string, any>, clinicId: st
   }
 
   if (name === "list_patients") {
-    const limit = Math.min(Math.max(parseInt(args.limit ?? "20"), 1), 50);
+    const limit = parseToolLimit(args.limit);
+    if (limit === null) return "Validation error: limit must be a positive integer (1-50).";
     let query = db
       .from("patients")
       .select("id, full_name, phone, email, notes, created_at")
