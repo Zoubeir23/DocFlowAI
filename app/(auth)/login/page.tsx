@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Image from 'next/image'
@@ -23,10 +23,12 @@ export default function LoginPage() {
 
 function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const t = useTranslations('auth.login')
+  const awaitingEmailConfirmation = searchParams.get('confirm') === '1'
 
   const {
     register,
