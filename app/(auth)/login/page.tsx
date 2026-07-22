@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
@@ -14,6 +14,14 @@ import { useTranslations } from 'next-intl'
 import { GoogleOAuthButton } from '@/components/auth/google-oauth-button'
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  )
+}
+
+function LoginForm() {
   const router = useRouter()
   const supabase = createClient()
   const [showPassword, setShowPassword] = useState(false)
