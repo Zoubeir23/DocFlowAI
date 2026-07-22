@@ -90,7 +90,11 @@ function OnboardingForm() {
     try {
       const result = await createOnboarding(data)
       if (result.success) {
-        toast.success(t('setupSuccess'))
+        toast.success(
+          result.data?.trial
+            ? `Essai gratuit de 14 jours démarré — profitez du plan ${TRIAL_PLAN_LABELS[result.data.plan] ?? result.data.plan} !`
+            : t('setupSuccess')
+        )
         router.push('/app/dashboard')
       } else {
         toast.error(result.error || t('setupFailed'))
