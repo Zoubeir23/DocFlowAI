@@ -21,13 +21,21 @@ export default function SignupPage() {
   );
 }
 
+const TRIAL_ELIGIBLE_PLANS = ["starter", "professional"] as const;
+
 function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const t = useTranslations("auth.signup");
+
+  const requestedPlan = searchParams.get("plan");
+  const selectedPlan = (TRIAL_ELIGIBLE_PLANS as readonly string[]).includes(requestedPlan ?? "")
+    ? (requestedPlan as (typeof TRIAL_ELIGIBLE_PLANS)[number])
+    : "free";
 
   const { register, handleSubmit, formState: { errors } } = useForm<SignupInput>({
     resolver: zodResolver(signupSchema),
