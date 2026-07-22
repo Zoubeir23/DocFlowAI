@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Image from 'next/image'
@@ -41,9 +41,24 @@ const TIMEZONES = [
 ]
 
 export default function OnboardingPage() {
+  return (
+    <Suspense fallback={null}>
+      <OnboardingForm />
+    </Suspense>
+  )
+}
+
+const TRIAL_PLAN_LABELS: Record<string, string> = {
+  starter: 'Starter',
+  professional: 'Professional',
+}
+
+function OnboardingForm() {
   const t = useTranslations('onboarding')
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
+  const trialPlanLabel = TRIAL_PLAN_LABELS[searchParams.get('plan') ?? '']
 
   const BENEFITS = [
     t('benefit1'),
