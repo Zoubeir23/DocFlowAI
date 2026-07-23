@@ -1,14 +1,44 @@
 -- ═══════════════════════════════════════════════════════════════════════════════
--- 015 — Essai gratuit de 14 jours pour Starter/Professional
+-- 015 — Onboarding atomique + essai gratuit de 14 jours Starter/Professional
+--        (audit approfondi multi-cliniques 2026-07-21 / feature essai gratuit
+--        / audit paiements-abonnements 2026-07-23)
 --
--- Les boutons "Démarrer l'essai gratuit" de /pricing pointaient tous vers
--- /signup sans passer le plan choisi : l'onboarding créait systématiquement
--- un abonnement 'free', quel que soit le plan cliqué. Aucun essai réel
+-- Fusionne trois migrations historiques : la création de la RPC atomique
+-- d'onboarding, son extension pour l'essai gratuit, et le correctif de quota
+-- qui l'a suivie de près — la RPC create_clinic_onboarding et le trigger
+-- enforce_appointment_quota étaient chacun réécrits deux fois en succession
+-- immédiate, sans qu'aucune version intermédiaire ne survive en pratique.
+--
+-- HIGH : createOnboarding enchaînait 7 insertions séquentielles sans
+-- transaction via PostgREST. Si l'une échouait après la création de
+-- clinics/users, la clinique existait et l'utilisateur y était rattaché mais
+-- sans abonnement, sans horaires ni FAQ, et l'action renvoyait success:true
+-- car seule l'erreur sur clinics était vérifiée. Une seule fonction RPC
+-- exécutée dans une seule transaction Postgres garantit que tout réussit ou
+-- rien n'est créé.
+--
+-- Les boutons "Démarrer l'essai gratuit" de /pricing pointaient vers /signup
+-- sans passer le plan choisi : l'onboarding créait systématiquement un
+-- abonnement 'free', quel que soit le plan cliqué. Aucun essai réel
 -- n'existait. Ce correctif ajoute un statut 'trialing' (sans carte bancaire,
 -- 14 jours, plan réel Starter/Professional), avec rétrogradation automatique
 -- et silencieuse vers les quotas du plan gratuit à l'expiration — sans job
--- cron, en réévaluant l'éligibilité à chaque lecture (même pattern que la
--- migration 009 pour le statut 'active').
+-- cron, en réévaluant l'éligibilité à chaque lecture (même pattern que le
+-- plan gratuit, migration 007).
+--
+-- CRITICAL : la première version du trigger de quota ne vérifiait
+-- current_period_end que pour le statut 'trialing' — un abonnement 'active'
+-- était considéré éligible sans jamais regarder sa date d'expiration.
+-- Pour Stripe ce n'était pas exploitable : les webhooks
+-- (customer.subscription.updated/deleted) font retomber le statut à
+-- past_due/cancelled dès que la carte n'est plus débitée avec succès. Mais
+-- un paiement crypto (app/api/webhooks/crypto/route.ts) est un virement
+-- on-chain ponctuel qui pose current_period_end à +1 mois sans AUCUNE
+-- infrastructure de reconduction : pas de webhook de renouvellement, pas de
+-- cron. Une clinique qui paie une fois en crypto gardait donc le quota du
+-- plan payant à vie. Le fix aligne 'active' sur le même pattern que
+-- 'trialing' : éligible uniquement tant que current_period_end n'est pas
+-- dépassée.
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 -- 1. Autoriser le nouveau statut 'trialing' sur subscriptions.status
@@ -16,11 +46,11 @@ ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS subscriptions_status_check;
 ALTER TABLE subscriptions ADD CONSTRAINT subscriptions_status_check
   CHECK (status IN ('active', 'trialing', 'inactive', 'cancelled', 'past_due'));
 
--- 2. create_clinic_onboarding accepte désormais un plan optionnel.
+-- 2. RPC atomique de création de clinique, avec plan optionnel.
 --    'starter'/'professional' → abonnement 'trialing' 14 jours, sans CB.
---    Toute autre valeur (dont NULL, 'free', 'enterprise') → comportement
---    inchangé : plan gratuit standard (l'auto-service Enterprise n'existe
---    pas, il passe par create_enterprise_clinic / contact commercial).
+--    Toute autre valeur (dont NULL, 'free', 'enterprise') → plan gratuit
+--    standard (l'auto-service Enterprise n'existe pas, il passe par
+--    create_enterprise_clinic / contact commercial).
 CREATE OR REPLACE FUNCTION create_clinic_onboarding(
   p_user_id     UUID,
   p_clinic_name TEXT,
@@ -91,16 +121,11 @@ REVOKE EXECUTE ON FUNCTION create_clinic_onboarding(UUID, TEXT, TEXT, TEXT, TEXT
 REVOKE EXECUTE ON FUNCTION create_clinic_onboarding(UUID, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT) FROM authenticated;
 GRANT  EXECUTE ON FUNCTION create_clinic_onboarding(UUID, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT) TO service_role;
 
--- L'ancienne signature à 6 paramètres n'est plus appelée par le code applicatif
--- (actions/clinic.ts est mis à jour dans le même correctif) ; on la supprime
--- pour éviter toute confusion/appel accidentel sur l'ancien comportement.
-DROP FUNCTION IF EXISTS create_clinic_onboarding(UUID, TEXT, TEXT, TEXT, TEXT, TEXT);
-
--- 3. Le trigger de quota (migration 009) doit traiter un essai 'trialing' non
---    expiré comme 'active' — sinon un essai Starter/Professional retomberait
---    immédiatement sur les 50 RDV/mois du plan gratuit, vidant l'essai de
---    tout intérêt. Un essai expiré (current_period_end dépassé) retombe bien
---    sur le plan gratuit, sans intervention manuelle ni job cron.
+-- 3. Trigger de quota (migration 007) : un essai 'trialing' non expiré doit
+--    être traité comme 'active' — sinon un essai Starter/Professional
+--    retomberait immédiatement sur les 50 RDV/mois du plan gratuit, vidant
+--    l'essai de tout intérêt. Un abonnement 'active' ou 'trialing' expiré
+--    retombe bien sur le plan gratuit, sans intervention manuelle ni job cron.
 CREATE OR REPLACE FUNCTION enforce_appointment_quota() RETURNS TRIGGER AS $$
 DECLARE
   v_plan          TEXT;
@@ -122,8 +147,8 @@ BEGIN
   FROM subscriptions
   WHERE clinic_id = NEW.clinic_id;
 
-  v_eligible := v_status = 'active'
-    OR (v_status = 'trialing' AND v_period_end IS NOT NULL AND v_period_end > NOW());
+  v_eligible := v_status IN ('active', 'trialing')
+    AND v_period_end IS NOT NULL AND v_period_end > NOW();
 
   IF NOT v_eligible THEN
     v_plan := 'free';
@@ -140,9 +165,10 @@ BEGIN
     RETURN NEW;
   END IF;
 
-  -- Fenêtre glissante pour le plan gratuit (migration 010) : current_period_end
+  -- Fenêtre glissante pour le plan gratuit (migration 007) : current_period_end
   -- ne se renouvelle jamais tout seul pour un abonnement 'free', qu'il vienne
-  -- d'un onboarding direct ou d'un essai expiré retombé sur 'free' ci-dessus.
+  -- d'un onboarding direct ou d'un essai/abonnement expiré retombé sur 'free'
+  -- ci-dessus.
   IF v_plan = 'free' THEN
     v_period_start := NOW() - INTERVAL '30 days';
     v_period_end   := NOW();
