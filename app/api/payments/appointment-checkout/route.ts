@@ -69,47 +69,82 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Configuration serveur manquante" }, { status: 500 });
   }
 
+  // Réserver le RDV AVANT de créer la session Stripe (pas après) : un update
+  // sans ligne affectée ne remonte pas d'erreur côté Supabase, donc deux
+  // requêtes concurrentes (double-clic, retry réseau) créaient auparavant
+  // chacune leur propre session Stripe, et seule la première gagnait cette
+  // même condition — si le patient payait sur la session "perdante", Stripe
+  // encaissait mais aucune ligne ne correspondait plus au webhook
+  // (stripe_checkout_session_id déjà écrasé par le gagnant), qui répondait
+  // quand même succès sans jamais marquer le RDV payé. En réservant d'abord,
+  // un seul appelant peut obtenir le droit de créer une session.
+  const adminSupabase = await createAdminClient();
+  const { data: claimed, error: claimError } = await (adminSupabase as any)
+    .from("appointments")
+    .update({ payment_status: "pending" })
+    .eq("id", appointmentId)
+    .eq("payment_status", "unpaid")
+    .select("id")
+    .maybeSingle();
+
+  if (claimError) {
+    console.error("[Checkout] Failed to claim appointment for payment:", claimError.message);
+    return NextResponse.json({ error: "Erreur lors de l'initialisation du paiement" }, { status: 500 });
+  }
+  if (!claimed) {
+    return NextResponse.json({ error: "Un paiement est déjà en cours pour ce rendez-vous" }, { status: 409 });
+  }
+
   const stripe = getStripeServerClient();
 
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    payment_method_types: ["card"],
-    customer_email: patient.email ?? undefined,
-    line_items: [
-      {
-        quantity: 1,
-        price_data: {
-          currency: "eur",
-          unit_amount: Math.round(price * 100),
-          product_data: {
-            name: appointment.services?.name ?? "Consultation",
-            description: `${appointment.clinics?.name ?? ""} — ${new Date(appointment.start_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })}`,
+  let session;
+  try {
+    session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      payment_method_types: ["card"],
+      customer_email: patient.email ?? undefined,
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: "eur",
+            unit_amount: Math.round(price * 100),
+            product_data: {
+              name: appointment.services?.name ?? "Consultation",
+              description: `${appointment.clinics?.name ?? ""} — ${new Date(appointment.start_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })}`,
+            },
           },
         },
+      ],
+      metadata: {
+        appointment_id: appointmentId,
+        patient_id: patient.id,
+        type: "appointment_payment",
       },
-    ],
-    metadata: {
-      appointment_id: appointmentId,
-      patient_id: patient.id,
-      type: "appointment_payment",
-    },
-    success_url: `${appUrl}/portail/dashboard?payment=success`,
-    cancel_url: `${appUrl}/portail/dashboard?payment=cancelled`,
-  });
+      success_url: `${appUrl}/portail/dashboard?payment=success`,
+      cancel_url: `${appUrl}/portail/dashboard?payment=cancelled`,
+    });
+  } catch (err: unknown) {
+    // Libérer la réservation : la création Stripe a échoué, le RDV ne doit
+    // pas rester bloqué en "pending" sans session associée.
+    await (adminSupabase as any)
+      .from("appointments")
+      .update({ payment_status: "unpaid" })
+      .eq("id", appointmentId)
+      .eq("payment_status", "pending");
+    const message = err instanceof Error ? err.message : "Erreur Stripe inconnue";
+    console.error("[Checkout] Stripe session creation failed:", message);
+    return NextResponse.json({ error: "Erreur lors de l'initialisation du paiement" }, { status: 500 });
+  }
 
-  // Marquer le RDV en attente de paiement (atomic — condition sur payment_status actuel)
-  const adminSupabase = await createAdminClient();
-  const { error: updateError } = await (adminSupabase as any)
+  const { error: attachError } = await (adminSupabase as any)
     .from("appointments")
-    .update({
-      payment_status: "pending",
-      stripe_checkout_session_id: session.id,
-    })
+    .update({ stripe_checkout_session_id: session.id })
     .eq("id", appointmentId)
-    .eq("payment_status", "unpaid");
+    .eq("payment_status", "pending");
 
-  if (updateError) {
-    console.error("[Checkout] Failed to update appointment payment status:", updateError.message);
+  if (attachError) {
+    console.error("[Checkout] Failed to attach checkout session id:", attachError.message);
     return NextResponse.json({ error: "Erreur lors de l'initialisation du paiement" }, { status: 500 });
   }
 
