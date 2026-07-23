@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { CheckCircle2, CheckCircle, Star } from 'lucide-react'
+import { CheckCircle2, Star } from 'lucide-react'
 import { LanguageSwitcher } from '@/components/layout/language-switcher'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import { getTranslations } from 'next-intl/server'

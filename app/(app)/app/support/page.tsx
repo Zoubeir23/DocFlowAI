@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { sendSupportTicket, getUserPlanForSupport, type SupportPriority } from "@/actions/support";
 import {
-  HeadphonesIcon, Zap, CheckCircle, AlertTriangle, Loader2,
+  HeadphonesIcon, Zap, CheckCircle, Loader2,
   Send, Clock, Shield, BookOpen, MessageSquare, ChevronRight,
   Crown, UserCheck,
 } from "lucide-react";
