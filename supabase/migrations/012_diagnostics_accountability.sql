@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════════════════
--- 014 — Traçabilité non répudiable des validations/prescriptions médicales
+-- 012 — Traçabilité non répudiable des validations/prescriptions médicales
 --        (audit approfondi carnet médical 2026-07-21)
 --
 -- CRITICAL : validated_by, practitioner_name, practitioner_title et
