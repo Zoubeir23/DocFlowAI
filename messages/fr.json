@@ -369,6 +369,7 @@
     "stripeSuccessDesc": "Votre abonnement sera activé sous quelques secondes.",
     "stripeCancelled": "Paiement annulé. Vous pouvez réessayer à tout moment.",
     "planChangedSuccess": "Votre plan a été changé avec succès sur votre abonnement existant.",
+    "manageBilling": "Gérer mon abonnement",
     "stripeCardDesc": "Visa, Mastercard, SEPA · Prix en Euros · Facturation mensuelle automatique",
     "cryptoFastLowFees": "Rapide · Faibles frais",
     "metamaskNotDetected": "MetaMask non détecté",

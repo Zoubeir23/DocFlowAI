@@ -107,14 +107,27 @@ async function handleAppointmentPaymentCompleted(
   const supabase = await createAdminClient();
   const db = supabase as any;
 
-  const { error } = await db
+  const { data, error } = await db
     .from("appointments")
     .update({ payment_status: "paid" })
     .eq("id", appointmentId)
-    .eq("stripe_checkout_session_id", session.id);
+    .eq("stripe_checkout_session_id", session.id)
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     console.error("[StripeWebhook] Failed to mark appointment as paid:", error.message);
+    return false;
+  }
+
+  // 0 ligne affectée == aucune erreur SQL côté Supabase, donc à vérifier
+  // explicitement : Stripe a bien été payé mais aucun rendez-vous ne
+  // correspond plus à cette session (id supprimé, ou session_id déjà
+  // remplacé). Un succès silencieux ici masquerait un paiement pris sans
+  // contrepartie enregistrée — on demande donc un retry Stripe plutôt que de
+  // classer l'event comme traité.
+  if (!data) {
+    console.error(`[StripeWebhook] Paid session ${session.id} matches no appointment (id: ${appointmentId}) — investigate.`);
     return false;
   }
 
