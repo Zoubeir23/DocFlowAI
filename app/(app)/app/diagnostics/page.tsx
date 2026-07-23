@@ -229,9 +229,14 @@ export default function DiagnosticsPage() {
 
                     {/* Actions */}
                     <div className="flex gap-1.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Link href={`/app/diagnostics/${diagnostic.id}`}>
+                      {/* Un brouillon n'a rien d'utile à afficher sur la fiche
+                          lecture seule ; il faut reprendre le wizard là où il
+                          a été laissé (current_step, cf. [id]/edit/page.tsx). */}
+                      <Link href={diagnostic.validation_status === "draft"
+                        ? `/app/diagnostics/${diagnostic.id}/edit`
+                        : `/app/diagnostics/${diagnostic.id}`}>
                         <Button variant="outline" size="sm" className="rounded-lg h-8 px-3 text-xs">
-                          Voir
+                          {diagnostic.validation_status === "draft" ? "Continuer" : "Voir"}
                         </Button>
                       </Link>
                       <button
