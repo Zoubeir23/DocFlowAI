@@ -23,7 +23,7 @@ interface StructureBrutSiteProps {
   doctor: any;
 }
 
-export function StructureBrutSite({ website, clinic, services, doctor }: StructureBrutSiteProps) {
+export function StructureBrutSite({ website, clinic, services, doctor: _doctor }: StructureBrutSiteProps) {
   const { style_config, hero_data, about_data, contact_data, show_chat_widget, show_services, show_testimonials, testimonials } = website;
   const patientTestimonials: Array<{ text: string; name: string; context: string }> = Array.isArray(testimonials) ? testimonials : [];
 

@@ -47,7 +47,7 @@ function isLightColor(hex: string): boolean {
 }
 
 
-export function OracareEditorialSite({ website, clinic, services, doctor }: PublicClinicSiteProps) {
+export function OracareEditorialSite({ website, clinic, services, doctor: _doctor }: PublicClinicSiteProps) {
   const { style_config, hero_data, about_data, contact_data, show_chat_widget, show_services, show_testimonials, testimonials } = website;
   const patientTestimonials: Array<{ text: string; name: string; context: string }> = Array.isArray(testimonials) ? testimonials : [];
 
