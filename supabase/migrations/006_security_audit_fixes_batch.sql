@@ -61,7 +61,8 @@ CREATE POLICY "subscriptions_select_owner" ON subscriptions
 -- reposait uniquement sur l'idempotence naturelle des handlers (upsert par
 -- clinic_id/stripe_subscription_id). Une table de suivi des event.id déjà
 -- traités donne une garantie explicite, combinée au retour d'erreur HTTP
--- (migration précédente) qui permet désormais les retries Stripe.
+-- (changement applicatif côté route webhook) qui permet désormais les retries
+-- Stripe.
 -- ───────────────────────────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS stripe_webhook_events (
