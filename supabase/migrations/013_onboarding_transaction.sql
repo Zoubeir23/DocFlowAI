@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════════════════
--- 015 — Onboarding atomique (audit approfondi multi-cliniques 2026-07-21)
+-- 013 — Onboarding atomique (audit approfondi multi-cliniques 2026-07-21)
 --
 -- HIGH : createOnboarding enchaîne 7 insertions séquentielles sans transaction
 -- via PostgREST. Si l'une échoue après la création de clinics/users, la
