@@ -213,7 +213,14 @@ async function executeTool(name: string, args: Record<string, any>, clinicId: st
       .insert({ clinic_id: clinicId, patient_id: patientId, service_id: parsed.data.service_id, start_at: parsed.data.start_at, end_at: parsed.data.end_at, status: "confirmed", notes: parsed.data.notes ?? null })
       .select("id, start_at, end_at, status").maybeSingle();
 
-    if (error) return `Error: ${error.message}`;
+    if (error) {
+      // Même mapping que POST /api/v1/appointments — sans ça Claude reçoit
+      // l'erreur Postgres brute au lieu d'un message actionnable.
+      if (error.code === "23P01" || (error.message ?? "").includes("appointments_no_overlap")) {
+        return "Error: Ce créneau chevauche un autre rendez-vous actif de la clinique.";
+      }
+      return `Error: ${error.message}`;
+    }
     return `Appointment created!\n${JSON.stringify({ ...appointment, patient_name: parsed.data.patient_name, service_name: service.name }, null, 2)}`;
   }
 
