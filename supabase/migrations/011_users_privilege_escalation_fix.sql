@@ -1,9 +1,9 @@
 -- ═══════════════════════════════════════════════════════════════════════════════
--- 013 — Correction de l'escalade de privilèges sur la table users
+-- 011 — Correction de l'escalade de privilèges sur la table users
 --        (audit approfondi RBAC 2026-07-21)
 --
 -- CRITICAL : "users_update_self" et "users_manage_owner" sont FOR UPDATE/FOR ALL
--- sans WITH CHECK. Comme pour "subscriptions_manage_owner" (migration 008),
+-- sans WITH CHECK. Comme pour "subscriptions_manage_owner" (migration 006),
 -- l'absence de WITH CHECK réutilise la clause USING pour valider la ligne
 -- après modification, qui ne contraint jamais les colonnes role/is_super_admin/
 -- clinic_id. Un utilisateur authentifié pouvait donc, en appelant directement
