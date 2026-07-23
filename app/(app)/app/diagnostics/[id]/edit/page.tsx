@@ -258,6 +258,9 @@ export default function DiagnosticEditPage() {
               symptomsData={symptomsData}
               onNext={handleAnalysisSubmit}
               onBack={() => updateStepInUrl(2)}
+              defaultCandidates={candidates}
+              defaultAdditionalTests={additionalTests}
+              defaultClinicalNotes={diagnostic?.clinical_notes ?? undefined}
             />
           )}
 
