@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════════════════
--- 011 — Fenêtre glissante pour le quota du plan gratuit côté trigger DB
+-- 010 — Fenêtre glissante pour le quota du plan gratuit côté trigger DB
 --        (audit abonnements/paiements 2026-07-20)
 --
 -- HIGH : même bug que lib/subscription/quota.ts — current_period_end du plan

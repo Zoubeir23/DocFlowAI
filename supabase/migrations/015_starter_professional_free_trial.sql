@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════════════════
--- 021 — Essai gratuit de 14 jours pour Starter/Professional
+-- 015 — Essai gratuit de 14 jours pour Starter/Professional
 --
 -- Les boutons "Démarrer l'essai gratuit" de /pricing pointaient tous vers
 -- /signup sans passer le plan choisi : l'onboarding créait systématiquement
@@ -8,7 +8,7 @@
 -- 14 jours, plan réel Starter/Professional), avec rétrogradation automatique
 -- et silencieuse vers les quotas du plan gratuit à l'expiration — sans job
 -- cron, en réévaluant l'éligibilité à chaque lecture (même pattern que la
--- migration 010 pour le statut 'active').
+-- migration 009 pour le statut 'active').
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 -- 1. Autoriser le nouveau statut 'trialing' sur subscriptions.status
@@ -96,7 +96,7 @@ GRANT  EXECUTE ON FUNCTION create_clinic_onboarding(UUID, TEXT, TEXT, TEXT, TEXT
 -- pour éviter toute confusion/appel accidentel sur l'ancien comportement.
 DROP FUNCTION IF EXISTS create_clinic_onboarding(UUID, TEXT, TEXT, TEXT, TEXT, TEXT);
 
--- 3. Le trigger de quota (migration 010) doit traiter un essai 'trialing' non
+-- 3. Le trigger de quota (migration 009) doit traiter un essai 'trialing' non
 --    expiré comme 'active' — sinon un essai Starter/Professional retomberait
 --    immédiatement sur les 50 RDV/mois du plan gratuit, vidant l'essai de
 --    tout intérêt. Un essai expiré (current_period_end dépassé) retombe bien
@@ -140,7 +140,7 @@ BEGIN
     RETURN NEW;
   END IF;
 
-  -- Fenêtre glissante pour le plan gratuit (migration 011) : current_period_end
+  -- Fenêtre glissante pour le plan gratuit (migration 010) : current_period_end
   -- ne se renouvelle jamais tout seul pour un abonnement 'free', qu'il vienne
   -- d'un onboarding direct ou d'un essai expiré retombé sur 'free' ci-dessus.
   IF v_plan = 'free' THEN
