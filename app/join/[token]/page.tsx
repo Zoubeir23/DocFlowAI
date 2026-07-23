@@ -157,7 +157,7 @@ export default function JoinPage() {
           {pageState === "loading" && (
             <div className="flex flex-col items-center gap-4 py-16 px-6">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Vérification de l'invitation...</p>
+              <p className="text-sm text-muted-foreground">Vérification de l&apos;invitation...</p>
             </div>
           )}
 
@@ -176,7 +176,7 @@ export default function JoinPage() {
                 <CheckCircle className="w-8 h-8 text-emerald-500" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-foreground">Bienvenue dans l'équipe !</h2>
+                <h2 className="text-xl font-bold text-foreground">Bienvenue dans l&apos;équipe !</h2>
                 <p className="text-sm text-muted-foreground mt-1">Vous êtes redirigé vers le tableau de bord...</p>
               </div>
             </div>
@@ -228,7 +228,7 @@ export default function JoinPage() {
                     className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${!isSigningUp ? "bg-card shadow text-foreground" : "text-muted-foreground"}`}
                   >
                     <LogIn className="w-3.5 h-3.5 inline mr-1.5" />
-                    J'ai un compte
+                    J&apos;ai un compte
                   </button>
                   <button
                     onClick={() => setIsSigningUp(true)}
