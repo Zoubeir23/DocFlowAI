@@ -194,7 +194,7 @@ export default function WaitlistPage() {
             <Clock className="w-5 h-5 text-primary" strokeWidth={1.8} />
           </div>
           <div>
-            <h2 className="section-title">Liste d'attente</h2>
+            <h2 className="section-title">Liste d&apos;attente</h2>
             <p className="section-subtitle">
               {entries.length} patient{entries.length !== 1 ? "s" : ""}
             </p>
@@ -357,7 +357,7 @@ export default function WaitlistPage() {
             </div>
             <p className="text-foreground font-medium">Aucun patient en attente</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Ajoutez des patients a la liste d'attente pour les contacter lors d'un créneau disponible.
+              Ajoutez des patients a la liste d&apos;attente pour les contacter lors d&apos;un créneau disponible.
             </p>
           </div>
         )}
@@ -371,7 +371,7 @@ export default function WaitlistPage() {
               <div className="icon-container-sm">
                 <Plus className="w-4 h-4 text-primary" />
               </div>
-              Ajouter a la liste d'attente
+              Ajouter a la liste d&apos;attente
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleAddSubmit} className="space-y-4 mt-1">
