@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════════════════
--- 009 — Nouveau statut 'unpaid' + calcul automatique à la création du RDV
+-- 008 — Nouveau statut 'unpaid' + calcul automatique à la création du RDV
 --        (audit abonnements/paiements 2026-07-20)
 --
 -- CRITICAL : aucun chemin de création de RDV ne positionnait payment_status
