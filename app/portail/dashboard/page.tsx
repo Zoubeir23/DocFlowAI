@@ -68,11 +68,11 @@ export default async function PortailDashboardPage({
         <section className="space-y-3">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-primary flex items-center gap-2">
             <span>🆘</span>
-            Carte médicale d'urgence
+            Carte médicale d&apos;urgence
           </h2>
           <div className="bg-card border border-border rounded-2xl p-5">
             <p className="text-sm text-muted-foreground mb-4">
-              Téléchargez votre carte et gardez-la dans votre portefeuille. En cas d'urgence, un médecin peut scanner le QR code pour accéder à votre historique médical complet.
+              Téléchargez votre carte et gardez-la dans votre portefeuille. En cas d&apos;urgence, un médecin peut scanner le QR code pour accéder à votre historique médical complet.
             </p>
             <MedicalEmergencyCard
               patientName={patient.full_name}

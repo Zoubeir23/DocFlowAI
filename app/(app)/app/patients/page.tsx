@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getStatusColor, getStatusLabel } from "@/lib/utils";
+import { getStatusLabel } from "@/lib/utils";
 import type { Patient } from "@/types";
 import { useTranslations } from "next-intl";
 import Link from "next/link";

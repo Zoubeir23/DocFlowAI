@@ -9,8 +9,8 @@ import {
   listAdminMessages, updateMessageStatus, replyToMessage,
   listNewsletterCampaigns, sendNewsletter,
   listAllApiKeys, listAllWebhooks,
-  type AdminClinicRow, type AdminUserRow, type AdminMessageRow,
-  type NewsletterCampaignRow, type AdminApiKeyRow, type AdminWebhookRow,
+  type AdminMessageRow,
+  type NewsletterCampaignRow,
 } from "@/actions/super-admin";
 import {
   ShieldCheck, Building2, Users, CalendarCheck, TrendingUp,

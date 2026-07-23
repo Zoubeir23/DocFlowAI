@@ -32,7 +32,7 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-export function LumierePriveeSite({ website, clinic, services, doctor }: LumierePriveeSiteProps) {
+export function LumierePriveeSite({ website, clinic, services, doctor: _doctor }: LumierePriveeSiteProps) {
   const { style_config, hero_data, about_data, contact_data, show_chat_widget, show_services, show_testimonials, testimonials } = website;
   const patientTestimonials: Array<{ text: string; name: string; context: string }> = Array.isArray(testimonials) ? testimonials : [];
 
@@ -322,7 +322,7 @@ export function LumierePriveeSite({ website, clinic, services, doctor }: Lumiere
               <div className="text-center mb-16">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.28em] mb-4" style={{ color: gold }}>Prestations</p>
                 <h2 className="fr italic font-normal leading-[1.05]" style={{ fontSize: "clamp(2.25rem,4.5vw,3.75rem)", color: ivory }}>
-                  Nos domaines d'expertise
+                  Nos domaines d&apos;expertise
                 </h2>
               </div>
 
@@ -386,7 +386,7 @@ export function LumierePriveeSite({ website, clinic, services, doctor }: Lumiere
                 <div className="space-y-8">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.28em]" style={{ color: gold }}>Le praticien</p>
                   <h2 className="fr italic font-normal leading-[1.05]" style={{ fontSize: "clamp(2.25rem,4.5vw,3.5rem)", color: ivory }}>
-                    Une pratique fondée sur l'exigence
+                    Une pratique fondée sur l&apos;exigence
                   </h2>
 
                   <div className="pl-6 border-l" style={{ borderColor: gold }}>
@@ -438,7 +438,7 @@ export function LumierePriveeSite({ website, clinic, services, doctor }: Lumiere
                       {[1, 2, 3, 4, 5].map((s) => <Star key={s} className="w-3.5 h-3.5" style={{ fill: gold, color: gold }} />)}
                     </div>
                     <p className="fr italic text-lg leading-relaxed mb-6" style={{ color: `${ivory}85` }}>
-                      "{testimonial.text}"
+                      &quot;{testimonial.text}&quot;
                     </p>
                     <div className="flex items-center justify-between pt-5 border-t" style={{ borderColor: ga(0.12) }}>
                       <span className="text-[13px] font-semibold" style={{ color: ivory }}>{testimonial.name}</span>

@@ -205,7 +205,7 @@ export default async function HomePage() {
                       <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">DZ</div>
                       <div>
                         <div className="text-sm font-bold text-foreground">Nouveau RDV via IA</div>
-                        <div className="text-xs text-muted-foreground">À l'instant • Consultation générale</div>
+                        <div className="text-xs text-muted-foreground">À l&apos;instant • Consultation générale</div>
                       </div>
                     </div>
                     <div className="text-primary font-bold">14:30</div>
@@ -350,7 +350,7 @@ export default async function HomePage() {
                 { step: "01", title: t("howItWorks.step1Title"), desc: t("howItWorks.step1Desc") },
                 { step: "02", title: t("howItWorks.step2Title"), desc: t("howItWorks.step2Desc") },
                 { step: "03", title: t("howItWorks.step3Title"), desc: t("howItWorks.step3Desc") },
-              ].map((s, i) => (
+              ].map((s) => (
                 <div key={s.step} className="bg-card rounded-2xl p-6 border border-border shadow-sm flex gap-6 items-start hover:-translate-y-1 transition-transform">
                   <div className="text-3xl font-cormorant font-bold text-primary/70">{s.step}</div>
                   <div>

@@ -275,7 +275,7 @@ export default function DiagnosticsPage() {
           </DialogHeader>
           <div className="space-y-4 mt-1">
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Cette action est irréversible. Le dossier diagnostique, les codes ICD-11 et l'ordonnance associée seront définitivement supprimés.
+              Cette action est irréversible. Le dossier diagnostique, les codes ICD-11 et l&apos;ordonnance associée seront définitivement supprimés.
             </p>
             <div className="flex gap-3 pt-2">
               <Button variant="outline" className="flex-1 rounded-xl border-border" onClick={() => setPendingDeleteId(null)}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Video, Loader2, X, ExternalLink } from "lucide-react";
+import { Video, Loader2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { createTeleconsultationRoom, activateTeleconsultation, endTeleconsultation } from "@/actions/teleconsultation";
 import { VideoRoom } from "./video-room";

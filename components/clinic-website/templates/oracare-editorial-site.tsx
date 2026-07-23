@@ -47,7 +47,7 @@ function isLightColor(hex: string): boolean {
 }
 
 
-export function OracareEditorialSite({ website, clinic, services, doctor }: PublicClinicSiteProps) {
+export function OracareEditorialSite({ website, clinic, services, doctor: _doctor }: PublicClinicSiteProps) {
   const { style_config, hero_data, about_data, contact_data, show_chat_widget, show_services, show_testimonials, testimonials } = website;
   const patientTestimonials: Array<{ text: string; name: string; context: string }> = Array.isArray(testimonials) ? testimonials : [];
 
@@ -534,7 +534,7 @@ export function OracareEditorialSite({ website, clinic, services, doctor }: Publ
                   </p>
                   <h2 className="bbn leading-[0.95]" style={{ fontSize: "clamp(2.8rem,6vw,5rem)", color: dark }}>
                     DOMAINES{" "}
-                    <span className="pfdi italic font-normal" style={{ color: primary }}>d'expertise</span>
+                    <span className="pfdi italic font-normal" style={{ color: primary }}>d&apos;expertise</span>
                   </h2>
                 </div>
                 <p className="text-base max-w-xs lg:text-right leading-relaxed" style={{ color: `${dark}55` }}>
@@ -647,7 +647,7 @@ export function OracareEditorialSite({ website, clinic, services, doctor }: Publ
                           <Award className="w-6 h-6 text-white" />
                           <div>
                             <p className="bbn text-2xl text-white leading-none">15+</p>
-                            <p className="text-[11px] text-white/80 font-medium">Ans d'expérience</p>
+                            <p className="text-[11px] text-white/80 font-medium">Ans d&apos;expérience</p>
                           </div>
                         </div>
                       </div>
@@ -761,7 +761,7 @@ export function OracareEditorialSite({ website, clinic, services, doctor }: Publ
                       ))}
                     </div>
 
-                    <div className="bbn text-7xl leading-none mb-2 select-none text-white opacity-20">"</div>
+                    <div className="bbn text-7xl leading-none mb-2 select-none text-white opacity-20">&quot;</div>
 
                     <p className="text-sm leading-relaxed flex-1 text-white opacity-80">{testimonial.text}</p>
 

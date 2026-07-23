@@ -5,7 +5,6 @@ import { format, parseISO } from "date-fns";
 import { MoreHorizontal, CheckCircle, XCircle, Clock, AlertCircle, Bot, Pencil, FileText, Download } from "lucide-react";
 import { toast } from "sonner";
 import type { AppointmentWithRelations } from "@/types";
-import { getStatusColor } from "@/lib/utils";
 import { updateAppointmentStatus, cancelAppointment } from "@/actions/appointments";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";

@@ -42,7 +42,7 @@ export function TemplatePicker({ onComplete }: { onComplete: (website: any) => v
         </div>
         <h1 className="text-3xl font-bold tracking-tight">{t("createTitle")}</h1>
         <p className="text-muted-foreground max-w-xl mx-auto text-base">
-          Choisissez le design de votre site. Vous pourrez personnaliser les couleurs, textes et images depuis l'éditeur.
+          Choisissez le design de votre site. Vous pourrez personnaliser les couleurs, textes et images depuis l&apos;éditeur.
         </p>
       </div>
 

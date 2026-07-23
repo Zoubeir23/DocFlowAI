@@ -1,4 +1,4 @@
-import { Bell, ChevronDown, Settings2, CreditCard, LogOut } from "lucide-react";
+import { Bell, Settings2, CreditCard, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,

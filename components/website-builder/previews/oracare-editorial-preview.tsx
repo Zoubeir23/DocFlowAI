@@ -249,7 +249,7 @@ export function OracareEditorialPreview({ website }: { website: any }) {
                       <Award className="w-2 h-2 text-white" />
                       <p className="prev-bbn text-[10px] text-white leading-none">15+</p>
                     </div>
-                    <p className="text-[6px] text-white/75">Ans d'exp.</p>
+                    <p className="text-[6px] text-white/75">Ans d&apos;exp.</p>
                   </div>
                 </div>
               ) : (

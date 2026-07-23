@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Clock, DollarSign, Edit2, Trash2, HeartPulse, ToggleLeft, ToggleRight, Activity, Smile } from "lucide-react";
+import { Plus, Clock, DollarSign, Edit2, Trash2, HeartPulse, ToggleLeft, ToggleRight, Activity } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";

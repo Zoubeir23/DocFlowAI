@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useTransition } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   listTeamMembers,
   listPendingInvitations,
@@ -9,8 +9,6 @@ import {
   cancelInvitation,
   removeTeamMember,
   getMyRole,
-  type TeamMember,
-  type StaffInvitation,
   type StaffRole,
 } from "@/actions/team";
 import { getClinicQuotaUsage } from "@/actions/quota";
@@ -93,7 +91,7 @@ function InviteModal({
             </div>
             <div>
               <h2 className="font-bold text-foreground">Inviter un membre</h2>
-              <p className="text-xs text-muted-foreground">Un email d'invitation sera envoyé</p>
+              <p className="text-xs text-muted-foreground">Un email d&apos;invitation sera envoyé</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-muted text-muted-foreground">

@@ -116,11 +116,12 @@ interface PatientProfileStepProps {
   defaultValues?: Partial<PatientProfileInput>;
   defaultPatientName?: string;
   onNext: (data: PatientProfileInput) => void;
+  isSubmitting?: boolean;
 }
 
-export function PatientProfileStep({ defaultValues, defaultPatientName, onNext }: PatientProfileStepProps) {
+export function PatientProfileStep({ defaultValues, defaultPatientName, onNext, isSubmitting }: PatientProfileStepProps) {
   const t = useTranslations("diagnostics.patientStep");
-  const { register, handleSubmit, control, watch, setValue, formState: { errors } } = useForm<PatientProfileInput>({
+  const { register, handleSubmit, control, watch, formState: { errors } } = useForm<PatientProfileInput>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       patient_full_name: defaultPatientName ?? "",
@@ -179,7 +180,7 @@ export function PatientProfileStep({ defaultValues, defaultPatientName, onNext }
 
         {/* Age group */}
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Catégorie d'âge</Label>
+          <Label className="text-sm font-medium">Catégorie d&apos;âge</Label>
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
             {AGE_GROUPS.map((group) => (
               <Controller key={group.value} name="patient_age_group" control={control} render={({ field }) => (
@@ -284,7 +285,7 @@ export function PatientProfileStep({ defaultValues, defaultPatientName, onNext }
       </section>
 
       <div className="flex justify-end pt-2">
-        <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-medium px-8">
+        <Button type="submit" disabled={isSubmitting} className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-medium px-8">
           {t("nextButton")}
         </Button>
       </div>

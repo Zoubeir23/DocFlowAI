@@ -6,9 +6,9 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import {
-  Plus, Trash2, Bot, Globe2, Save, ExternalLink, Copy, Check,
+  Plus, Trash2, Save, ExternalLink, Copy, Check,
   Code2, Palette, MessageSquare, Lightbulb, ChevronDown, ChevronUp,
-  Sparkles, Activity, Wand2
+  Sparkles, Wand2
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getClinicSettings, updateClinicSettings } from '@/actions/settings'
@@ -72,7 +72,7 @@ export default function AISettingsPage() {
     enabled: !!clinicId,
   })
 
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<ClinicSettingsInput>({
+  const { register, handleSubmit, setValue, watch } = useForm<ClinicSettingsInput>({
     resolver: zodResolver(clinicSettingsSchema),
     defaultValues: {
       widget_color: '#0d9488',
