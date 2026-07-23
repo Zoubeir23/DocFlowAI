@@ -107,7 +107,7 @@ export function LumierePriveePreview({ website }: { website: any }) {
               )}
               <div className="flex-1 space-y-1.5">
                 <p className="text-[7px] font-semibold uppercase tracking-[0.24em]" style={{ color: gold }}>Le praticien</p>
-                <p className="lpp-fr text-[15px] leading-tight" style={{ color: ivory }}>Une pratique fondée sur l'exigence</p>
+                <p className="lpp-fr text-[15px] leading-tight" style={{ color: ivory }}>Une pratique fondée sur l&apos;exigence</p>
                 {about_data?.bio && (
                   <p className="text-[7.5px] leading-relaxed line-clamp-3" style={{ color: `${ivory}55` }}>{about_data.bio}</p>
                 )}
@@ -124,7 +124,7 @@ export function LumierePriveePreview({ website }: { website: any }) {
               {website.testimonials.slice(0, 2).map((t: { text: string; name: string }, i: number) => (
                 <div key={i} className="p-3 border" style={{ borderColor: ga(0.15) }}>
                   <div className="flex gap-0.5 mb-1.5">{[1, 2, 3, 4, 5].map((s) => <Star key={s} className="w-1.5 h-1.5" style={{ fill: gold, color: gold }} />)}</div>
-                  <p className="lpp-fr text-[8px] leading-relaxed line-clamp-2" style={{ color: `${ivory}80` }}>"{t.text}"</p>
+                  <p className="lpp-fr text-[8px] leading-relaxed line-clamp-2" style={{ color: `${ivory}80` }}>&quot;{t.text}&quot;</p>
                   <p className="text-[7px] font-semibold mt-1.5" style={{ color: ivory }}>{t.name}</p>
                 </div>
               ))}

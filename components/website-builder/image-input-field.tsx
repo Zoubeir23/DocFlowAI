@@ -173,7 +173,7 @@ export function ImageInputField({
                 className="w-full h-24 object-cover rounded-lg"
               />
               <p className="text-xs text-muted-foreground">
-                Cliquer pour remplacer l'image
+                Cliquer pour remplacer l&apos;image
               </p>
             </div>
           ) : (

@@ -217,7 +217,7 @@ export function WebsiteEditor({
 
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                    <Clock className="w-3 h-3" /> Horaires d'ouverture
+                    <Clock className="w-3 h-3" /> Horaires d&apos;ouverture
                   </Label>
                   <Textarea
                     value={website.contact_data?.schedule || ""}
@@ -273,7 +273,7 @@ export function WebsiteEditor({
               </div>
               <div className="p-4 space-y-4">
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Ajoutez les témoignages de vos patients. Ils s'affichent sur votre site public si le module est activé dans Settings.
+                  Ajoutez les témoignages de vos patients. Ils s&apos;affichent sur votre site public si le module est activé dans Settings.
                 </p>
 
                 {(website.testimonials ?? []).map((testimonial: { text: string; name: string; context: string }, index: number) => (
