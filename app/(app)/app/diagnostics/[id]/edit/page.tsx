@@ -40,10 +40,15 @@ export default function DiagnosticEditPage() {
   const searchParams = useSearchParams();
 
   const diagnosticId = params.id;
-  const stepParam = parseInt(searchParams.get("step") ?? "2", 10) as WizardStep;
+  // null (pas de ?step= dans l'URL) doit rester distinct de "step=2 fourni
+  // explicitement", sinon la reprise via current_step (cf. plus bas) est
+  // masquée en permanence par ce fallback et on retombe toujours à l'étape 2.
+  const stepParamRaw = searchParams.get("step");
+  const stepParam = stepParamRaw !== null ? (parseInt(stepParamRaw, 10) as WizardStep) : null;
+  const hasExplicitStepParam = stepParam !== null && stepParam >= 2 && stepParam <= 5;
 
   const [currentStep, setCurrentStep] = useState<WizardStep>(
-    stepParam >= 2 && stepParam <= 5 ? stepParam : 2
+    hasExplicitStepParam ? (stepParam as WizardStep) : 2
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -77,11 +82,11 @@ export default function DiagnosticEditPage() {
 
       const savedStep = record.current_step ?? 2;
       const resolvedStep = Math.max(2, Math.min(5, savedStep)) as WizardStep;
-      setCurrentStep(stepParam >= 2 && stepParam <= 5 ? stepParam : resolvedStep);
+      setCurrentStep(hasExplicitStepParam ? (stepParam as WizardStep) : resolvedStep);
       setIsLoading(false);
     }
     loadDiagnostic();
-  }, [diagnosticId, stepParam, router]);
+  }, [diagnosticId, hasExplicitStepParam, stepParam, router]);
 
   function updateStepInUrl(step: WizardStep) {
     const url = new URL(window.location.href);
