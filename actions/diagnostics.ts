@@ -94,6 +94,52 @@ export async function createDiagnosticDraft(
   return { success: true, data: { id: (data as { id: string }).id } };
 }
 
+// ── Step 1 (reprise) : mettre à jour le profil patient d'un brouillon existant ─
+
+export async function updateDiagnosticPatientProfile(
+  diagnosticId: string,
+  profile: PatientProfileInput
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const clinicId = await resolveClinicId();
+  if (!clinicId) return { success: false, error: "Non autorisé" };
+
+  if (profile.patient_id) {
+    const { data: patientCheck } = await (supabase as any)
+      .from("patients")
+      .select("id")
+      .eq("id", profile.patient_id)
+      .eq("clinic_id", clinicId)
+      .maybeSingle();
+    if (!patientCheck) {
+      return { success: false, error: "Patient introuvable ou n'appartient pas à cette clinique." };
+    }
+  }
+
+  const { error } = await (supabase as any)
+    .from("diagnostics")
+    .update({
+      patient_id: profile.patient_id ?? null,
+      patient_full_name: profile.patient_full_name,
+      patient_age_years: profile.patient_age_years ?? null,
+      patient_age_group: profile.patient_age_group ?? null,
+      patient_sex: profile.patient_sex ?? null,
+      patient_weight_kg: profile.patient_weight_kg ?? null,
+      patient_height_cm: profile.patient_height_cm ?? null,
+      patient_blood_group: profile.patient_blood_group || "unknown",
+      chronic_conditions: profile.chronic_conditions ?? [],
+      allergies: profile.allergies ?? [],
+      current_medications: profile.current_medications ?? [],
+      surgical_history: profile.surgical_history ?? [],
+      family_history: profile.family_history ?? [],
+    })
+    .eq("id", diagnosticId)
+    .eq("clinic_id", clinicId);
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
 // ── Step 2: Save symptoms + vitals ────────────────────────────────────────────
 
 export async function updateDiagnosticSymptoms(
