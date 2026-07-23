@@ -3,7 +3,7 @@
 import { useState, useEffect, useTransition } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
-import { createStripeCheckoutSession, type StripePlan } from "@/actions/stripe-checkout";
+import { createStripeCheckoutSession, createStripeBillingPortalSession, type StripePlan } from "@/actions/stripe-checkout";
 import { getClinicQuotaUsage, type QuotaUsage } from "@/actions/quota";
 import { CryptoPaymentModal, type CryptoPlan } from "@/components/billing/crypto-payment-modal";
 import { EnterpriseContactModal } from "@/components/billing/enterprise-contact-modal";
@@ -91,6 +91,8 @@ export default function BillingPage() {
   const [stripeError, setStripeError] = useState<string | null>(null);
   const [stripeStatus, setStripeStatus] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isPortalPending, setIsPortalPending] = useState(false);
+  const [portalError, setPortalError] = useState<string | null>(null);
 
   const REQUIRED_CHAIN_ID = Number(process.env.NEXT_PUBLIC_CRYPTO_CHAIN_ID || 137);
   const RECIPIENT = process.env.NEXT_PUBLIC_CRYPTO_WALLET_ADDRESS!;
@@ -123,6 +125,20 @@ export default function BillingPage() {
   const effectivePlan = subscriptionLoaded
     ? (subscription?.plan ?? "free")
     : null;
+
+  const handleManageBillingClick = async () => {
+    setPortalError(null);
+    setIsPortalPending(true);
+    const result = await createStripeBillingPortalSession();
+    setIsPortalPending(false);
+    if (result.error) {
+      setPortalError(result.error);
+      return;
+    }
+    if (result.portalUrl) {
+      window.location.href = result.portalUrl;
+    }
+  };
 
   const handleStripeCheckout = (plan: StripePlan) => {
     setStripeError(null);
@@ -258,8 +274,33 @@ export default function BillingPage() {
                 }`}>
                   {isExpired ? t("expired") : PLAN_STATUS_KEYS[subscription.status] ? t(`planStatus.${PLAN_STATUS_KEYS[subscription.status]}`) : subscription.status}
                 </span>
+                {!isFree && subscription.payment_provider === "stripe" && subscription.status !== "trialing" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-lg h-8 text-xs"
+                    onClick={handleManageBillingClick}
+                    disabled={isPortalPending}
+                  >
+                    {isPortalPending ? (
+                      <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                    ) : (
+                      <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                    )}
+                    {t("manageBilling")}
+                  </Button>
+                )}
               </div>
             </div>
+
+            {portalError && (
+              <div className="px-5 pb-4">
+                <div className="flex items-start gap-2.5 p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-red-500" />
+                  <p className="text-xs text-red-500">{portalError}</p>
+                </div>
+              </div>
+            )}
 
             {quotaUsage && (() => {
               const apptFull = quotaUsage.appointments.limit !== null && quotaUsage.appointments.current >= quotaUsage.appointments.limit;
