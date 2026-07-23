@@ -129,7 +129,7 @@ export function AtcDrugSearch({ value, atcCode, onSelect, placeholder = "Nom com
           ))}
           {options.length === 0 && query.trim().length >= 2 && !loading && (
             <div className="px-3 py-3 border-t border-border">
-              <p className="text-xs text-muted-foreground mb-2">"{query}" introuvable dans la base de données.</p>
+              <p className="text-xs text-muted-foreground mb-2">&quot;{query}&quot; introuvable dans la base de données.</p>
               <button
                 type="button"
                 onClick={handleSaveCustomDrug}
@@ -141,7 +141,7 @@ export function AtcDrugSearch({ value, atcCode, onSelect, placeholder = "Nom com
                 ) : (
                   <PlusCircle className="w-3.5 h-3.5" />
                 )}
-                Ajouter "{query}" à ma pharmacopée
+                Ajouter &quot;{query}&quot; à ma pharmacopée
               </button>
             </div>
           )}
