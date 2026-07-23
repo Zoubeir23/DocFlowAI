@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/dialog'
 import type { AppointmentWithRelations } from '@/types'
 import type { TeamMember } from '@/actions/team'
-import { getStatusColor, getStatusLabel } from '@/lib/utils'
+import { getStatusLabel } from '@/lib/utils'
 import Link from 'next/link'
 
 const PRACTITIONER_COLORS = [
