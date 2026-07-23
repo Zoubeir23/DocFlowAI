@@ -5,7 +5,7 @@
  * API docs: https://icd.who.int/icdapi
  */
 
-import { fetchWhoAccessToken, buildWhoApiHeaders, WHO_API_BASE } from "./who-auth";
+import { fetchWhoAccessToken, buildWhoApiHeaders, getCurrentIcdReleaseId, WHO_API_BASE } from "./who-auth";
 import type { IcfCode } from "@/types";
 
 interface WhoIcfSearchResponse {
@@ -27,6 +27,7 @@ export async function searchIcfCodes(query: string, limit = 8): Promise<IcfCode[
 
   try {
     const token = await fetchWhoAccessToken();
+    const releaseId = await getCurrentIcdReleaseId(token);
     const params = new URLSearchParams({
       q: query,
       subtreesFilter: "",
@@ -38,7 +39,10 @@ export async function searchIcfCodes(query: string, limit = 8): Promise<IcfCode[
       medicalCodingMode: "false",
     });
 
-    const url = `${WHO_API_BASE}/release/11/2024-01/icf/search?${params}`;
+    // "2024-01" en dur retournait HTTP 500 (release retirée) — releaseId est
+    // désormais découvert dynamiquement, cf. lib/who-auth.ts. Vérifié en
+    // direct contre l'API OMS le 2026-07-23.
+    const url = `${WHO_API_BASE}/release/11/${releaseId}/icf/search?${params}`;
     const response = await fetch(url, {
       headers: buildWhoApiHeaders(token),
       next: { revalidate: 3600 },
