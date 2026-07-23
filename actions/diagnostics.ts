@@ -237,6 +237,9 @@ export async function validateDiagnostic(
       validated_by_user_id: userId,
       validated_at: new Date().toISOString(),
       rejection_reason: rejectionReason ?? null,
+      // Sans ceci, un rechargement de /edit sans ?step= dans l'URL retombe sur
+      // record.current_step resté à 4, même quand la validation est déjà faite.
+      current_step: status === "rejected" ? 3 : 5,
     })
     .eq("id", diagnosticId)
     .eq("clinic_id", clinicId);
