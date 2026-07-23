@@ -34,3 +34,9 @@ jobs:
 
       - name: Tests
         run: npm run test:run
+
+      # Non-bloquant : dette de lint préexistante (config ESLint absente avant
+      # ce workflow). À rendre bloquant une fois la dette résorbée.
+      - name: Lint
+        continue-on-error: true
+        run: npm run lint
