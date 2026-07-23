@@ -38,7 +38,7 @@ export function MedicalEmergencyCard({ patientName, publicCode, clinicName }: Me
             <ShieldAlert className="w-4 h-4 text-white" />
           </div>
           <div>
-            <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest">Carte médicale d'urgence</p>
+            <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest">Carte médicale d&apos;urgence</p>
             <p className="text-[10px] text-gray-500">DocFlow IA</p>
           </div>
         </div>
@@ -63,7 +63,7 @@ export function MedicalEmergencyCard({ patientName, publicCode, clinicName }: Me
         {/* Instructions */}
         <div className="mt-4 pt-3 border-t border-gray-100">
           <p className="text-[9px] text-gray-400 leading-relaxed">
-            En cas d'urgence, scannez ce QR code ou saisissez le code dans DocFlow IA pour accéder à l'historique médical complet de ce patient.
+            En cas d&apos;urgence, scannez ce QR code ou saisissez le code dans DocFlow IA pour accéder à l&apos;historique médical complet de ce patient.
           </p>
         </div>
       </div>
@@ -74,7 +74,7 @@ export function MedicalEmergencyCard({ patientName, publicCode, clinicName }: Me
         className="w-full rounded-xl bg-teal-600 hover:bg-teal-700 text-white gap-2"
       >
         <Download className="w-4 h-4" />
-        Télécharger ma carte d'urgence
+        Télécharger ma carte d&apos;urgence
       </Button>
     </div>
   );
