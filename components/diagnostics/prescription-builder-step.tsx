@@ -7,7 +7,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Plus, Trash2, AlertTriangle, Pill, ClipboardList, ActivitySquare, Loader2 } from "lucide-react";
 import { AtcDrugSearch } from "@/components/diagnostics/atc-drug-search";
-import { IchiSearchField } from "@/components/diagnostics/ichi-search-field";
 import { IcfSearchField } from "@/components/diagnostics/icf-search-field";
 import { DrugInteractionWarning } from "@/components/diagnostics/drug-interaction-warning";
 import { Button } from "@/components/ui/button";
@@ -375,7 +374,7 @@ export function PrescriptionBuilderStep({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Voie d'administration</Label>
+                <Label className="text-xs font-medium">Voie d&apos;administration</Label>
                 <select
                   value={treatment.route}
                   onChange={(e) => updateTreatment(index, "route", e.target.value)}
@@ -505,7 +504,7 @@ export function PrescriptionBuilderStep({
             </h3>
           </div>
           <p className="text-xs text-muted-foreground">
-            Documentez les limitations fonctionnelles du patient pour justifier l'arrêt de travail.
+            Documentez les limitations fonctionnelles du patient pour justifier l&apos;arrêt de travail.
           </p>
           <IcfSearchField
             selectedCodes={icfCodes}
