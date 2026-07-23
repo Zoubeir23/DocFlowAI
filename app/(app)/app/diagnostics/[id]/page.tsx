@@ -94,7 +94,7 @@ export default async function DiagnosticDetailPage({ params }: DiagnosticDetailP
               <FileEdit className="w-5 h-5 text-primary flex-shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-foreground">Diagnostic validé — ordonnance non créée</p>
-                <p className="text-xs text-muted-foreground">Continuer vers l'étape 5 pour générer le document</p>
+                <p className="text-xs text-muted-foreground">Continuer vers l&apos;étape 5 pour générer le document</p>
               </div>
             </div>
           </Link>

@@ -175,7 +175,7 @@ export default function DiagnosticEditPage() {
                 {diagnostic?.patient_full_name}
               </h1>
               <p className="text-muted-foreground text-sm mt-1">
-                Reprendre à l'étape {currentStep} sur 5
+                Reprendre à l&apos;étape {currentStep} sur 5
               </p>
             </div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-lg">
@@ -238,7 +238,7 @@ export default function DiagnosticEditPage() {
 
           {currentStep === 3 && (!patientProfile || !symptomsData) && (
             <div className="text-center py-8 text-muted-foreground">
-              <p className="text-sm">Veuillez compléter les étapes précédentes d'abord.</p>
+              <p className="text-sm">Veuillez compléter les étapes précédentes d&apos;abord.</p>
               <button onClick={() => updateStepInUrl(2)} className="mt-3 text-primary text-sm underline">Retour aux symptômes</button>
             </div>
           )}

@@ -116,9 +116,10 @@ interface PatientProfileStepProps {
   defaultValues?: Partial<PatientProfileInput>;
   defaultPatientName?: string;
   onNext: (data: PatientProfileInput) => void;
+  isSubmitting?: boolean;
 }
 
-export function PatientProfileStep({ defaultValues, defaultPatientName, onNext }: PatientProfileStepProps) {
+export function PatientProfileStep({ defaultValues, defaultPatientName, onNext, isSubmitting }: PatientProfileStepProps) {
   const t = useTranslations("diagnostics.patientStep");
   const { register, handleSubmit, control, watch, setValue, formState: { errors } } = useForm<PatientProfileInput>({
     resolver: zodResolver(profileSchema),
@@ -284,7 +285,7 @@ export function PatientProfileStep({ defaultValues, defaultPatientName, onNext }
       </section>
 
       <div className="flex justify-end pt-2">
-        <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-medium px-8">
+        <Button type="submit" disabled={isSubmitting} className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-medium px-8">
           {t("nextButton")}
         </Button>
       </div>

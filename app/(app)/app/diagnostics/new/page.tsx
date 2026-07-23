@@ -288,6 +288,7 @@ export default function NewDiagnosticPage() {
             onNext={handlePatientProfileSubmit}
             defaultPatientName={prefillData?.patient_full_name ?? linkedPatientName ?? undefined}
             defaultValues={prefillData ?? undefined}
+            isSubmitting={isSubmitting}
           />
         </div>
       </div>
