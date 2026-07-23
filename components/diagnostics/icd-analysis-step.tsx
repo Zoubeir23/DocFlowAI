@@ -36,7 +36,6 @@ export function IcdAnalysisStep({
   const [additionalTests, setAdditionalTests] = useState<string[]>(defaultAdditionalTests ?? []);
   const [clinicalNotes, setClinicalNotes] = useState(defaultClinicalNotes ?? "");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [hasAnalyzed, setHasAnalyzed] = useState(hasSavedAnalysis);
 
   const vitals: VitalSigns = {
     temperature: symptomsData.vital_temperature ?? null,
@@ -84,7 +83,6 @@ export function IcdAnalysisStep({
 
       setRankedCandidates(weighted);
       setAdditionalTests(tests);
-      setHasAnalyzed(true);
     } catch (error) {
       console.error("[ICD Analysis]", error);
       import("sonner").then(({ toast }) => toast.error("Échec de l'analyse ICD-11 — réessayez"));
