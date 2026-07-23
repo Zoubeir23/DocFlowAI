@@ -15,6 +15,9 @@ interface IcdAnalysisStepProps {
   symptomsData: SymptomsInput;
   onNext: (candidates: IcdCandidate[], additionalTests: string[], clinicalNotes: string) => void;
   onBack: () => void;
+  defaultCandidates?: IcdCandidate[];
+  defaultAdditionalTests?: string[];
+  defaultClinicalNotes?: string;
 }
 
 export function IcdAnalysisStep({
@@ -22,14 +25,18 @@ export function IcdAnalysisStep({
   symptomsData,
   onNext,
   onBack,
+  defaultCandidates,
+  defaultAdditionalTests,
+  defaultClinicalNotes,
 }: IcdAnalysisStepProps) {
   const t = useTranslations("diagnostics");
+  const hasSavedAnalysis = (defaultCandidates?.length ?? 0) > 0;
   const [manualCodes, setManualCodes] = useState<IcdCode[]>([]);
-  const [rankedCandidates, setRankedCandidates] = useState<IcdCandidate[]>([]);
-  const [additionalTests, setAdditionalTests] = useState<string[]>([]);
-  const [clinicalNotes, setClinicalNotes] = useState("");
+  const [rankedCandidates, setRankedCandidates] = useState<IcdCandidate[]>(defaultCandidates ?? []);
+  const [additionalTests, setAdditionalTests] = useState<string[]>(defaultAdditionalTests ?? []);
+  const [clinicalNotes, setClinicalNotes] = useState(defaultClinicalNotes ?? "");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [hasAnalyzed, setHasAnalyzed] = useState(false);
+  const [hasAnalyzed, setHasAnalyzed] = useState(hasSavedAnalysis);
 
   const vitals: VitalSigns = {
     temperature: symptomsData.vital_temperature ?? null,
@@ -87,8 +94,14 @@ export function IcdAnalysisStep({
   }, [symptomsData, patientProfile]);
 
   useEffect(() => {
-    runAnalysis();
-  }, [runAnalysis]);
+    // Ne relance pas automatiquement l'analyse si on reprend une étape 3 déjà
+    // complétée — cf. defaultCandidates. L'utilisateur garde le bouton
+    // "Relancer l'analyse" pour la refaire volontairement.
+    if (!hasSavedAnalysis) {
+      runAnalysis();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function handleManualCodesChange(codes: IcdCode[]) {
     setManualCodes(codes);

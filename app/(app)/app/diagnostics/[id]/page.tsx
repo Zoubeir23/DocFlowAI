@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Stethoscope } from "lucide-react";
+import { ArrowLeft, FileEdit, Stethoscope } from "lucide-react";
 import { getDiagnosticById } from "@/actions/diagnostics";
 import { getDoctorSignature } from "@/actions/doctor-signature";
 import { PrescriptionPrintDocument } from "@/components/diagnostics/prescription-print-document";
@@ -79,6 +79,25 @@ export default async function DiagnosticDetailPage({ params }: DiagnosticDetailP
             diagnosisCode={diagnostic.validated_diagnosis_code}
             diagnosisName={diagnostic.validated_diagnosis_name ?? diagnostic.chief_complaint ?? ""}
           />
+        )}
+
+        {/* Un diagnostic validé depuis ce panneau (plutôt que via l'étape 4 du
+            wizard) n'a pas encore d'ordonnance tant que current_step < 6
+            (updateDiagnosticPrescription). Sans ce lien, rien dans l'UI ne
+            permet d'atteindre l'étape 5. */}
+        {diagnostic.validation_status === "validated" && (diagnostic.current_step ?? 0) < 6 && (
+          <Link
+            href={`/app/diagnostics/${diagnostic.id}/edit?step=5`}
+            className="print:hidden flex items-center justify-between gap-3 px-5 py-4 rounded-2xl border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <FileEdit className="w-5 h-5 text-primary flex-shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-foreground">Diagnostic validé — ordonnance non créée</p>
+                <p className="text-xs text-muted-foreground">Continuer vers l'étape 5 pour générer le document</p>
+              </div>
+            </div>
+          </Link>
         )}
 
         <PrescriptionPrintDocument

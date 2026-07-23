@@ -15,6 +15,7 @@ import {
   validateDiagnostic,
   updateDiagnosticPrescription,
 } from "@/actions/diagnostics";
+import { buildPatientProfileFromRecord, buildSymptomsFromRecord } from "@/lib/diagnostics/build-profile-from-record";
 import type {
   DiagnosticRecord,
   PatientProfileInput,
@@ -33,50 +34,21 @@ const STEPS = [
   { step: 5, label: "Ordonnance", description: "Prescription" },
 ];
 
-function buildPatientProfileFromRecord(record: DiagnosticRecord): PatientProfileInput {
-  return {
-    patient_full_name: record.patient_full_name,
-    patient_age_years: record.patient_age_years ?? undefined,
-    patient_age_group: record.patient_age_group ?? undefined,
-    patient_sex: record.patient_sex ?? undefined,
-    patient_weight_kg: record.patient_weight_kg ?? null,
-    patient_height_cm: record.patient_height_cm ?? null,
-    patient_blood_group: record.patient_blood_group ?? "unknown",
-    chronic_conditions: record.chronic_conditions ?? [],
-    allergies: record.allergies ?? [],
-    current_medications: record.current_medications ?? [],
-    surgical_history: record.surgical_history ?? [],
-    family_history: record.family_history ?? [],
-  };
-}
-
-function buildSymptomsFromRecord(record: DiagnosticRecord): SymptomsInput {
-  return {
-    chief_complaint: record.chief_complaint ?? "",
-    symptoms: record.symptoms ?? [],
-    symptom_duration: record.symptom_duration ?? "",
-    symptom_intensity: record.symptom_intensity ?? 5,
-    aggravating_factors: record.aggravating_factors ?? [],
-    relieving_factors: record.relieving_factors ?? [],
-    vital_temperature: record.vital_temperature ?? null,
-    vital_blood_pressure_systolic: record.vital_blood_pressure_systolic ?? null,
-    vital_blood_pressure_diastolic: record.vital_blood_pressure_diastolic ?? null,
-    vital_heart_rate: record.vital_heart_rate ?? null,
-    vital_respiratory_rate: record.vital_respiratory_rate ?? null,
-    vital_oxygen_saturation: record.vital_oxygen_saturation ?? null,
-  };
-}
-
 export default function DiagnosticEditPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
 
   const diagnosticId = params.id;
-  const stepParam = parseInt(searchParams.get("step") ?? "2", 10) as WizardStep;
+  // null (pas de ?step= dans l'URL) doit rester distinct de "step=2 fourni
+  // explicitement", sinon la reprise via current_step (cf. plus bas) est
+  // masquée en permanence par ce fallback et on retombe toujours à l'étape 2.
+  const stepParamRaw = searchParams.get("step");
+  const stepParam = stepParamRaw !== null ? (parseInt(stepParamRaw, 10) as WizardStep) : null;
+  const hasExplicitStepParam = stepParam !== null && stepParam >= 2 && stepParam <= 5;
 
   const [currentStep, setCurrentStep] = useState<WizardStep>(
-    stepParam >= 2 && stepParam <= 5 ? stepParam : 2
+    hasExplicitStepParam ? (stepParam as WizardStep) : 2
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -110,11 +82,11 @@ export default function DiagnosticEditPage() {
 
       const savedStep = record.current_step ?? 2;
       const resolvedStep = Math.max(2, Math.min(5, savedStep)) as WizardStep;
-      setCurrentStep(stepParam >= 2 && stepParam <= 5 ? stepParam : resolvedStep);
+      setCurrentStep(hasExplicitStepParam ? (stepParam as WizardStep) : resolvedStep);
       setIsLoading(false);
     }
     loadDiagnostic();
-  }, [diagnosticId, stepParam, router]);
+  }, [diagnosticId, hasExplicitStepParam, stepParam, router]);
 
   function updateStepInUrl(step: WizardStep) {
     const url = new URL(window.location.href);
@@ -258,6 +230,9 @@ export default function DiagnosticEditPage() {
               symptomsData={symptomsData}
               onNext={handleAnalysisSubmit}
               onBack={() => updateStepInUrl(2)}
+              defaultCandidates={candidates}
+              defaultAdditionalTests={additionalTests}
+              defaultClinicalNotes={diagnostic?.clinical_notes ?? undefined}
             />
           )}
 
