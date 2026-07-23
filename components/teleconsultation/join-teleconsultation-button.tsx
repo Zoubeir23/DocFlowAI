@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Video, X } from "lucide-react";
+import { Video } from "lucide-react";
 import { VideoRoom } from "./video-room";
 import type { TeleconsultationSession } from "@/actions/teleconsultation";
 

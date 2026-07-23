@@ -2,7 +2,7 @@
 
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Printer, Download } from "lucide-react";
+import { Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { DiagnosticRecord } from "@/types";
 
