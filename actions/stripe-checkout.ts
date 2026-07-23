@@ -6,6 +6,71 @@ import { isOwnerOrAbove, type UserRole } from "@/lib/rbac";
 
 export type StripePlan = "starter" | "professional" | "enterprise";
 
+export interface CreateStripeBillingPortalSessionResult {
+  portalUrl: string | null;
+  error: string | null;
+}
+
+// Point d'entrée self-service pour résilier/gérer un abonnement Stripe —
+// jusqu'ici, seul le support pouvait le faire manuellement dans le dashboard
+// Stripe (audit paiements/abonnements 2026-07-23). Le portail Stripe gère
+// nativement l'annulation, le changement de moyen de paiement et l'historique
+// des factures ; aucune écriture DB n'est nécessaire ici, le webhook
+// customer.subscription.deleted/updated existant reflète déjà les changements.
+export async function createStripeBillingPortalSession(): Promise<CreateStripeBillingPortalSessionResult> {
+  const supabase = await createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { portalUrl: null, error: "Utilisateur non authentifié" };
+  }
+
+  const { data: userData, error: userError } = await db
+    .from("users")
+    .select("clinic_id, role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (userError || !userData) {
+    return { portalUrl: null, error: "Données utilisateur introuvables" };
+  }
+
+  if (!isOwnerOrAbove(userData.role as UserRole)) {
+    return { portalUrl: null, error: "Non autorisé" };
+  }
+
+  const { data: subscription } = await db
+    .from("subscriptions")
+    .select("stripe_customer_id, payment_provider")
+    .eq("clinic_id", userData.clinic_id)
+    .maybeSingle();
+
+  if (!subscription?.stripe_customer_id || subscription.payment_provider !== "stripe") {
+    return { portalUrl: null, error: "Aucun abonnement Stripe actif à gérer." };
+  }
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const stripe = getStripeServerClient();
+
+  try {
+    const session = await stripe.billingPortal.sessions.create({
+      customer: subscription.stripe_customer_id,
+      return_url: `${appUrl}/app/billing`,
+    });
+    return { portalUrl: session.url, error: null };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Erreur Stripe inconnue";
+    console.error("[Stripe] createBillingPortalSession error:", message);
+    return { portalUrl: null, error: message };
+  }
+}
+
 export interface CreateStripeCheckoutSessionResult {
   checkoutUrl: string | null;
   error: string | null;
