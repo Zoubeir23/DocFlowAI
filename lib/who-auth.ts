@@ -57,3 +57,34 @@ export function buildWhoApiHeaders(token: string, language = "en"): Record<strin
     Accept: "application/json",
   };
 }
+
+// Les endpoints de recherche par linéarisation (mms, icf...) exigent un
+// releaseId explicite dans l'URL (ex. /release/11/2024-01/mms/search) — l'API
+// OMS ne reconnaît pas de mot-clé "latest" (vérifié : 404). Coder ce releaseId
+// en dur casse l'intégration à chaque publication d'une nouvelle release OMS
+// (constaté le 2026-07-23 : "2024-01" retourne 500 sur /icf/search alors que
+// la release courante de la Fondation est "2026-01"). On la découvre donc
+// dynamiquement depuis la racine /icd/entity, qui l'expose toujours à jour.
+let releaseIdCache: { value: string; fetchedAt: number } | null = null;
+const RELEASE_ID_CACHE_TTL_MS = 60 * 60 * 1000;
+
+export async function getCurrentIcdReleaseId(token: string): Promise<string> {
+  if (releaseIdCache && Date.now() - releaseIdCache.fetchedAt < RELEASE_ID_CACHE_TTL_MS) {
+    return releaseIdCache.value;
+  }
+
+  const response = await fetch(`${WHO_API_BASE}/entity`, {
+    headers: buildWhoApiHeaders(token, "en"),
+  });
+  if (!response.ok) {
+    throw new Error(`Impossible de résoudre la release ICD courante: ${response.status}`);
+  }
+
+  const data = (await response.json()) as { releaseId?: string };
+  if (!data.releaseId) {
+    throw new Error("Réponse OMS inattendue : releaseId absent de /icd/entity");
+  }
+
+  releaseIdCache = { value: data.releaseId, fetchedAt: Date.now() };
+  return data.releaseId;
+}
