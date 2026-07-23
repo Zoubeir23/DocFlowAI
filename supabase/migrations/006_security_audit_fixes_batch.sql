@@ -128,7 +128,7 @@ CREATE POLICY "user_clinic_access_update_service_only" ON user_clinic_access
 -- via le même bypass, appeler directement l'API REST et passer
 -- validation_status à 'validated' avec un validated_by arbitraire — ce qui
 -- contournerait entièrement la vérification de rôle ajoutée à
--- validateDiagnostic() (migration 012). Un trigger réplique cette même règle
+-- validateDiagnostic() (migration 010). Un trigger réplique cette même règle
 -- au niveau base de données.
 -- ───────────────────────────────────────────────────────────────────────────────
 
