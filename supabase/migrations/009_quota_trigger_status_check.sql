@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════════════════
--- 010 — Le trigger de quota ignore aussi le statut de l'abonnement
+-- 009 — Le trigger de quota ignore aussi le statut de l'abonnement
 --        (audit abonnements/paiements 2026-07-20)
 --
 -- HIGH : le trigger enforce_appointment_quota() (migration 007) lit
