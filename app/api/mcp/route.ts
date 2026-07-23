@@ -5,6 +5,8 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { validateApiKey, extractApiKey } from "@/lib/api-auth";
 import { sanitizePostgrestSearchTerm } from "@/lib/security/sanitize-postgrest-search";
 import { checkApiIpRateLimit, getClientIp } from "@/lib/rate-limit";
+import { parseToolLimit } from "@/lib/api-pagination";
+import { checkAppointmentQuota } from "@/lib/subscription/quota";
 
 function unauthorized() {
   return NextResponse.json(
@@ -101,7 +103,8 @@ async function executeTool(name: string, args: Record<string, any>, clinicId: st
   }
 
   if (name === "list_appointments") {
-    const limit = Math.min(Math.max(parseInt(args.limit ?? "20"), 1), 50);
+    const limit = parseToolLimit(args.limit);
+    if (limit === null) return "Validation error: limit must be a positive integer (1-50).";
     let query = db
       .from("appointments")
       .select("id, start_at, end_at, status, notes, patient:patients(full_name, phone, email), service:services(name, duration_minutes)")
@@ -117,7 +120,8 @@ async function executeTool(name: string, args: Record<string, any>, clinicId: st
   }
 
   if (name === "list_patients") {
-    const limit = Math.min(Math.max(parseInt(args.limit ?? "20"), 1), 50);
+    const limit = parseToolLimit(args.limit);
+    if (limit === null) return "Validation error: limit must be a positive integer (1-50).";
     let query = db
       .from("patients")
       .select("id, full_name, phone, email, notes, created_at")
@@ -177,6 +181,14 @@ async function executeTool(name: string, args: Record<string, any>, clinicId: st
 
     if (!parsed.success) return `Validation error: ${parsed.error.errors[0].message}`;
 
+    // Pré-vérification pour un message clair : le trigger DB
+    // trg_enforce_appointment_quota reste l'autorité finale (protège aussi
+    // les autres canaux d'insertion), mais sans ce check l'assistant IA
+    // reçoit l'erreur Postgres brute "quota_exceeded" au lieu d'un message
+    // actionnable.
+    const quota = await checkAppointmentQuota(clinicId, db);
+    if (!quota.allowed) return `Error: ${quota.reason ?? "Quota de rendez-vous atteint."}`;
+
     const { data: service } = await db
       .from("services").select("id, name").eq("id", parsed.data.service_id).eq("clinic_id", clinicId).eq("is_active", true).maybeSingle();
     if (!service) return "Error: Service not found or inactive.";
@@ -201,7 +213,14 @@ async function executeTool(name: string, args: Record<string, any>, clinicId: st
       .insert({ clinic_id: clinicId, patient_id: patientId, service_id: parsed.data.service_id, start_at: parsed.data.start_at, end_at: parsed.data.end_at, status: "confirmed", notes: parsed.data.notes ?? null })
       .select("id, start_at, end_at, status").maybeSingle();
 
-    if (error) return `Error: ${error.message}`;
+    if (error) {
+      // Même mapping que POST /api/v1/appointments — sans ça Claude reçoit
+      // l'erreur Postgres brute au lieu d'un message actionnable.
+      if (error.code === "23P01" || (error.message ?? "").includes("appointments_no_overlap")) {
+        return "Error: Ce créneau chevauche un autre rendez-vous actif de la clinique.";
+      }
+      return `Error: ${error.message}`;
+    }
     return `Appointment created!\n${JSON.stringify({ ...appointment, patient_name: parsed.data.patient_name, service_name: service.name }, null, 2)}`;
   }
 

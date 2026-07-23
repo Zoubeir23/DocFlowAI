@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { validateApiKey, extractApiKey } from "@/lib/api-auth";
 import { sanitizePostgrestSearchTerm } from "@/lib/security/sanitize-postgrest-search";
 import { checkApiIpRateLimit, getClientIp } from "@/lib/rate-limit";
+import { parsePaginationParams } from "@/lib/api-pagination";
 
 function tooManyRequests() {
   return NextResponse.json(
@@ -28,8 +29,11 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const search = searchParams.get("search");
-  const limit = Math.min(parseInt(searchParams.get("limit") ?? "50"), 100);
-  const offset = parseInt(searchParams.get("offset") ?? "0");
+  const pagination = parsePaginationParams(searchParams, { defaultLimit: 50, maxLimit: 100 });
+  if ("error" in pagination) {
+    return NextResponse.json({ error: pagination.error }, { status: 400 });
+  }
+  const { limit, offset } = pagination;
 
   const db = (await createAdminClient()) as any;
 
