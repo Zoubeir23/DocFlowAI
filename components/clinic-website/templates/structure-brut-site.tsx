@@ -376,7 +376,7 @@ export function StructureBrutSite({ website, clinic, services, doctor: _doctor }
               <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border-[3px]" style={{ borderColor: ink }}>
                 {patientTestimonials.slice(0, 3).map((testimonial, i) => (
                   <div key={i} className="p-7 relative" style={{ borderLeft: i > 0 ? `3px solid ${ink}` : "none" }}>
-                    <div className="an text-6xl leading-none mb-3" style={{ color: `${ink}12` }}>"</div>
+                    <div className="an text-6xl leading-none mb-3" style={{ color: `${ink}12` }}>&quot;</div>
                     <div className="flex items-center gap-1 mb-4">
                       {[1, 2, 3, 4, 5].map((s) => <Star key={s} className="w-3.5 h-3.5" style={{ fill: accent, color: accent }} />)}
                     </div>
