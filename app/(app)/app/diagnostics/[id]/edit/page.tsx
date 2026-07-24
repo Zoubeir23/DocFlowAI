@@ -69,7 +69,10 @@ export default function DiagnosticEditPage() {
       }
       setDiagnostic(record);
       setPatientProfile(buildPatientProfileFromRecord(record));
-      if (record.chief_complaint) {
+      // L'étape 2 est considérée complétée dès que current_step l'a dépassée,
+      // même si tous ses champs (optionnels) sont vides — ne pas se baser sur
+      // le contenu de chief_complaint, sinon la reprise reste bloquée.
+      if ((record.current_step ?? 2) >= 3) {
         setSymptomsData(buildSymptomsFromRecord(record));
       }
       if (record.icd_candidates?.length > 0) {
