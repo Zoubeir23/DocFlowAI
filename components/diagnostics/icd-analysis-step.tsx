@@ -288,7 +288,6 @@ export function IcdAnalysisStep({
         <Button
           type="button"
           onClick={handleSubmit}
-          disabled={rankedCandidates.length === 0}
           className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-medium flex-1"
         >
           <CheckCircle2 className="w-4 h-4 mr-2" />
