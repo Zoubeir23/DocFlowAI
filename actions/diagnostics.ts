@@ -41,6 +41,32 @@ async function resolveClinicId(): Promise<string | null> {
   return context?.clinicId ?? null;
 }
 
+interface DiagnosticState {
+  current_step: number | null;
+  validation_status: DiagnosticValidationStatus;
+}
+
+async function getDiagnosticState(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  diagnosticId: string,
+  clinicId: string
+): Promise<DiagnosticState | null> {
+  const { data } = await (supabase as any)
+    .from("diagnostics")
+    .select("current_step, validation_status")
+    .eq("id", diagnosticId)
+    .eq("clinic_id", clinicId)
+    .maybeSingle();
+  return (data as DiagnosticState | null) ?? null;
+}
+
+// current_step ne doit jamais reculer : sinon revenir en arrière puis
+// ré-enregistrer une étape antérieure masque la progression réelle déjà
+// atteinte au prochain chargement de /edit sans ?step= explicite.
+function nextStep(existing: number | null, target: number): number {
+  return Math.max(existing ?? 0, target);
+}
+
 // ── Step 1: Create draft with patient profile ─────────────────────────────────
 
 export async function createDiagnosticDraft(
@@ -150,6 +176,9 @@ export async function updateDiagnosticSymptoms(
   const clinicId = await resolveClinicId();
   if (!clinicId) return { success: false, error: "Non autorisé" };
 
+  const state = await getDiagnosticState(supabase, diagnosticId, clinicId);
+  if (!state) return { success: false, error: "Diagnostic introuvable" };
+
   const { error } = await (supabase as any)
     .from("diagnostics")
     .update({
@@ -165,7 +194,7 @@ export async function updateDiagnosticSymptoms(
       vital_heart_rate: symptoms.vital_heart_rate ?? null,
       vital_respiratory_rate: symptoms.vital_respiratory_rate ?? null,
       vital_oxygen_saturation: symptoms.vital_oxygen_saturation ?? null,
-      current_step: 3,
+      current_step: nextStep(state.current_step, 3),
     })
     .eq("id", diagnosticId)
     .eq("clinic_id", clinicId);
@@ -186,6 +215,9 @@ export async function updateDiagnosticAnalysis(
   const clinicId = await resolveClinicId();
   if (!clinicId) return { success: false, error: "Non autorisé" };
 
+  const state = await getDiagnosticState(supabase, diagnosticId, clinicId);
+  if (!state) return { success: false, error: "Diagnostic introuvable" };
+
   const { error } = await (supabase as any)
     .from("diagnostics")
     .update({
@@ -193,7 +225,7 @@ export async function updateDiagnosticAnalysis(
       additional_tests_required: additionalTests,
       clinical_notes: clinicalNotes,
       validation_status: "pending_validation",
-      current_step: 4,
+      current_step: nextStep(state.current_step, 4),
     })
     .eq("id", diagnosticId)
     .eq("clinic_id", clinicId);
@@ -225,6 +257,15 @@ export async function validateDiagnostic(
     return { success: false, error: "Seul un médecin peut valider un diagnostic" };
   }
 
+  const state = await getDiagnosticState(supabase, diagnosticId, clinicId);
+  if (!state) return { success: false, error: "Diagnostic introuvable" };
+  // Empêche de valider/rejeter un diagnostic qui n'a pas encore été soumis
+  // pour validation (ex: navigation manuelle vers ?step=4 sur un brouillon) —
+  // seule l'analyse ICD (étape 3) fait passer le statut à pending_validation.
+  if (state.validation_status !== "pending_validation") {
+    return { success: false, error: "Ce diagnostic n'est pas en attente de validation." };
+  }
+
   const { error } = await (supabase as any)
     .from("diagnostics")
     .update({
@@ -239,7 +280,11 @@ export async function validateDiagnostic(
       rejection_reason: rejectionReason ?? null,
       // Sans ceci, un rechargement de /edit sans ?step= dans l'URL retombe sur
       // record.current_step resté à 4, même quand la validation est déjà faite.
-      current_step: status === "rejected" ? 3 : 5,
+      // Le rejet est une régression volontaire du workflow (retour à l'analyse
+      // ICD) — elle n'est donc pas soumise à la règle "current_step ne recule
+      // jamais", qui ne vise qu'à empêcher une régression accidentelle côté
+      // client.
+      current_step: status === "rejected" ? 3 : nextStep(state.current_step, 5),
     })
     .eq("id", diagnosticId)
     .eq("clinic_id", clinicId);
@@ -259,6 +304,15 @@ export async function updateDiagnosticPrescription(
   if (!context) return { success: false, error: "Non autorisé" };
   const { userId, clinicId } = context;
 
+  const state = await getDiagnosticState(supabase, diagnosticId, clinicId);
+  if (!state) return { success: false, error: "Diagnostic introuvable" };
+  // Empêche de générer une ordonnance/document en sautant la validation
+  // médecin (ex: navigation manuelle vers ?step=5 sur un diagnostic encore
+  // en attente ou rejeté).
+  if (state.validation_status !== "validated") {
+    return { success: false, error: "Le diagnostic doit d'abord être validé par un médecin." };
+  }
+
   const { error } = await (supabase as any)
     .from("diagnostics")
     .update({
@@ -274,7 +328,7 @@ export async function updateDiagnosticPrescription(
       // désormais imputable à un compte réel et vérifiable.
       prescribed_by_user_id: userId,
       icf_codes: prescription.icf_codes ?? [],
-      current_step: 6,
+      current_step: nextStep(state.current_step, 6),
     })
     .eq("id", diagnosticId)
     .eq("clinic_id", clinicId);
