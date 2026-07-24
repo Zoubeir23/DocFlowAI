@@ -251,12 +251,11 @@ export function PrescriptionBuilderStep({
   async function handleFormSubmit(formData: Omit<PrescriptionInput, "treatments" | "recommendations" | "follow_up_tests" | "icf_codes">) {
     if (allergyWarnings.size > 0) return;
 
-    // Validate treatments manually (outside RHF scope)
-    for (const treatment of treatments) {
-      if (!treatment.drug_name.trim()) {
-        import("sonner").then(({ toast }) => toast.error("Le nom du médicament est requis pour tous les traitements"));
-        return;
-      }
+    // Les traitements sont optionnels : les lignes sans médicament renseigné
+    // sont simplement omises plutôt que de bloquer la soumission (ex: reçu,
+    // certificat, rapport médical sans prescription associée).
+    const filledTreatments = treatments.filter((treatment) => treatment.drug_name.trim() !== "");
+    for (const treatment of filledTreatments) {
       if (treatment.duration_days < 1) {
         import("sonner").then(({ toast }) => toast.error("La durée de traitement doit être d'au moins 1 jour"));
         return;
@@ -265,7 +264,7 @@ export function PrescriptionBuilderStep({
 
     await onSubmit({
       ...formData,
-      treatments,
+      treatments: filledTreatments,
       recommendations: selectedRecommendations,
       follow_up_tests: followUpTests,
       icf_codes: icfCodes,
@@ -411,12 +410,10 @@ export function PrescriptionBuilderStep({
                 />
                 <span className="text-muted-foreground">Substitution générique autorisée</span>
               </label>
-              {treatments.length > 1 && (
-                <button type="button" onClick={() => removeTreatment(index)}
-                  className="text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1 text-xs">
-                  <Trash2 className="w-3.5 h-3.5" /> {t("prescriptionStep.remove")}
-                </button>
-              )}
+              <button type="button" onClick={() => removeTreatment(index)}
+                className="text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1 text-xs">
+                <Trash2 className="w-3.5 h-3.5" /> {t("prescriptionStep.remove")}
+              </button>
             </div>
           </div>
         ))}
