@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { getStripeServerClient } from "@/lib/stripe/client";
+import { checkAuthenticatedRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
