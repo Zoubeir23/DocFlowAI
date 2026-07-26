@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { escapeCsvField } from "@/lib/csv/escape-csv-field";
+import { checkAuthenticatedRateLimit } from "@/lib/rate-limit";
 
 function formatDateFr(iso: string): string {
   const date = new Date(iso);
@@ -26,6 +27,12 @@ export async function GET() {
   const { data: authData } = await supabase.auth.getUser();
   if (!authData.user) {
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+  }
+
+  // Export en masse de données patients identifiantes — même limite que les
+  // autres endpoints authentifiés coûteux/sensibles (ex: upload).
+  if (!(await checkAuthenticatedRateLimit(authData.user.id, "export"))) {
+    return NextResponse.json({ error: "Trop de requêtes. Réessayez dans une minute." }, { status: 429 });
   }
 
   const { data: userData } = await supabase
