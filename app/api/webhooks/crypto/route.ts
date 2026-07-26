@@ -74,6 +74,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (!user) {
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
   }
+
+  // Chaque appel déclenche jusqu'à 3 requêtes RPC vers des noeuds Polygon
+  // publics (getBlockNumber + getTransactionReceipt) : sans limite, un spam
+  // authentifié peut faire blacklister l'IP du serveur auprès de ces
+  // fournisseurs gratuits et casser le paiement crypto pour toutes les cliniques.
+  if (!(await checkAuthenticatedRateLimit(user.id, "crypto-webhook"))) {
+    return NextResponse.json({ error: "Trop de requêtes. Réessayez dans une minute." }, { status: 429 });
+  }
+
   const { data: userData } = await userDb
     .from("users")
     .select("clinic_id")
