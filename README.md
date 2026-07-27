@@ -664,6 +664,24 @@ NEXT_PUBLIC_CRYPTO_WALLET_ADDRESS="0x..."
 NEXT_PUBLIC_PLAN_STARTER_PRICE="49"
 NEXT_PUBLIC_PLAN_PROFESSIONAL_PRICE="99"
 NEXT_PUBLIC_PLAN_ENTERPRISE_PRICE="299"
+
+# ─── URL app & Cron ──────────────────────────────────────
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+CRON_SECRET="un-secret-aléatoire-long"
+
+# ─── Rate limiting (recommandé en production) ────────────
+# UPSTASH_REDIS_REST_URL="https://your-db.upstash.io"
+# UPSTASH_REDIS_REST_TOKEN="your-token"
+
+# ─── SMS (optionnel) ─────────────────────────────────────
+# TWILIO_ACCOUNT_SID="AC..."
+# TWILIO_AUTH_TOKEN="..."
+# TWILIO_PHONE_NUMBER="+1234567890"
+
+# ─── APIs médicales (module Diagnostics) ─────────────────
+WHO_ICD_CLIENT_ID="..."
+WHO_ICD_CLIENT_SECRET="..."
+# OPENFDA_API_KEY="..."
 ```
 
 ### 4. Lancer l'application
