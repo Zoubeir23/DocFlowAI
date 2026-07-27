@@ -58,40 +58,79 @@ Il combine un tableau de bord médical complet, un agent IA multi-fournisseurs c
 <tr>
 <td width="50%">
 
-**🌐 Website Builder**
-- Éditeur visuel de site vitrine sans code
-- 3 templates premium (Éditorial, Premium, Clinique)
-- Upload d'images, couleurs, typographie
-- Publication en un clic sur URL personnalisée
+**🩺 Dossier Médical & Diagnostics**
+- Wizard de diagnostic assisté par IA, étape par étape
+- Codage international WHO ICD-11 / ICF / ICHI
+- Vérification d'interactions médicamenteuses (OpenFDA)
+- Prescriptions et carnet numérique partagé au patient
 
 </td>
 <td width="50%">
 
-**💳 Paiements Hybrides**
-- Stripe (cartes bancaires, abonnements récurrents)
-- Web3 — USDC sur Polygon via MetaMask / WalletConnect
-- Webhooks sécurisés avec vérification de signature
-- Gestion des quotas par plan (Free / Starter / Pro / Enterprise)
+**🎥 Téléconsultation**
+- Salle vidéo Jitsi Meet générée automatiquement par RDV
+- Aucune installation ni compte tiers requis pour le patient
+- Lien unique envoyé par email/SMS
 
 </td>
 </tr>
 <tr>
 <td width="50%">
 
-**📧 Emails Transactionnels**
-- Confirmation patient automatique après réservation
-- Notification médecin en temps réel
-- Google SMTP (500 emails/jour gratuit) ou Resend
-- Templates HTML bilingues (FR / EN)
+**🌐 Website Builder**
+- Éditeur visuel de site vitrine sans code
+- 3 templates premium (Cabinet Éditorial, Lumière Privée, Structure Brut)
+- Upload d'images, couleurs, typographie
+- Publication en un clic sur URL personnalisée
 
 </td>
 <td width="50%">
 
+**💳 Paiements Hybrides & Essai Gratuit**
+- Stripe (cartes, abonnements récurrents, portail client self-service)
+- Web3 — USDC sur Polygon via MetaMask / WalletConnect
+- Essai gratuit 14 jours sur Starter/Professional, sans carte bancaire
+- Quotas par plan (Free / Starter / Pro / Enterprise)
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**🔌 Automatisation — API, MCP, Zapier/Make**
+- API REST publique (`/api/v1/*`) authentifiée par clé API
+- Serveur MCP natif — pilotage par Claude Desktop en langage naturel
+- Webhooks sortants signés HMAC pour Zapier / Make
+- Portail patient dédié (`/portail`) avec accès à son propre dossier
+
+</td>
+<td width="50%">
+
+**📧 Emails & SMS Transactionnels**
+- Confirmation patient automatique après réservation
+- Rappels SMS via Twilio (optionnel)
+- Google SMTP (500 emails/jour gratuit) ou Resend
+- Templates HTML bilingues (FR / EN)
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
 **🔐 Sécurité Production**
 - Row Level Security (RLS) Supabase sur toutes les tables
-- Guards d'ownership sur chaque action serveur
+- Guards d'ownership + rôles sur chaque action serveur
+- Protection SSRF sur les webhooks sortants (anti DNS-rebinding)
 - Headers CSP, HSTS, X-Frame-Options configurés
-- Rate limiting sur les endpoints publics widget
+
+</td>
+<td width="50%">
+
+**⚡ Rate Limiting & Fiabilité**
+- Upstash Redis en production (fallback mémoire en dev)
+- Endpoints publics (widget, API, webhooks) tous limités par IP
+- Rappels de RDV automatiques via Vercel Cron
+- Panneau super-admin multi-cliniques (`/admin`)
 
 </td>
 </tr>
