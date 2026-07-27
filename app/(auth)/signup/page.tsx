@@ -44,7 +44,7 @@ function SignupForm() {
   const onSubmit = async (data: SignupInput) => {
     setLoading(true);
     if (!acceptedTerms) {
-      toast.error("Vous devez accepter les CGU et la politique de confidentialité.");
+      toast.error(t("acceptTermsError"));
       setLoading(false);
       return;
     }
