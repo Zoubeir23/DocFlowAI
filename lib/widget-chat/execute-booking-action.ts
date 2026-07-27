@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { z } from "zod";
+import { getTranslations } from "next-intl/server";
 import { checkWidgetBookRateLimit } from "@/lib/rate-limit";
 import { sendNotification } from "@/lib/notifications";
 import { dispatchWebhookEvent } from "@/lib/webhooks";
@@ -30,8 +31,14 @@ export async function executeBookingAction(
   ip: string,
   clinic: { id: string; name: string },
   services: any[],
-  slotsPerDate: ClinicDaySlots[]
+  slotsPerDate: ClinicDaySlots[],
+  locale: "fr" | "en"
 ): Promise<BookingResult> {
+  // Locale explicite (pas de contexte de requête React ici, contrairement à
+  // une page) : le widget passe déjà `locale` pour les réponses du LLM, ces
+  // messages d'erreur doivent suivre la même langue.
+  const t = await getTranslations({ locale, namespace: "widgetChat" });
+
   // M6 fix: never log patient PII — log intent only
   console.log("[booking] create_booking action received");
 
@@ -42,11 +49,11 @@ export async function executeBookingAction(
   // proposé correspond exactement à un créneau réellement disponible
   // calculé côté serveur (pas seulement la règle textuelle du prompt).
   if (!validated.success) {
-    return { success: false, error: "Données de réservation invalides" };
+    return { success: false, error: t("bookingInvalidData") };
   }
 
   if (!(await checkWidgetBookRateLimit(ip))) {
-    return { success: false, error: "Trop de tentatives de réservation. Réessayez dans une minute." };
+    return { success: false, error: t("bookingTooManyAttempts") };
   }
 
   const data = validated.data;
@@ -57,7 +64,7 @@ export async function executeBookingAction(
   );
 
   if (!service) {
-    return { success: false, error: "Service not found" };
+    return { success: false, error: t("bookingServiceNotFound") };
   }
 
   const slotIsReallyAvailable = slotsPerDate.some((d) =>
@@ -65,7 +72,7 @@ export async function executeBookingAction(
   );
 
   if (!slotIsReallyAvailable) {
-    return { success: false, error: "Ce créneau n'est plus disponible." };
+    return { success: false, error: t("bookingSlotUnavailable") };
   }
 
   const { data: result, error } = await db.rpc("create_booking_from_widget", {
@@ -80,7 +87,7 @@ export async function executeBookingAction(
   });
 
   if (error || !result) {
-    return { success: false, error: error?.message || "Booking failed" };
+    return { success: false, error: error?.message || t("bookingGenericFailed") };
   }
 
   const resultData = result as { appointment_id: string; patient_id: string };

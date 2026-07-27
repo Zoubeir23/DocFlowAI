@@ -44,7 +44,7 @@ function SignupForm() {
   const onSubmit = async (data: SignupInput) => {
     setLoading(true);
     if (!acceptedTerms) {
-      toast.error("Vous devez accepter les CGU et la politique de confidentialité.");
+      toast.error(t("acceptTermsError"));
       setLoading(false);
       return;
     }
@@ -73,18 +73,18 @@ function SignupForm() {
       });
       if (error) { toast.error(error.message); return; }
       if (!authData.user) {
-        toast.error("Something went wrong. Please try again.");
+        toast.error(t("genericError"));
         return;
       }
       if (!authData.session) {
-        toast.success("Compte créé ! Vérifiez votre boîte mail pour confirmer votre adresse avant de continuer.");
+        toast.success(t("confirmEmailToast"));
         router.push("/login?confirm=1");
         return;
       }
-      toast.success("Account created! Let's set up your clinic.");
+      toast.success(t("accountCreatedToast"));
       router.push(selectedPlan === "free" ? "/onboarding" : `/onboarding?plan=${selectedPlan}`);
     } catch {
-      toast.error("Something went wrong. Please try again.");
+      toast.error(t("genericError"));
     } finally {
       setLoading(false);
     }

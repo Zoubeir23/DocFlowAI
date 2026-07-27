@@ -92,7 +92,7 @@ function OnboardingForm() {
       if (result.success) {
         toast.success(
           result.data?.trial
-            ? `Essai gratuit de 14 jours démarré — profitez du plan ${TRIAL_PLAN_LABELS[result.data.plan] ?? result.data.plan} !`
+            ? t('trialSuccessToast', { plan: TRIAL_PLAN_LABELS[result.data.plan] ?? result.data.plan })
             : t('setupSuccess')
         )
         router.push('/app/dashboard')
@@ -165,7 +165,7 @@ function OnboardingForm() {
           {trialPlanLabel && (
             <div className="mb-6 flex items-center gap-2.5 px-4 py-3 border border-[#14b8a6]/30 bg-[#14b8a6]/5 text-[13px] font-medium text-foreground/80">
               <Sparkles className="w-4 h-4 text-[#14b8a6] shrink-0" />
-              Vous démarrez un essai gratuit de 14 jours du plan {trialPlanLabel}, sans carte bancaire.
+              {t('trialBannerText', { plan: trialPlanLabel })}
             </div>
           )}
 

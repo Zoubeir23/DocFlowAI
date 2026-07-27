@@ -652,7 +652,11 @@
       "feature4": "Annulable à tout moment",
       "copyright": "© 2024 DocFlow IA · Tous droits réservés",
       "orContinueWith": "ou",
-      "continueWithGoogle": "Continuer avec Google"
+      "continueWithGoogle": "Continuer avec Google",
+      "acceptTermsError": "Vous devez accepter les CGU et la politique de confidentialité.",
+      "genericError": "Une erreur s'est produite. Veuillez réessayer.",
+      "confirmEmailToast": "Compte créé ! Vérifiez votre boîte mail pour confirmer votre adresse avant de continuer.",
+      "accountCreatedToast": "Compte créé ! Configurons votre clinique."
     }
   },
   "onboarding": {
@@ -680,7 +684,9 @@
     "setupFailed": "Échec de la configuration de la clinique",
     "setupError": "Une erreur est survenue. Veuillez réessayer.",
     "submitLoading": "Configuration en cours...",
-    "submitButton": "Lancer ma clinique"
+    "submitButton": "Lancer ma clinique",
+    "trialBannerText": "Vous démarrez un essai gratuit de 14 jours du plan {plan}, sans carte bancaire.",
+    "trialSuccessToast": "Essai gratuit de 14 jours démarré — profitez du plan {plan} !"
   },
   "pricing": {
     "nav": {
@@ -919,7 +925,12 @@
     "typeMessage": "Écrivez un message...",
     "nameReq": "Le nom et le téléphone sont requis.",
     "bookFailed": "Échec de la réservation. Veuillez réessayer.",
-    "error": "Une erreur s'est produite. Veuillez réessayer."
+    "error": "Une erreur s'est produite. Veuillez réessayer.",
+    "bookingInvalidData": "Données de réservation invalides",
+    "bookingTooManyAttempts": "Trop de tentatives de réservation. Réessayez dans une minute.",
+    "bookingServiceNotFound": "Service introuvable",
+    "bookingSlotUnavailable": "Ce créneau n'est plus disponible.",
+    "bookingGenericFailed": "Échec de la réservation"
   },
   "calendar": {
     "agenda": "Agenda",

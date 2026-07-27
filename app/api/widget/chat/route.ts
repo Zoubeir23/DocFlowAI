@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
     let bookingResult: BookingResult | null = null;
 
     if (action && action.intent === "create_booking" && action.data) {
-      bookingResult = await executeBookingAction(db, action.data, ip, clinic, services as any[], slotsPerDate);
+      bookingResult = await executeBookingAction(db, action.data, ip, clinic, services as any[], slotsPerDate, locale);
     }
 
     const updatedMessages: AIMessage[] = [
