@@ -9,6 +9,7 @@
     "lint": "next lint",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "db:generate": "supabase gen types typescript --local > types/supabase.ts",
     "db:migrate": "supabase db push",
     "db:migrate:neon": "tsx scripts/migrate-neon.ts",
