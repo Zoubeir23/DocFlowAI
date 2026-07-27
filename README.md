@@ -543,7 +543,7 @@ C'est l'adresse Ethereum/Polygon sur laquelle vous recevrez les paiements USDC.
 3. Copiez l'adresse affichée (commence par `0x`, fait 42 caractères).
 
 ```env
-NEXT_PUBLIC_ADMIN_WALLET_ADDRESS="0xAbCdEf1234567890AbCdEf1234567890AbCdEf12"
+NEXT_PUBLIC_CRYPTO_WALLET_ADDRESS="0xAbCdEf1234567890AbCdEf1234567890AbCdEf12"
 ```
 
 #### Prix des plans en USDC
@@ -591,7 +591,7 @@ STRIPE_WEBHOOK_SECRET="whsec_..."
 
 # ─── Web3 (optionnel) ────────────────────────────────────
 NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID="..."
-NEXT_PUBLIC_ADMIN_WALLET_ADDRESS="0x..."
+NEXT_PUBLIC_CRYPTO_WALLET_ADDRESS="0x..."
 NEXT_PUBLIC_PLAN_STARTER_PRICE="49"
 NEXT_PUBLIC_PLAN_PROFESSIONAL_PRICE="99"
 NEXT_PUBLIC_PLAN_ENTERPRISE_PRICE="299"
