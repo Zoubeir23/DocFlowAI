@@ -560,6 +560,75 @@ NEXT_PUBLIC_PLAN_ENTERPRISE_PRICE="299"
 
 ---
 
+<details>
+<summary><b>🌍 Bloc 6 — URL de l'app & Cron (obligatoire)</b></summary>
+
+`NEXT_PUBLIC_APP_URL` est utilisée dans les liens des emails transactionnels, les URLs de retour Stripe, l'annulation de RDV et l'onboarding. `CRON_SECRET` protège la route `/api/cron/appointment-reminders` (appelée quotidiennement par Vercel Cron, voir `vercel.json`) contre les appels non autorisés.
+
+```env
+NEXT_PUBLIC_APP_URL="http://localhost:3000"   # URL réelle de déploiement en production
+CRON_SECRET="un-secret-aléatoire-long"
+```
+
+</details>
+
+---
+
+<details>
+<summary><b>⚡ Bloc 7 — Rate limiting Upstash Redis (recommandé en production)</b></summary>
+
+Sans ces variables, le rate limiting retombe sur un store en mémoire — fonctionnel en dev, mais **non partagé entre instances serverless** (donc peu fiable en production Vercel).
+
+1. Créez un compte gratuit sur [console.upstash.com](https://console.upstash.com/).
+2. Créez une base **Redis**.
+3. Copiez **REST URL** et **REST Token** depuis le tableau de bord de la base.
+
+```env
+UPSTASH_REDIS_REST_URL="https://your-db.upstash.io"
+UPSTASH_REDIS_REST_TOKEN="your-token"
+```
+
+</details>
+
+---
+
+<details>
+<summary><b>📱 Bloc 8 — SMS Twilio (optionnel)</b></summary>
+
+Si absent, les rappels SMS sont silencieusement désactivés — le reste de l'application fonctionne normalement.
+
+1. Créez un compte sur [twilio.com](https://www.twilio.com/).
+2. Récupérez **Account SID** et **Auth Token** depuis le tableau de bord.
+3. Achetez ou récupérez un numéro d'envoi.
+
+```env
+TWILIO_ACCOUNT_SID="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+TWILIO_AUTH_TOKEN="your-twilio-auth-token"
+TWILIO_PHONE_NUMBER="+1234567890"
+```
+
+</details>
+
+---
+
+<details>
+<summary><b>🩺 Bloc 9 — APIs médicales : WHO ICD & OpenFDA (obligatoire pour le module Diagnostics)</b></summary>
+
+Le wizard de diagnostic (codage WHO ICD-11/ICF/ICHI, vérification d'interactions médicamenteuses) dépend de ces APIs externes.
+
+1. **WHO ICD API** : créez des identifiants sur [icd.who.int/icdapi](https://icd.who.int/icdapi).
+2. **OpenFDA** (optionnel) : une clé sur [open.fda.gov/apis/authentication](https://open.fda.gov/apis/authentication/) fait passer la limite de 40 à 240 requêtes/min ; l'API fonctionne sans clé en deçà de ce quota.
+
+```env
+WHO_ICD_CLIENT_ID="your-who-client-id"
+WHO_ICD_CLIENT_SECRET="your-who-client-secret"
+OPENFDA_API_KEY="your-openfda-api-key"   # optionnel
+```
+
+</details>
+
+---
+
 #### Exemple de fichier `.env.local` complet
 
 Voici un modèle prêt à copier-coller. Remplacez chaque `...` par vos vraies valeurs :
