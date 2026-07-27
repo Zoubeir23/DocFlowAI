@@ -168,17 +168,12 @@ export default async function PricingPage() {
                   ))}
                 </ul>
 
-                <Link href={HREFS[key]} className="mt-auto">
-                  <button
-                    className={`w-full ${
-                      highlighted
-                        ? 'btn-void-primary'
-                        : 'btn-void-ghost'
-                    }`}
-                  >
-                    {t(`plans.${key}.cta`)}
-                  </button>
-                </Link>
+                <PricingPlanCta
+                  plan={key}
+                  href={HREFS[key]}
+                  label={t(`plans.${key}.cta`)}
+                  highlighted={highlighted}
+                />
               </div>
             )
           })}
