@@ -738,23 +738,36 @@ Ou via l'interface Vercel : **Settings → Environment Variables** — importer 
 ```
 docflow-ai/
 ├── app/
-│   ├── (app)/app/          # Pages authentifiées (dashboard, patients, etc.)
-│   ├── api/                # Routes API (widget, webhooks, upload)
-│   ├── clinique/[slug]/    # Page publique de la clinique
-│   ├── widget/[slug]/      # Widget IA intégrable
+│   ├── (app)/app/          # Pages authentifiées staff (dashboard, patients, diagnostics...)
+│   ├── (admin)/admin/      # Panneau super-admin multi-cliniques
+│   ├── api/
+│   │   ├── v1/             # API REST publique (clé API)
+│   │   ├── mcp/            # Serveur MCP (Claude Desktop)
+│   │   ├── widget/         # Chat IA + réservation embarquables
+│   │   ├── webhooks/       # Stripe, crypto
+│   │   └── cron/           # Rappels de RDV (Vercel Cron)
+│   ├── clinique/[slug]/    # Page publique de la clinique (Website Builder)
+│   ├── widget/[slug]/      # Widget IA intégrable en <iframe>
+│   ├── portail/            # Portail patient (dossier, RDV, paiement)
 │   └── page.tsx            # Landing page
 ├── actions/                # Server Actions Next.js
 ├── components/
 │   ├── layout/             # Sidebar, Topbar, Header
-│   ├── widget/             # Composant chatbot widget
+│   ├── clinic-website/     # Templates du Website Builder
+│   ├── integrations/       # UI clés API / webhooks / MCP
 │   └── website-builder/    # Éditeur de site vitrine
 ├── lib/
 │   ├── ai/                 # Router multi-fournisseurs IA
-│   ├── email/              # Templates et envoi d'emails
+│   ├── widget-chat/        # Logique métier du widget de réservation IA
+│   ├── email/ · sms/       # Notifications transactionnelles
+│   ├── security/           # Anti-SSRF, échappement, scrubbing Sentry
 │   ├── slots.ts            # Génération des créneaux disponibles
-│   └── subscription/       # Gestion des quotas par plan
+│   ├── rate-limit.ts       # Rate limiting (Upstash + fallback mémoire)
+│   └── subscription/       # Gestion des quotas & essai gratuit par plan
 ├── supabase/migrations/    # Scripts SQL (à exécuter dans l'ordre)
-└── messages/               # Traductions FR / EN (next-intl)
+├── i18n/                   # Configuration next-intl (routing, locale)
+├── messages/               # Traductions FR / EN (next-intl)
+└── __tests__/              # Tests Vitest (`npm run test`)
 ```
 
 ---
