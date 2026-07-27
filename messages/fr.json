@@ -684,7 +684,9 @@
     "setupFailed": "Échec de la configuration de la clinique",
     "setupError": "Une erreur est survenue. Veuillez réessayer.",
     "submitLoading": "Configuration en cours...",
-    "submitButton": "Lancer ma clinique"
+    "submitButton": "Lancer ma clinique",
+    "trialBannerText": "Vous démarrez un essai gratuit de 14 jours du plan {plan}, sans carte bancaire.",
+    "trialSuccessToast": "Essai gratuit de 14 jours démarré — profitez du plan {plan} !"
   },
   "pricing": {
     "nav": {

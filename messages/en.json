@@ -684,7 +684,9 @@
     "setupFailed": "Failed to set up clinic",
     "setupError": "Something went wrong. Please try again.",
     "submitLoading": "Setting up...",
-    "submitButton": "Launch My Clinic"
+    "submitButton": "Launch My Clinic",
+    "trialBannerText": "You're starting a 14-day free trial of the {plan} plan, no credit card required.",
+    "trialSuccessToast": "14-day free trial started — enjoy the {plan} plan!"
   },
   "pricing": {
     "nav": {
