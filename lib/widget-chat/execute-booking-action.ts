@@ -49,11 +49,11 @@ export async function executeBookingAction(
   // proposé correspond exactement à un créneau réellement disponible
   // calculé côté serveur (pas seulement la règle textuelle du prompt).
   if (!validated.success) {
-    return { success: false, error: "Données de réservation invalides" };
+    return { success: false, error: t("bookingInvalidData") };
   }
 
   if (!(await checkWidgetBookRateLimit(ip))) {
-    return { success: false, error: "Trop de tentatives de réservation. Réessayez dans une minute." };
+    return { success: false, error: t("bookingTooManyAttempts") };
   }
 
   const data = validated.data;
