@@ -17,6 +17,17 @@ export interface EnterpriseContactData {
 export async function sendEnterpriseContactRequest(
   data: EnterpriseContactData
 ): Promise<{ success: boolean; error?: string }> {
+  // Cette action est désormais aussi accessible depuis /pricing, une page
+  // publique sans authentification — sans limite de débit, elle pourrait être
+  // spammée pour inonder ADMIN_EMAIL et la table admin_messages.
+  const { headers } = await import("next/headers");
+  const { checkRateLimit } = await import("@/lib/rate-limit");
+  const headersList = await headers();
+  const ip = headersList.get("x-real-ip") ?? headersList.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  if (!(await checkRateLimit(`enterprise-contact:${ip}`, { requests: 5, windowSeconds: 3600 }))) {
+    return { success: false, error: "Trop de demandes envoyées. Réessayez plus tard ou écrivez-nous directement." };
+  }
+
   const adminEmail = process.env.ADMIN_EMAIL ?? process.env.SUPPORT_EMAIL;
   if (!adminEmail) {
     console.error("[EnterpriseContact] ADMIN_EMAIL not configured");

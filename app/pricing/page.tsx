@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { CheckCircle2, Star } from 'lucide-react'
 import { LanguageSwitcher } from '@/components/layout/language-switcher'
 import { ThemeSwitcher } from '@/components/theme-switcher'
+import { PricingPlanCta } from '@/components/pricing/pricing-plan-cta'
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
 
@@ -167,17 +168,12 @@ export default async function PricingPage() {
                   ))}
                 </ul>
 
-                <Link href={HREFS[key]} className="mt-auto">
-                  <button
-                    className={`w-full ${
-                      highlighted
-                        ? 'btn-void-primary'
-                        : 'btn-void-ghost'
-                    }`}
-                  >
-                    {t(`plans.${key}.cta`)}
-                  </button>
-                </Link>
+                <PricingPlanCta
+                  plan={key}
+                  href={HREFS[key]}
+                  label={t(`plans.${key}.cta`)}
+                  highlighted={highlighted}
+                />
               </div>
             )
           })}
