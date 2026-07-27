@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { CheckCircle2, Star } from 'lucide-react'
 import { LanguageSwitcher } from '@/components/layout/language-switcher'
 import { ThemeSwitcher } from '@/components/theme-switcher'
+import { PricingPlanCta } from '@/components/pricing/pricing-plan-cta'
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
 
