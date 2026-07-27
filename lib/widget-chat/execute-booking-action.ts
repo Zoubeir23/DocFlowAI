@@ -64,7 +64,7 @@ export async function executeBookingAction(
   );
 
   if (!service) {
-    return { success: false, error: "Service not found" };
+    return { success: false, error: t("bookingServiceNotFound") };
   }
 
   const slotIsReallyAvailable = slotsPerDate.some((d) =>
@@ -72,7 +72,7 @@ export async function executeBookingAction(
   );
 
   if (!slotIsReallyAvailable) {
-    return { success: false, error: "Ce créneau n'est plus disponible." };
+    return { success: false, error: t("bookingSlotUnavailable") };
   }
 
   const { data: result, error } = await db.rpc("create_booking_from_widget", {
@@ -87,7 +87,7 @@ export async function executeBookingAction(
   });
 
   if (error || !result) {
-    return { success: false, error: error?.message || "Booking failed" };
+    return { success: false, error: error?.message || t("bookingGenericFailed") };
   }
 
   const resultData = result as { appointment_id: string; patient_id: string };
