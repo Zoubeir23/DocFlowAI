@@ -242,16 +242,19 @@ npm install
 
 1. Créez un projet sur [supabase.com](https://supabase.com) → **New project**
 2. Allez dans **SQL Editor** → **New query**
-3. Exécutez chaque fichier du dossier `supabase/migrations/` **dans l'ordre** :
+3. Exécutez **chaque fichier** du dossier `supabase/migrations/` **dans l'ordre numérique** (`001_...` jusqu'au dernier). Le nombre et le nom exact des fichiers évoluent avec le projet — fiez-vous au contenu réel du dossier plutôt qu'à une liste figée ici. À titre indicatif, la structure actuelle :
 
 ```
 supabase/migrations/
-├── 001_initial_schema.sql      ← tables principales
-├── 002_rls_policies.sql        ← sécurité Row Level Security
-├── 003_functions.sql           ← fonctions PostgreSQL (booking, etc.)
-├── 004_stripe_subscriptions.sql
-└── 005_website_builder.sql
+├── 001_schema.sql                       ← tables principales
+├── 002_functions_indexes_triggers.sql   ← fonctions PostgreSQL (booking, quota...)
+├── 003_rls_policies.sql                 ← sécurité Row Level Security
+├── 004_medical_carnets.sql              ← dossier médical / diagnostics
+├── ...
+└── 012_starter_professional_free_trial.sql
 ```
+
+> Alternative en local/CI : `npm run db:migrate` (nécessite la Supabase CLI et `supabase link`).
 
 4. Allez dans **Storage** → **New bucket**
    - Nom : `clinic-assets`
