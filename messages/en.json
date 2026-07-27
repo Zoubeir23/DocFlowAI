@@ -652,7 +652,11 @@
       "feature4": "Cancel anytime",
       "copyright": "© 2024 DocFlow IA · All rights reserved",
       "orContinueWith": "or",
-      "continueWithGoogle": "Continue with Google"
+      "continueWithGoogle": "Continue with Google",
+      "acceptTermsError": "You must accept the Terms of Service and Privacy Policy.",
+      "genericError": "Something went wrong. Please try again.",
+      "confirmEmailToast": "Account created! Check your inbox to confirm your email before continuing.",
+      "accountCreatedToast": "Account created! Let's set up your clinic."
     }
   },
   "onboarding": {

@@ -652,7 +652,11 @@
       "feature4": "Annulable à tout moment",
       "copyright": "© 2024 DocFlow IA · Tous droits réservés",
       "orContinueWith": "ou",
-      "continueWithGoogle": "Continuer avec Google"
+      "continueWithGoogle": "Continuer avec Google",
+      "acceptTermsError": "Vous devez accepter les CGU et la politique de confidentialité.",
+      "genericError": "Une erreur s'est produite. Veuillez réessayer.",
+      "confirmEmailToast": "Compte créé ! Vérifiez votre boîte mail pour confirmer votre adresse avant de continuer.",
+      "accountCreatedToast": "Compte créé ! Configurons votre clinique."
     }
   },
   "onboarding": {
