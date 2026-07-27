@@ -701,14 +701,18 @@ Ouvrir **[http://localhost:3000](http://localhost:3000)**
 ## Parcours de test
 
 ```
-1. /signup          → Créer un compte médecin
-2. /onboarding      → Nommer la clinique, configurer le fuseau horaire
-3. /app/dashboard   → Tableau de bord principal
-4. /app/settings    → Configurer les disponibilités & services
-5. /app/ai-settings → Personnaliser l'agent IA, copier l'iframe widget
-6. /app/website-builder → Créer la page vitrine, publier
-7. /clinique/[slug] → Voir la page publique de la clinique
-8. /widget/[slug]   → Tester le widget IA en autonomie
+1. /pricing              → Choisir un plan (essai gratuit 14j sur Starter/Pro)
+2. /signup               → Créer un compte médecin
+3. /onboarding           → Nommer la clinique, configurer le fuseau horaire
+4. /app/dashboard        → Tableau de bord principal
+5. /app/settings         → Configurer les disponibilités & services
+6. /app/diagnostics      → Créer un diagnostic (wizard, codage WHO ICD)
+7. /app/ai-settings      → Personnaliser l'agent IA, copier l'iframe widget
+8. /app/integrations     → Générer une clé API / configurer un webhook / MCP
+9. /app/website-builder  → Créer la page vitrine, publier
+10. /clinique/[slug]     → Voir la page publique de la clinique
+11. /widget/[slug]       → Tester le widget IA en autonomie
+12. /portail/login       → Espace patient (RDV, dossier, paiement)
 ```
 
 ---
