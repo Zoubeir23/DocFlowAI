@@ -772,6 +772,18 @@ docflow-ai/
 
 ---
 
+## Tests
+
+```bash
+npm run test           # mode watch
+npm run test:run       # une seule passe (CI)
+npm run test:coverage  # avec rapport de couverture (v8)
+```
+
+Les tests couvrent aujourd'hui les utilitaires purs (`lib/utils.ts`, `lib/notifications.ts`, `lib/sms/`, `lib/email/templates/`) — voir `include` dans `vitest.config.ts` pour le périmètre exact mesuré par `test:coverage`.
+
+---
+
 ## Sécurité
 
 - **`.env.local`** : ne jamais committer — déjà dans `.gitignore`
