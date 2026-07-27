@@ -31,8 +31,14 @@ export async function executeBookingAction(
   ip: string,
   clinic: { id: string; name: string },
   services: any[],
-  slotsPerDate: ClinicDaySlots[]
+  slotsPerDate: ClinicDaySlots[],
+  locale: "fr" | "en"
 ): Promise<BookingResult> {
+  // Locale explicite (pas de contexte de requête React ici, contrairement à
+  // une page) : le widget passe déjà `locale` pour les réponses du LLM, ces
+  // messages d'erreur doivent suivre la même langue.
+  const t = await getTranslations({ locale, namespace: "widgetChat" });
+
   // M6 fix: never log patient PII — log intent only
   console.log("[booking] create_booking action received");
 
