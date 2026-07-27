@@ -925,7 +925,12 @@
     "typeMessage": "Écrivez un message...",
     "nameReq": "Le nom et le téléphone sont requis.",
     "bookFailed": "Échec de la réservation. Veuillez réessayer.",
-    "error": "Une erreur s'est produite. Veuillez réessayer."
+    "error": "Une erreur s'est produite. Veuillez réessayer.",
+    "bookingInvalidData": "Données de réservation invalides",
+    "bookingTooManyAttempts": "Trop de tentatives de réservation. Réessayez dans une minute.",
+    "bookingServiceNotFound": "Service introuvable",
+    "bookingSlotUnavailable": "Ce créneau n'est plus disponible.",
+    "bookingGenericFailed": "Échec de la réservation"
   },
   "calendar": {
     "agenda": "Agenda",

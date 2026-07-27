@@ -925,7 +925,12 @@
     "typeMessage": "Type a message...",
     "nameReq": "Name and phone number are required.",
     "bookFailed": "Booking failed. Please try again.",
-    "error": "Something went wrong. Please try again."
+    "error": "Something went wrong. Please try again.",
+    "bookingInvalidData": "Invalid booking data",
+    "bookingTooManyAttempts": "Too many booking attempts. Please try again in a minute.",
+    "bookingServiceNotFound": "Service not found",
+    "bookingSlotUnavailable": "This slot is no longer available.",
+    "bookingGenericFailed": "Booking failed"
   },
   "calendar": {
     "agenda": "Agenda",
