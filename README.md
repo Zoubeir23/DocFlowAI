@@ -58,40 +58,79 @@ Il combine un tableau de bord médical complet, un agent IA multi-fournisseurs c
 <tr>
 <td width="50%">
 
-**🌐 Website Builder**
-- Éditeur visuel de site vitrine sans code
-- 3 templates premium (Éditorial, Premium, Clinique)
-- Upload d'images, couleurs, typographie
-- Publication en un clic sur URL personnalisée
+**🩺 Dossier Médical & Diagnostics**
+- Wizard de diagnostic assisté par IA, étape par étape
+- Codage international WHO ICD-11 / ICF / ICHI
+- Vérification d'interactions médicamenteuses (OpenFDA)
+- Prescriptions et carnet numérique partagé au patient
 
 </td>
 <td width="50%">
 
-**💳 Paiements Hybrides**
-- Stripe (cartes bancaires, abonnements récurrents)
-- Web3 — USDC sur Polygon via MetaMask / WalletConnect
-- Webhooks sécurisés avec vérification de signature
-- Gestion des quotas par plan (Free / Starter / Pro / Enterprise)
+**🎥 Téléconsultation**
+- Salle vidéo Jitsi Meet générée automatiquement par RDV
+- Aucune installation ni compte tiers requis pour le patient
+- Lien unique envoyé par email/SMS
 
 </td>
 </tr>
 <tr>
 <td width="50%">
 
-**📧 Emails Transactionnels**
-- Confirmation patient automatique après réservation
-- Notification médecin en temps réel
-- Google SMTP (500 emails/jour gratuit) ou Resend
-- Templates HTML bilingues (FR / EN)
+**🌐 Website Builder**
+- Éditeur visuel de site vitrine sans code
+- 3 templates premium (Cabinet Éditorial, Lumière Privée, Structure Brut)
+- Upload d'images, couleurs, typographie
+- Publication en un clic sur URL personnalisée
 
 </td>
 <td width="50%">
 
+**💳 Paiements Hybrides & Essai Gratuit**
+- Stripe (cartes, abonnements récurrents, portail client self-service)
+- Web3 — USDC sur Polygon via MetaMask / WalletConnect
+- Essai gratuit 14 jours sur Starter/Professional, sans carte bancaire
+- Quotas par plan (Free / Starter / Pro / Enterprise)
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**🔌 Automatisation — API, MCP, Zapier/Make**
+- API REST publique (`/api/v1/*`) authentifiée par clé API
+- Serveur MCP natif — pilotage par Claude Desktop en langage naturel
+- Webhooks sortants signés HMAC pour Zapier / Make
+- Portail patient dédié (`/portail`) avec accès à son propre dossier
+
+</td>
+<td width="50%">
+
+**📧 Emails & SMS Transactionnels**
+- Confirmation patient automatique après réservation
+- Rappels SMS via Twilio (optionnel)
+- Google SMTP (500 emails/jour gratuit) ou Resend
+- Templates HTML bilingues (FR / EN)
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
 **🔐 Sécurité Production**
 - Row Level Security (RLS) Supabase sur toutes les tables
-- Guards d'ownership sur chaque action serveur
+- Guards d'ownership + rôles sur chaque action serveur
+- Protection SSRF sur les webhooks sortants (anti DNS-rebinding)
 - Headers CSP, HSTS, X-Frame-Options configurés
-- Rate limiting sur les endpoints publics widget
+
+</td>
+<td width="50%">
+
+**⚡ Rate Limiting & Fiabilité**
+- Upstash Redis en production (fallback mémoire en dev)
+- Endpoints publics (widget, API, webhooks) tous limités par IP
+- Rappels de RDV automatiques via Vercel Cron
+- Panneau super-admin multi-cliniques (`/admin`)
 
 </td>
 </tr>
@@ -203,16 +242,19 @@ npm install
 
 1. Créez un projet sur [supabase.com](https://supabase.com) → **New project**
 2. Allez dans **SQL Editor** → **New query**
-3. Exécutez chaque fichier du dossier `supabase/migrations/` **dans l'ordre** :
+3. Exécutez **chaque fichier** du dossier `supabase/migrations/` **dans l'ordre numérique** (`001_...` jusqu'au dernier). Le nombre et le nom exact des fichiers évoluent avec le projet — fiez-vous au contenu réel du dossier plutôt qu'à une liste figée ici. À titre indicatif, la structure actuelle :
 
 ```
 supabase/migrations/
-├── 001_initial_schema.sql      ← tables principales
-├── 002_rls_policies.sql        ← sécurité Row Level Security
-├── 003_functions.sql           ← fonctions PostgreSQL (booking, etc.)
-├── 004_stripe_subscriptions.sql
-└── 005_website_builder.sql
+├── 001_schema.sql                       ← tables principales
+├── 002_functions_indexes_triggers.sql   ← fonctions PostgreSQL (booking, quota...)
+├── 003_rls_policies.sql                 ← sécurité Row Level Security
+├── 004_medical_carnets.sql              ← dossier médical / diagnostics
+├── ...
+└── 012_starter_professional_free_trial.sql
 ```
+
+> Alternative en local/CI : `npm run db:migrate` (nécessite la Supabase CLI et `supabase link`).
 
 4. Allez dans **Storage** → **New bucket**
    - Nom : `clinic-assets`
@@ -501,7 +543,7 @@ C'est l'adresse Ethereum/Polygon sur laquelle vous recevrez les paiements USDC.
 3. Copiez l'adresse affichée (commence par `0x`, fait 42 caractères).
 
 ```env
-NEXT_PUBLIC_ADMIN_WALLET_ADDRESS="0xAbCdEf1234567890AbCdEf1234567890AbCdEf12"
+NEXT_PUBLIC_CRYPTO_WALLET_ADDRESS="0xAbCdEf1234567890AbCdEf1234567890AbCdEf12"
 ```
 
 #### Prix des plans en USDC
@@ -512,6 +554,75 @@ Définissez les tarifs de vos abonnements (en dollars, 1 USDC = 1 USD) :
 NEXT_PUBLIC_PLAN_STARTER_PRICE="49"
 NEXT_PUBLIC_PLAN_PROFESSIONAL_PRICE="99"
 NEXT_PUBLIC_PLAN_ENTERPRISE_PRICE="299"
+```
+
+</details>
+
+---
+
+<details>
+<summary><b>🌍 Bloc 6 — URL de l'app & Cron (obligatoire)</b></summary>
+
+`NEXT_PUBLIC_APP_URL` est utilisée dans les liens des emails transactionnels, les URLs de retour Stripe, l'annulation de RDV et l'onboarding. `CRON_SECRET` protège la route `/api/cron/appointment-reminders` (appelée quotidiennement par Vercel Cron, voir `vercel.json`) contre les appels non autorisés.
+
+```env
+NEXT_PUBLIC_APP_URL="http://localhost:3000"   # URL réelle de déploiement en production
+CRON_SECRET="un-secret-aléatoire-long"
+```
+
+</details>
+
+---
+
+<details>
+<summary><b>⚡ Bloc 7 — Rate limiting Upstash Redis (recommandé en production)</b></summary>
+
+Sans ces variables, le rate limiting retombe sur un store en mémoire — fonctionnel en dev, mais **non partagé entre instances serverless** (donc peu fiable en production Vercel).
+
+1. Créez un compte gratuit sur [console.upstash.com](https://console.upstash.com/).
+2. Créez une base **Redis**.
+3. Copiez **REST URL** et **REST Token** depuis le tableau de bord de la base.
+
+```env
+UPSTASH_REDIS_REST_URL="https://your-db.upstash.io"
+UPSTASH_REDIS_REST_TOKEN="your-token"
+```
+
+</details>
+
+---
+
+<details>
+<summary><b>📱 Bloc 8 — SMS Twilio (optionnel)</b></summary>
+
+Si absent, les rappels SMS sont silencieusement désactivés — le reste de l'application fonctionne normalement.
+
+1. Créez un compte sur [twilio.com](https://www.twilio.com/).
+2. Récupérez **Account SID** et **Auth Token** depuis le tableau de bord.
+3. Achetez ou récupérez un numéro d'envoi.
+
+```env
+TWILIO_ACCOUNT_SID="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+TWILIO_AUTH_TOKEN="your-twilio-auth-token"
+TWILIO_PHONE_NUMBER="+1234567890"
+```
+
+</details>
+
+---
+
+<details>
+<summary><b>🩺 Bloc 9 — APIs médicales : WHO ICD & OpenFDA (obligatoire pour le module Diagnostics)</b></summary>
+
+Le wizard de diagnostic (codage WHO ICD-11/ICF/ICHI, vérification d'interactions médicamenteuses) dépend de ces APIs externes.
+
+1. **WHO ICD API** : créez des identifiants sur [icd.who.int/icdapi](https://icd.who.int/icdapi).
+2. **OpenFDA** (optionnel) : une clé sur [open.fda.gov/apis/authentication](https://open.fda.gov/apis/authentication/) fait passer la limite de 40 à 240 requêtes/min ; l'API fonctionne sans clé en deçà de ce quota.
+
+```env
+WHO_ICD_CLIENT_ID="your-who-client-id"
+WHO_ICD_CLIENT_SECRET="your-who-client-secret"
+OPENFDA_API_KEY="your-openfda-api-key"   # optionnel
 ```
 
 </details>
@@ -549,10 +660,28 @@ STRIPE_WEBHOOK_SECRET="whsec_..."
 
 # ─── Web3 (optionnel) ────────────────────────────────────
 NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID="..."
-NEXT_PUBLIC_ADMIN_WALLET_ADDRESS="0x..."
+NEXT_PUBLIC_CRYPTO_WALLET_ADDRESS="0x..."
 NEXT_PUBLIC_PLAN_STARTER_PRICE="49"
 NEXT_PUBLIC_PLAN_PROFESSIONAL_PRICE="99"
 NEXT_PUBLIC_PLAN_ENTERPRISE_PRICE="299"
+
+# ─── URL app & Cron ──────────────────────────────────────
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+CRON_SECRET="un-secret-aléatoire-long"
+
+# ─── Rate limiting (recommandé en production) ────────────
+# UPSTASH_REDIS_REST_URL="https://your-db.upstash.io"
+# UPSTASH_REDIS_REST_TOKEN="your-token"
+
+# ─── SMS (optionnel) ─────────────────────────────────────
+# TWILIO_ACCOUNT_SID="AC..."
+# TWILIO_AUTH_TOKEN="..."
+# TWILIO_PHONE_NUMBER="+1234567890"
+
+# ─── APIs médicales (module Diagnostics) ─────────────────
+WHO_ICD_CLIENT_ID="..."
+WHO_ICD_CLIENT_SECRET="..."
+# OPENFDA_API_KEY="..."
 ```
 
 ### 4. Lancer l'application
@@ -572,14 +701,18 @@ Ouvrir **[http://localhost:3000](http://localhost:3000)**
 ## Parcours de test
 
 ```
-1. /signup          → Créer un compte médecin
-2. /onboarding      → Nommer la clinique, configurer le fuseau horaire
-3. /app/dashboard   → Tableau de bord principal
-4. /app/settings    → Configurer les disponibilités & services
-5. /app/ai-settings → Personnaliser l'agent IA, copier l'iframe widget
-6. /app/website-builder → Créer la page vitrine, publier
-7. /clinique/[slug] → Voir la page publique de la clinique
-8. /widget/[slug]   → Tester le widget IA en autonomie
+1. /pricing              → Choisir un plan (essai gratuit 14j sur Starter/Pro)
+2. /signup               → Créer un compte médecin
+3. /onboarding           → Nommer la clinique, configurer le fuseau horaire
+4. /app/dashboard        → Tableau de bord principal
+5. /app/settings         → Configurer les disponibilités & services
+6. /app/diagnostics      → Créer un diagnostic (wizard, codage WHO ICD)
+7. /app/ai-settings      → Personnaliser l'agent IA, copier l'iframe widget
+8. /app/integrations     → Générer une clé API / configurer un webhook / MCP
+9. /app/website-builder  → Créer la page vitrine, publier
+10. /clinique/[slug]     → Voir la page publique de la clinique
+11. /widget/[slug]       → Tester le widget IA en autonomie
+12. /portail/login       → Espace patient (RDV, dossier, paiement)
 ```
 
 ---
@@ -609,24 +742,49 @@ Ou via l'interface Vercel : **Settings → Environment Variables** — importer 
 ```
 docflow-ai/
 ├── app/
-│   ├── (app)/app/          # Pages authentifiées (dashboard, patients, etc.)
-│   ├── api/                # Routes API (widget, webhooks, upload)
-│   ├── clinique/[slug]/    # Page publique de la clinique
-│   ├── widget/[slug]/      # Widget IA intégrable
+│   ├── (app)/app/          # Pages authentifiées staff (dashboard, patients, diagnostics...)
+│   ├── (admin)/admin/      # Panneau super-admin multi-cliniques
+│   ├── api/
+│   │   ├── v1/             # API REST publique (clé API)
+│   │   ├── mcp/            # Serveur MCP (Claude Desktop)
+│   │   ├── widget/         # Chat IA + réservation embarquables
+│   │   ├── webhooks/       # Stripe, crypto
+│   │   └── cron/           # Rappels de RDV (Vercel Cron)
+│   ├── clinique/[slug]/    # Page publique de la clinique (Website Builder)
+│   ├── widget/[slug]/      # Widget IA intégrable en <iframe>
+│   ├── portail/            # Portail patient (dossier, RDV, paiement)
 │   └── page.tsx            # Landing page
 ├── actions/                # Server Actions Next.js
 ├── components/
 │   ├── layout/             # Sidebar, Topbar, Header
-│   ├── widget/             # Composant chatbot widget
+│   ├── clinic-website/     # Templates du Website Builder
+│   ├── integrations/       # UI clés API / webhooks / MCP
 │   └── website-builder/    # Éditeur de site vitrine
 ├── lib/
 │   ├── ai/                 # Router multi-fournisseurs IA
-│   ├── email/              # Templates et envoi d'emails
+│   ├── widget-chat/        # Logique métier du widget de réservation IA
+│   ├── email/ · sms/       # Notifications transactionnelles
+│   ├── security/           # Anti-SSRF, échappement, scrubbing Sentry
 │   ├── slots.ts            # Génération des créneaux disponibles
-│   └── subscription/       # Gestion des quotas par plan
+│   ├── rate-limit.ts       # Rate limiting (Upstash + fallback mémoire)
+│   └── subscription/       # Gestion des quotas & essai gratuit par plan
 ├── supabase/migrations/    # Scripts SQL (à exécuter dans l'ordre)
-└── messages/               # Traductions FR / EN (next-intl)
+├── i18n/                   # Configuration next-intl (routing, locale)
+├── messages/               # Traductions FR / EN (next-intl)
+└── __tests__/              # Tests Vitest (`npm run test`)
 ```
+
+---
+
+## Tests
+
+```bash
+npm run test           # mode watch
+npm run test:run       # une seule passe (CI)
+npm run test:coverage  # avec rapport de couverture (v8)
+```
+
+Les tests couvrent aujourd'hui les utilitaires purs (`lib/utils.ts`, `lib/notifications.ts`, `lib/sms/`, `lib/email/templates/`) — voir `include` dans `vitest.config.ts` pour le périmètre exact mesuré par `test:coverage`.
 
 ---
 
