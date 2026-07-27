@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { z } from "zod";
+import { getTranslations } from "next-intl/server";
 import { checkWidgetBookRateLimit } from "@/lib/rate-limit";
 import { sendNotification } from "@/lib/notifications";
 import { dispatchWebhookEvent } from "@/lib/webhooks";
