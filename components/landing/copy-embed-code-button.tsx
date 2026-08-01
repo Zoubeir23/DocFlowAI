@@ -38,7 +38,7 @@ export function CopyEmbedCodeButton({ code, copyLabel, copiedLabel }: CopyEmbedC
     <button
       type="button"
       onClick={copyEmbedCode}
-      className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.16em] text-white/80 hover:border-primary/40 hover:text-white transition-colors"
+      className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors"
     >
       {hasCopied ? (
         <Check className="w-3.5 h-3.5 text-primary" />
