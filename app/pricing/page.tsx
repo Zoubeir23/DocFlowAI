@@ -5,6 +5,13 @@ import { LanguageSwitcher } from '@/components/layout/language-switcher'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import { PricingPlanCta } from '@/components/pricing/pricing-plan-cta'
 import { getTranslations } from 'next-intl/server'
+import {
+  PRICING_PLAN_KEYS,
+  PRICING_PLAN_MONTHLY_PRICES,
+  PRICING_PLAN_HIGHLIGHTED,
+  PRICING_PLAN_SIGNUP_HREFS,
+  PRICING_PLANS_WITH_TRIAL,
+} from '@/lib/subscription/pricing-plans'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -44,10 +51,10 @@ const pricingJsonLd = {
   ],
 }
 
-const PLAN_KEYS = ['free', 'starter', 'professional', 'enterprise'] as const
-const PRICES = { free: 0, starter: 49, professional: 99, enterprise: 299 }
-const HIGHLIGHTED = { free: false, starter: false, professional: true, enterprise: false }
-const HREFS = { free: '/signup', starter: '/signup?plan=starter', professional: '/signup?plan=professional', enterprise: '/signup' }
+const PLAN_KEYS = PRICING_PLAN_KEYS
+const PRICES = PRICING_PLAN_MONTHLY_PRICES
+const HIGHLIGHTED = PRICING_PLAN_HIGHLIGHTED
+const HREFS = PRICING_PLAN_SIGNUP_HREFS
 
 export default async function PricingPage() {
   const t = await getTranslations('pricing')
@@ -150,7 +157,7 @@ export default async function PricingPage() {
                       /{period}
                     </span>
                   </div>
-                  {(key === 'starter' || key === 'professional') && (
+                  {PRICING_PLANS_WITH_TRIAL.includes(key) && (
                     <p className="font-sans font-normal text-[13px] text-[#14b8a6] mt-2">
                       {t('trialNote')}
                     </p>
