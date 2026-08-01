@@ -270,70 +270,18 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ── TECH STACK ───────────────────────────────────────────────────── */}
+      <TechStackBand />
+
       {/* ── BENTO FEATURES ───────────────────────────────────────────────── */}
-      <section id="features" className="py-32 relative">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center max-w-3xl mx-auto mb-20">
-            <h2 className="text-4xl md:text-5xl font-cormorant font-bold text-foreground mb-6">{t("features.title")}</h2>
-            <p className="text-lg text-muted-foreground">{t("features.subtitle")}</p>
-          </div>
+      <FeaturesSection />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            {/* Bento 1: Large AI */}
-            <div className="md:col-span-2 bg-card rounded-3xl p-8 lg:p-12 border border-border shadow-sm hover:shadow-xl transition-shadow relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] group-hover:bg-primary/20 transition-colors" />
-              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-8 border border-primary/20">
-                <Bot className="w-7 h-7 text-primary" />
-              </div>
-              <h3 className="text-2xl font-bold text-foreground mb-4">{t("features.aiAssistantTitle")}</h3>
-              <p className="text-muted-foreground text-lg max-w-md leading-relaxed">{t("features.aiAssistantDesc")}</p>
-            </div>
+      {/* ── DOSSIER & IA ─────────────────────────────────────────────────── */}
+      <MedicalRecordSection />
 
-            {/* Bento 2: Calendar */}
-            <div className="bg-card rounded-3xl p-8 lg:p-10 border border-border shadow-sm hover:shadow-xl transition-shadow">
-              <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center mb-8 border border-blue-500/20">
-                <CalendarDays className="w-7 h-7 text-blue-500" />
-              </div>
-              <h3 className="text-xl font-bold text-foreground mb-4">{t("features.calendarTitle")}</h3>
-              <p className="text-muted-foreground leading-relaxed">{t("features.calendarDesc")}</p>
-            </div>
+      {/* ── WIDGET IA EMBARQUABLE ────────────────────────────────────────── */}
+      <EmbedWidgetSection />
 
-            {/* Bento 3: CRM */}
-            <div className="bg-card rounded-3xl p-8 lg:p-10 border border-border shadow-sm hover:shadow-xl transition-shadow">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-8 border border-emerald-500/20">
-                <Users className="w-7 h-7 text-emerald-500" />
-              </div>
-              <h3 className="text-xl font-bold text-foreground mb-4">{t("features.crmTitle")}</h3>
-              <p className="text-muted-foreground leading-relaxed">{t("features.crmDesc")}</p>
-            </div>
-
-            {/* Bento 4: Availability */}
-            <div className="bg-card rounded-3xl p-8 lg:p-10 border border-border shadow-sm hover:shadow-xl transition-shadow">
-               <div className="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-8 border border-amber-500/20">
-                <Clock className="w-7 h-7 text-amber-500" />
-              </div>
-              <h3 className="text-xl font-bold text-foreground mb-4">{t("features.availabilityTitle")}</h3>
-              <p className="text-muted-foreground leading-relaxed">{t("features.availabilityDesc")}</p>
-            </div>
-
-            {/* Bento 5: Security & Analytics */}
-            <div className="bg-card rounded-3xl p-8 lg:p-10 border border-border shadow-sm hover:shadow-xl transition-shadow relative overflow-hidden group">
-              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-8 border border-primary/20">
-                <ShieldCheck className="w-7 h-7 text-primary" />
-              </div>
-              <h3 className="text-xl font-bold text-foreground mb-4">{t("features.securityTitle")}</h3>
-              <p className="text-muted-foreground leading-relaxed mb-6">{t("features.securityDesc")}</p>
-              <div className="pt-6 border-t border-border">
-                <div className="flex items-center gap-3 text-primary font-bold">
-                  <TrendingUp className="w-5 h-5" /> 100% HIPAA Compliant
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
 
       {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
       <section id="how-it-works" className="py-32 bg-muted/30 border-y border-border">
