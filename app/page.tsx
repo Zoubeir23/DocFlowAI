@@ -284,7 +284,7 @@ export default async function HomePage() {
 
 
       {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
-      <section id="how-it-works" className="py-32 bg-muted/30 border-y border-border">
+      <section id="how-it-works" className="scroll-mt-32 py-32 bg-muted/30 border-y border-border">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col lg:flex-row gap-20 items-center">
             

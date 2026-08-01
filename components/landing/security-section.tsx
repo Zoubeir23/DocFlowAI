@@ -24,7 +24,7 @@ export async function SecuritySection() {
   ];
 
   return (
-    <section id="security" className="py-28 lg:py-32">
+    <section id="security" className="scroll-mt-32 py-28 lg:py-32">
       <div className="max-w-7xl mx-auto px-6">
         <div className="max-w-3xl mb-14">
           <SectionLabel>{t("label")}</SectionLabel>

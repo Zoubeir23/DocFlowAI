@@ -10,8 +10,8 @@ function buildEmbedCode(appUrl: string): string {
 }
 
 /**
- * Section « Widget IA » : bandeau profond présentant l'intégration iframe de
- * l'agent de réservation sur un site existant.
+ * Section « Widget IA » : intégration iframe de l'agent de réservation sur un
+ * site existant. Fond teal très clair en thème clair, profond en thème sombre.
  */
 export async function EmbedWidgetSection() {
   const t = await getTranslations("landing.widget");
@@ -22,7 +22,7 @@ export async function EmbedWidgetSection() {
   return (
     <section
       id="widget"
-      className="py-28 lg:py-32 bg-[hsl(222_47%_8%)] text-white relative overflow-hidden"
+      className="scroll-mt-32 py-28 lg:py-32 bg-primary/[0.06] border-y border-primary/15 relative overflow-hidden"
     >
       <div
         className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-primary/10 blur-[140px] pointer-events-none"
@@ -33,16 +33,18 @@ export async function EmbedWidgetSection() {
         <div className="grid lg:grid-cols-12 gap-14 items-center">
           <div className="lg:col-span-7">
             <SectionLabel>{t("label")}</SectionLabel>
-            <h2 className="mt-6 text-4xl md:text-5xl font-cormorant font-medium leading-[1.1]">
+            <h2 className="mt-6 text-4xl md:text-5xl font-cormorant font-medium text-foreground leading-[1.1]">
               {t("title")}
             </h2>
-            <p className="mt-5 text-lg text-white/60 leading-relaxed max-w-2xl">{t("subtitle")}</p>
+            <p className="mt-5 text-lg text-muted-foreground leading-relaxed max-w-2xl">
+              {t("subtitle")}
+            </p>
 
-            <div className="mt-9 rounded-2xl border border-white/10 bg-black/40 overflow-hidden">
-              <pre className="p-5 overflow-x-auto font-mono text-[12px] leading-relaxed text-primary/90">
+            <div className="mt-9 rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
+              <pre className="p-5 font-mono text-[12px] leading-relaxed text-primary whitespace-pre-wrap break-all">
                 <code>{embedCode}</code>
               </pre>
-              <div className="border-t border-white/10 px-5 py-3">
+              <div className="border-t border-border px-5 py-3">
                 <CopyEmbedCodeButton
                   code={embedCode}
                   copyLabel={t("copy")}
@@ -53,7 +55,7 @@ export async function EmbedWidgetSection() {
 
             <ul className="mt-8 flex flex-wrap gap-x-8 gap-y-3">
               {bullets.map((bullet) => (
-                <li key={bullet} className="flex items-center gap-2 text-sm text-white/60">
+                <li key={bullet} className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Check className="w-4 h-4 text-primary" strokeWidth={2.5} />
                   {bullet}
                 </li>
@@ -62,7 +64,7 @@ export async function EmbedWidgetSection() {
           </div>
 
           <div className="lg:col-span-5 fade-in-up" style={{ animationDelay: "0.15s" }}>
-            <div className="mx-auto w-full max-w-sm rounded-3xl overflow-hidden border border-white/10 bg-card text-card-foreground shadow-2xl">
+            <div className="mx-auto w-full max-w-sm rounded-3xl overflow-hidden border border-border bg-card shadow-xl shadow-primary/5">
               <div className="flex items-center justify-between px-4 py-2.5 bg-muted/50 border-b border-border">
                 <div className="flex gap-1.5" aria-hidden="true">
                   <span className="w-2.5 h-2.5 rounded-full bg-primary/30" />

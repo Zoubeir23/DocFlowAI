@@ -26,7 +26,7 @@ export async function MedicalRecordSection() {
   return (
     <section
       id="medical-record"
-      className="py-28 lg:py-32 border-y border-border bg-muted/20 relative overflow-hidden"
+      className="scroll-mt-32 py-28 lg:py-32 border-y border-border bg-muted/20 relative overflow-hidden"
     >
       <div
         className="absolute -left-40 top-1/4 w-[520px] h-[520px] rounded-full bg-primary/5 blur-[120px] pointer-events-none"

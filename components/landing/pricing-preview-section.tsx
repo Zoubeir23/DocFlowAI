@@ -23,7 +23,7 @@ export async function PricingPreviewSection() {
   const tPricing = await getTranslations("pricing");
 
   return (
-    <section id="pricing" className="py-28 lg:py-32 border-y border-border bg-muted/20">
+    <section id="pricing" className="scroll-mt-32 py-28 lg:py-32 border-y border-border bg-muted/20">
       <div className="max-w-7xl mx-auto px-6">
         <div className="max-w-3xl mb-16">
           <SectionLabel>{t("label")}</SectionLabel>

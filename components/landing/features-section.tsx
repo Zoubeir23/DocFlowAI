@@ -100,7 +100,7 @@ export async function FeaturesSection() {
   ];
 
   return (
-    <section id="features" className="py-28 lg:py-32 relative">
+    <section id="features" className="scroll-mt-32 py-28 lg:py-32 relative">
       <div className="max-w-7xl mx-auto px-6">
         <div className="max-w-3xl mb-16">
           <SectionLabel>{t("sectionLabel")}</SectionLabel>
