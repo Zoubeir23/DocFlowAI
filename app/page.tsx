@@ -5,17 +5,19 @@ import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { headers } from "next/headers";
 import {
-  CalendarDays,
-  Bot,
-  Users,
-  ShieldCheck,
-  TrendingUp,
-  Clock,
   ArrowRight,
   CheckCircle2,
   Sparkles,
   LayoutDashboard,
 } from "lucide-react";
+import { AnnouncementBar } from "@/components/landing/announcement-bar";
+import { TechStackBand } from "@/components/landing/tech-stack-band";
+import { FeaturesSection } from "@/components/landing/features-section";
+import { MedicalRecordSection } from "@/components/landing/medical-record-section";
+import { EmbedWidgetSection } from "@/components/landing/embed-widget-section";
+import { PricingPreviewSection } from "@/components/landing/pricing-preview-section";
+import { SecuritySection } from "@/components/landing/security-section";
+import { LandingFooter } from "@/components/landing/landing-footer";
 
 export const metadata = {
   title: "Gestion Cabinet Médical par IA — Gratuit · DocFlow IA",
@@ -79,22 +81,26 @@ export default async function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
       />
       
-      {/* ── NAVBAR ───────────────────────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border transition-all">
+      {/* ── HEADER (annonce + navigation) ────────────────────────────────── */}
+      <header className="sticky top-0 z-50">
+      <AnnouncementBar />
+      <nav className="bg-background/80 backdrop-blur-xl border-b border-border transition-all">
         <div className="w-full max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          
+
           <Link href="/" className="flex items-center group">
             <div className="group-hover:scale-105 transition-transform">
               <Image src="/logo.png" alt="DocFlow IA" width={140} height={36} className="object-contain dark:brightness-0 dark:invert" priority />
             </div>
           </Link>
-          
-          <div className="hidden md:flex items-center gap-8">
-            <Link href="#features" className="text-sm font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">{t("nav.features")}</Link>
-            <Link href="/pricing" className="text-sm font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">{t("nav.pricing")}</Link>
-            <Link href="#how-it-works" className="text-sm font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">{t("nav.howItWorks")}</Link>
+
+          <div className="hidden lg:flex items-center gap-7">
+            <Link href="#features" className="text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">{t("nav.features")}</Link>
+            <Link href="#medical-record" className="text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">{t("nav.medicalRecord")}</Link>
+            <Link href="#widget" className="text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">{t("nav.widget")}</Link>
+            <Link href="#pricing" className="text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">{t("nav.pricing")}</Link>
+            <Link href="#security" className="text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">{t("nav.security")}</Link>
           </div>
-          
+
           <div className="flex items-center gap-4">
             <ThemeSwitcher />
             <LanguageSwitcher />
@@ -122,11 +128,12 @@ export default async function HomePage() {
           </div>
         </div>
       </nav>
+      </header>
 
       {/* ── MAIN CONTENT ─────────────────────────────────────────────────── */}
       <main>
       {/* ── HERO SECTION ─────────────────────────────────────────────────── */}
-      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+      <section className="relative pt-20 pb-20 lg:pt-28 lg:pb-32 overflow-hidden">
         {/* Abstract Backgrounds */}
         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-[100px] translate-y-1/3 -translate-x-1/4 pointer-events-none" />
