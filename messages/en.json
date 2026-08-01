@@ -841,7 +841,27 @@
       "securityTitle": "Multi-Tenant Security",
       "securityDesc": "Each clinic is completely isolated. Row-level security ensures no data leakage between practices.",
       "analyticsTitle": "Analytics Dashboard",
-      "analyticsDesc": "Track booking trends, occupancy rates, no-shows, and patient acquisition at a glance."
+      "analyticsDesc": "Track booking trends, occupancy rates, no-shows, and patient acquisition at a glance.",
+      "teleconsultationTitle": "Jitsi Teleconsultation",
+      "teleconsultationDesc": "A secure video room is generated automatically for every remote appointment. No account and no install for the patient.",
+      "websiteBuilderTitle": "No-code Clinic Website",
+      "websiteBuilderDesc": "Build your practice page without writing a line of code, publish it in one click, and let the booking widget do the rest.",
+      "paymentsTitle": "Hybrid Payments & MCP",
+      "paymentsDesc": "Charge by card through Stripe or in USDC on Polygon. Run your practice from Claude Desktop with the native MCP server.",
+      "bullets": {
+        "aiWidget": "Embeddable iframe widget",
+        "aiPrompts": "Customisable medical persona and prompts",
+        "calendarDragDrop": "Drag-and-drop with day / week / month views",
+        "calendarSync": "iCal export and calendar sync",
+        "crmRecords": "Records, prescriptions and digital health books",
+        "crmNotifications": "Automatic SMS and email reminders",
+        "teleconsultationLink": "Unique link sent by SMS or email",
+        "teleconsultationQuality": "High fidelity audio and video streams",
+        "websiteTemplates": "Medical templates ready to publish",
+        "websiteBranding": "Custom colours, typography and content",
+        "paymentsWebhooks": "HMAC-signed outbound webhooks",
+        "paymentsApi": "Public REST API /api/v1/*"
+      }
     },
     "howItWorks": {
       "sectionLabel": "Process",
@@ -883,7 +903,91 @@
       "signup": "Sign Up",
       "rights": "All rights reserved.",
       "terms": "Terms",
-      "privacy": "Privacy"
+      "privacy": "Privacy",
+      "tagline": "Medical practice management platform and AI-powered appointment booking agent.",
+      "productTitle": "Product",
+      "aiAgent": "Autonomous AI agent",
+      "medicalRecord": "Medical records & ICD-11",
+      "widget": "Widget & clinic website",
+      "developersTitle": "Developers",
+      "apiDocs": "Public REST API",
+      "mcp": "MCP server",
+      "webhooks": "Webhooks & HMAC",
+      "portalTitle": "Patient portal",
+      "portalDesc": "Find your prescriptions and consultation history.",
+      "portalCta": "Open the portal",
+      "security": "Security"
+    },
+    "announcement": {
+      "text": "New: native MCP server for Claude Desktop and USDC payments (Polygon)",
+      "cta": "Learn more"
+    },
+    "techStack": {
+      "label": "Built on demanding technical and medical standards",
+      "items": [
+        "Next.js 15",
+        "Supabase RLS",
+        "Claude · Anthropic",
+        "WHO ICD-11",
+        "OpenFDA",
+        "Stripe + Polygon"
+      ]
+    },
+    "medicalRecord": {
+      "label": "Records & AI",
+      "title": "International WHO coding and real-time medication safety",
+      "subtitle": "The diagnostic assistant relies on official World Health Organization and FDA references to structure every consultation.",
+      "icdTitle": "ICD-11 / ICF / ICHI coding",
+      "icdDesc": "Instant standardisation of conditions and procedures straight inside the patient record.",
+      "fdaTitle": "OpenFDA verification",
+      "fdaDesc": "Automatic alert on drug interaction risks while the prescription is being written.",
+      "carnetTitle": "Shared digital health book",
+      "carnetDesc": "Patients find their prescriptions and history in their portal, electronically signed.",
+      "mock": {
+        "label": "Diagnostic assistant · Patient #8492",
+        "badge": "WHO ICD-11 connected",
+        "diagnosisLabel": "Selected condition (ICD-11)",
+        "diagnosisValue": "BA00 — Essential hypertension",
+        "prescriptionLabel": "Planned prescription",
+        "prescriptionValue": "Lisinopril 10 mg / day",
+        "safeBadge": "OpenFDA checked",
+        "action": "Generate the shared health book"
+      }
+    },
+    "widget": {
+      "label": "Live in two minutes",
+      "title": "Embed the booking agent on any existing website",
+      "subtitle": "Already running WordPress, Webflow or React? A single iframe line adds the white-label conversational agent.",
+      "copy": "Copy code",
+      "copied": "Code copied",
+      "bulletRateLimit": "Built-in anti-spam and rate limiting",
+      "bulletBilingual": "Bilingual French / English",
+      "bulletBranding": "Colours and tone aligned with your practice",
+      "mock": {
+        "title": "Booking 24/7",
+        "desc": "The AI reads your real availability and writes the booking straight into your calendar.",
+        "cta": "Start a simulation"
+      }
+    },
+    "pricingPreview": {
+      "label": "Pricing",
+      "title": "Start for free, change plan whenever you want",
+      "subtitle": "Pay by card through Stripe or in USDC stablecoin on Polygon. No commitment.",
+      "seeAll": "See full plan details",
+      "note": "14-day free trial on paid plans · No credit card required"
+    },
+    "security": {
+      "label": "Security",
+      "title": "Health data confidentiality in production",
+      "subtitle": "Every practice is isolated at the database level, and every outbound call is filtered.",
+      "rlsTitle": "Row Level Security",
+      "rlsDesc": "Strict per-clinic isolation across all Supabase tables.",
+      "ssrfTitle": "SSRF protection",
+      "ssrfDesc": "Anti DNS-rebinding filtering on every outbound webhook.",
+      "headersTitle": "Hardened headers",
+      "headersDesc": "CSP, HSTS and permissions policies enabled by default.",
+      "rbacTitle": "Roles and permissions",
+      "rbacDesc": "Staff access limited to what is strictly needed, and logged."
     }
   },
   "widgetChat": {
