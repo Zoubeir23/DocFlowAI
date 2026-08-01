@@ -320,6 +320,12 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ── TARIFS ───────────────────────────────────────────────────────── */}
+      <PricingPreviewSection />
+
+      {/* ── SÉCURITÉ ─────────────────────────────────────────────────────── */}
+      <SecuritySection />
+
       {/* ── EARLY ADOPTERS ───────────────────────────────────────────────── */}
       <section className="py-32 overflow-hidden" aria-labelledby="early-adopters-heading">
         <div className="max-w-7xl mx-auto px-6 text-center">
@@ -392,25 +398,7 @@ export default async function HomePage() {
       </main>
 
       {/* ── FOOTER ───────────────────────────────────────────────────────── */}
-      <footer className="py-12 px-6 border-t border-border bg-card">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="flex items-center gap-3 opacity-80">
-            <Image src="/logo.png" alt="DocFlow IA" width={110} height={30} className="object-contain dark:brightness-0 dark:invert" />
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-6 text-sm font-bold uppercase tracking-wider text-muted-foreground">
-            <Link href="/#features" className="hover:text-primary transition-colors">{t("footer.features")}</Link>
-            <Link href="/#how-it-works" className="hover:text-primary transition-colors">{t("footer.howItWorks")}</Link>
-            <Link href="/pricing" className="hover:text-primary transition-colors">{t("footer.pricing")}</Link>
-            <Link href="/login" className="hover:text-primary transition-colors">{t("footer.login")}</Link>
-            <Link href="/signup" className="hover:text-primary transition-colors">{t("footer.signup")}</Link>
-            <Link href="/terms" className="hover:text-primary transition-colors">{t("footer.terms")}</Link>
-            <Link href="/privacy" className="hover:text-primary transition-colors">{t("footer.privacy")}</Link>
-          </div>
-          <div className="text-sm font-medium text-muted-foreground">
-            © 2026 DocFlow IA. {t("footer.rights")}
-          </div>
-        </div>
-      </footer>
+      <LandingFooter />
 
     </div>
   );
