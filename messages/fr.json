@@ -791,7 +791,10 @@
       "howItWorks": "Comment ça marche",
       "reviews": "Avis",
       "signIn": "Connexion",
-      "startFreeTrial": "Essai gratuit"
+      "startFreeTrial": "Essai gratuit",
+      "medicalRecord": "Dossier & IA",
+      "widget": "Widget IA",
+      "security": "Sécurité"
     },
     "hero": {
       "badge": "Propulsé par Claude AI · Assistant de réservation 24h/24",

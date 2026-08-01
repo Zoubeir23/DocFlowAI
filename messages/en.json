@@ -791,7 +791,10 @@
       "howItWorks": "How It Works",
       "reviews": "Reviews",
       "signIn": "Sign In",
-      "startFreeTrial": "Start Free Trial"
+      "startFreeTrial": "Start Free Trial",
+      "medicalRecord": "Records & AI",
+      "widget": "AI Widget",
+      "security": "Security"
     },
     "hero": {
       "badge": "Powered by Claude AI · 24/7 Booking Assistant",
