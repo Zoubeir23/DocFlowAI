@@ -22,7 +22,7 @@ import { LandingFooter } from "@/components/landing/landing-footer";
 export const metadata = {
   title: "Gestion Cabinet Médical par IA — Gratuit · DocFlow IA",
   description:
-    "Automatisez la prise de rendez-vous médicaux avec l'IA. Agenda intelligent, dossiers patients, notifications SMS. Plan gratuit — sans carte bancaire. 98% de satisfaction.",
+    "Automatisez la prise de rendez-vous médicaux avec l'IA. Agenda intelligent, dossier patient ICD-11, téléconsultation, site vitrine et widget intégrable. Plan gratuit — sans carte bancaire.",
   alternates: {
     canonical: process.env.NEXT_PUBLIC_APP_URL ?? "https://docflow.ia",
     languages: {
