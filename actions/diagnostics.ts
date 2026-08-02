@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { computeDocumentSeal } from "@/lib/document-seal";
 import type {
   DiagnosticRecord,
   PatientProfileInput,
@@ -313,7 +314,39 @@ export async function updateDiagnosticPrescription(
     return { success: false, error: "Le diagnostic doit d'abord être validé par un médecin." };
   }
 
-  const { error } = await (supabase as any)
+  // Un seul cast pour les deux requêtes de cette fonction, plutôt qu'un par appel.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
+
+  // Champs du document qui ne figurent pas dans le formulaire de prescription :
+  // ils entrent pourtant dans l'empreinte, puisqu'ils sont imprimés.
+  const { data: existing } = await db
+    .from("diagnostics")
+    .select(
+      "patient_full_name, patient_age_years, patient_sex, patient_weight_kg, patient_blood_group, validated_diagnosis_code, validated_diagnosis_name, chief_complaint, clinical_notes, validated_by, validated_by_user_id, validated_at"
+    )
+    .eq("id", diagnosticId)
+    .eq("clinic_id", clinicId)
+    .maybeSingle();
+
+  if (!existing) return { success: false, error: "Diagnostic introuvable" };
+
+  // Le sceau est calculé sur le contenu tel qu'il sera enregistré, jamais sur ce
+  // que le client prétend avoir produit : une empreinte fournie par l'appelant
+  // ne prouverait rien.
+  const documentSeal = computeDocumentSeal({
+    ...existing,
+    document_type: prescription.document_type,
+    treatments: prescription.treatments,
+    recommendations: prescription.recommendations,
+    follow_up_delay_days: prescription.follow_up_delay_days,
+    follow_up_tests: prescription.follow_up_tests,
+    practitioner_name: prescription.practitioner_name,
+    practitioner_title: prescription.practitioner_title,
+    practitioner_rpps: prescription.practitioner_rpps,
+  });
+
+  const { error } = await db
     .from("diagnostics")
     .update({
       document_type: prescription.document_type,
@@ -328,6 +361,9 @@ export async function updateDiagnosticPrescription(
       // désormais imputable à un compte réel et vérifiable.
       prescribed_by_user_id: userId,
       icf_codes: prescription.icf_codes ?? [],
+      document_seal: documentSeal,
+      document_sealed_at: new Date().toISOString(),
+      document_sealed_by_user_id: userId,
       current_step: nextStep(state.current_step, 6),
     })
     .eq("id", diagnosticId)
