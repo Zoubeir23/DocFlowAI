@@ -58,6 +58,7 @@ export async function EmbedWidgetSection() {
                   code={embedCode}
                   copyLabel={t("copy")}
                   copiedLabel={t("copied")}
+                  copyFailedLabel={t("copyFailed")}
                 />
               </div>
             </div>

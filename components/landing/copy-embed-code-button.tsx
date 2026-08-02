@@ -1,51 +1,77 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, TriangleAlert } from "lucide-react";
+
+type CopyStatus = "idle" | "copied" | "failed";
+
+/** Durée d'affichage du retour visuel avant retour à l'état initial. */
+const FEEDBACK_DURATION_MS = 2500;
 
 interface CopyEmbedCodeButtonProps {
   code: string;
   copyLabel: string;
   copiedLabel: string;
+  copyFailedLabel: string;
 }
 
 /**
- * Bouton de copie du snippet d'intégration du widget. Le libellé revient à son
- * état initial après deux secondes, et le timer est nettoyé au démontage.
+ * Bouton de copie du snippet d'intégration du widget.
+ *
+ * Le presse-papiers est indisponible hors contexte sécurisé ou si l'utilisateur
+ * refuse la permission : l'échec est alors affiché explicitement, avec une
+ * consigne de sélection manuelle, plutôt que de laisser le clic sans effet.
  */
-export function CopyEmbedCodeButton({ code, copyLabel, copiedLabel }: CopyEmbedCodeButtonProps) {
-  const [hasCopied, setHasCopied] = useState(false);
+export function CopyEmbedCodeButton({
+  code,
+  copyLabel,
+  copiedLabel,
+  copyFailedLabel,
+}: CopyEmbedCodeButtonProps) {
+  const [copyStatus, setCopyStatus] = useState<CopyStatus>("idle");
 
   useEffect(() => {
-    if (!hasCopied) return;
+    if (copyStatus === "idle") return;
 
-    const resetTimeout = setTimeout(() => setHasCopied(false), 2000);
+    const resetTimeout = setTimeout(() => setCopyStatus("idle"), FEEDBACK_DURATION_MS);
     return () => clearTimeout(resetTimeout);
-  }, [hasCopied]);
+  }, [copyStatus]);
 
   const copyEmbedCode = async () => {
+    if (!navigator.clipboard) {
+      setCopyStatus("failed");
+      return;
+    }
+
     try {
       await navigator.clipboard.writeText(code);
-      setHasCopied(true);
+      setCopyStatus("copied");
     } catch {
-      // Clipboard indisponible (contexte non sécurisé ou permission refusée) :
-      // on laisse le code visible à l'écran pour une sélection manuelle.
-      setHasCopied(false);
+      setCopyStatus("failed");
     }
+  };
+
+  const statusLabel: Record<CopyStatus, string> = {
+    idle: copyLabel,
+    copied: copiedLabel,
+    failed: copyFailedLabel,
   };
 
   return (
     <button
       type="button"
       onClick={copyEmbedCode}
-      className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors"
+      aria-live="polite"
+      className={`inline-flex items-center gap-2 rounded-xl border bg-background px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors ${
+        copyStatus === "failed"
+          ? "border-destructive/40 text-destructive"
+          : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
+      }`}
     >
-      {hasCopied ? (
-        <Check className="w-3.5 h-3.5 text-primary" />
-      ) : (
-        <Copy className="w-3.5 h-3.5" />
-      )}
-      {hasCopied ? copiedLabel : copyLabel}
+      {copyStatus === "copied" && <Check className="w-3.5 h-3.5 text-primary" />}
+      {copyStatus === "failed" && <TriangleAlert className="w-3.5 h-3.5" />}
+      {copyStatus === "idle" && <Copy className="w-3.5 h-3.5" />}
+      {statusLabel[copyStatus]}
     </button>
   );
 }
