@@ -29,5 +29,15 @@ export async function POST(request: Request) {
 
   const validRxcuis = rxcuis.filter((id) => typeof id === "string" && id.trim() !== "");
   const result = await checkDrugInteractions(validRxcuis);
+
+  // Une indisponibilité de RxNav est une erreur, pas un résultat : la renvoyer
+  // en 200 laisserait le client l'afficher comme « aucune interaction ».
+  if (result.status === "unavailable") {
+    return NextResponse.json(
+      { error: "Service d'interactions indisponible", status: result.status },
+      { status: 502 }
+    );
+  }
+
   return NextResponse.json(result);
 }
