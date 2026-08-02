@@ -5,8 +5,17 @@ import { CopyEmbedCodeButton } from "@/components/landing/copy-embed-code-button
 
 const DEMO_CLINIC_SLUG = "cabinet-dr-martin";
 
+/**
+ * Construit le snippet d'intégration copié par le praticien sur son propre site.
+ *
+ * L'URL est normalisée : `NEXT_PUBLIC_APP_URL` peut finir par une barre oblique
+ * et produirait alors `https://exemple.fr//widget/…`. L'attribut `frameborder`
+ * ayant disparu du standard HTML, la bordure est retirée en CSS.
+ */
 function buildEmbedCode(appUrl: string): string {
-  return `<iframe src="${appUrl}/widget/${DEMO_CLINIC_SLUG}" width="100%" height="600" frameborder="0"></iframe>`;
+  const normalizedAppUrl = appUrl.replace(/\/+$/, "");
+
+  return `<iframe src="${normalizedAppUrl}/widget/${DEMO_CLINIC_SLUG}" width="100%" height="600" style="border:0"></iframe>`;
 }
 
 /**
