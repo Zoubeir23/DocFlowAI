@@ -23,7 +23,7 @@ const SHADER_VARIANTS = [
     distortion: 0.2,
     swirl: 0.85,
     swirlIterations: 11,
-    shape: "dots" as const,
+    shape: "stripes" as const,
     shapeScale: 0.12,
     colors: ["hsl(200, 68%, 16%)", "hsl(186, 75%, 28%)", "hsl(174, 60%, 55%)", "hsl(166, 58%, 76%)"],
   },
