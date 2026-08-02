@@ -4,9 +4,13 @@ import { Warp } from "@paper-design/shaders-react";
 import { Check } from "lucide-react";
 import { useInView } from "@/lib/hooks/use-in-view";
 import { usePrefersReducedMotion } from "@/lib/hooks/use-prefers-reduced-motion";
+import { useBrandShaderPalette } from "@/lib/hooks/use-brand-shader-palette";
 
-/** Déclinaisons du shader, toutes dérivées du teal de la charte. */
-const SHADER_VARIANTS = [
+/**
+ * Géométries du shader. Les couleurs ne sont pas figées ici : elles dérivent du
+ * token `--primary` via useBrandShaderPalette, pour suivre la charte et le thème.
+ */
+const SHADER_GEOMETRIES = [
   {
     proportion: 0.32,
     softness: 0.9,
@@ -15,7 +19,6 @@ const SHADER_VARIANTS = [
     swirlIterations: 8,
     shape: "checks" as const,
     shapeScale: 0.09,
-    colors: ["hsl(190, 70%, 14%)", "hsl(173, 80%, 30%)", "hsl(168, 62%, 52%)", "hsl(160, 55%, 72%)"],
   },
   {
     proportion: 0.42,
@@ -25,7 +28,6 @@ const SHADER_VARIANTS = [
     swirlIterations: 11,
     shape: "stripes" as const,
     shapeScale: 0.12,
-    colors: ["hsl(200, 68%, 16%)", "hsl(186, 75%, 28%)", "hsl(174, 60%, 55%)", "hsl(166, 58%, 76%)"],
   },
   {
     proportion: 0.36,
@@ -35,15 +37,7 @@ const SHADER_VARIANTS = [
     swirlIterations: 10,
     shape: "checks" as const,
     shapeScale: 0.11,
-    colors: ["hsl(178, 72%, 13%)", "hsl(166, 78%, 30%)", "hsl(158, 58%, 54%)", "hsl(150, 52%, 74%)"],
   },
-] as const;
-
-/** Dégradé de repli, utilisé sans WebGL ou en mouvement réduit. */
-const FALLBACK_GRADIENTS = [
-  "linear-gradient(135deg, hsl(190 70% 14%), hsl(173 80% 30%) 55%, hsl(160 55% 72%))",
-  "linear-gradient(135deg, hsl(200 68% 16%), hsl(186 75% 28%) 55%, hsl(166 58% 76%))",
-  "linear-gradient(135deg, hsl(178 72% 13%), hsl(166 78% 30%) 55%, hsl(150 52% 74%))",
 ] as const;
 
 interface FeatureShaderCardProps {
@@ -72,8 +66,8 @@ export function FeatureShaderCard({
   const { ref, isInView, hasBeenInView } = useInView<HTMLElement>();
   const prefersReducedMotion = usePrefersReducedMotion();
 
-  const variant = SHADER_VARIANTS[index % SHADER_VARIANTS.length];
-  const fallbackGradient = FALLBACK_GRADIENTS[index % FALLBACK_GRADIENTS.length];
+  const geometry = SHADER_GEOMETRIES[index % SHADER_GEOMETRIES.length];
+  const { colors, gradient } = useBrandShaderPalette(index);
   // Le contexte WebGL est libéré dès que la carte s'éloigne du viewport : six
   // canvas actifs en permanence saturent inutilement le GPU et la batterie.
   const shouldRenderShader = isInView && !prefersReducedMotion;
@@ -85,21 +79,21 @@ export function FeatureShaderCard({
       data-in-view={hasBeenInView}
       style={{ transitionDelay: `${(index % 3) * 90}ms` }}
     >
-      <div className="absolute inset-0" style={{ background: fallbackGradient }} aria-hidden="true">
+      <div className="absolute inset-0" style={{ background: gradient }} aria-hidden="true">
         {shouldRenderShader && (
           <Warp
             style={{ width: "100%", height: "100%" }}
-            proportion={variant.proportion}
-            softness={variant.softness}
-            distortion={variant.distortion}
-            swirl={variant.swirl}
-            swirlIterations={variant.swirlIterations}
-            shape={variant.shape}
-            shapeScale={variant.shapeScale}
+            proportion={geometry.proportion}
+            softness={geometry.softness}
+            distortion={geometry.distortion}
+            swirl={geometry.swirl}
+            swirlIterations={geometry.swirlIterations}
+            shape={geometry.shape}
+            shapeScale={geometry.shapeScale}
             scale={1}
             rotation={0}
             speed={0.5}
-            colors={[...variant.colors]}
+            colors={colors}
           />
         )}
       </div>
