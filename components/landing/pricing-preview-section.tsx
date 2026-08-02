@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { Check, Star, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { SectionLabel } from "@/components/landing/section-label";
-import { PricingPlanCta } from "@/components/pricing/pricing-plan-cta";
+import { PricingPlanCard } from "@/components/landing/pricing-plan-card";
 import {
   PRICING_PLAN_KEYS,
   PRICING_PLAN_MONTHLY_PRICES,
@@ -33,75 +33,33 @@ export async function PricingPreviewSection() {
           <p className="mt-5 text-lg text-muted-foreground leading-relaxed">{t("subtitle")}</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 items-stretch lg:items-center">
           {PRICING_PLAN_KEYS.map((planKey, index) => {
-            const isHighlighted = PRICING_PLAN_HIGHLIGHTED[planKey];
             const monthlyPrice = PRICING_PLAN_MONTHLY_PRICES[planKey];
-            const period = monthlyPrice === 0 ? tPricing("forever") : tPricing("perMonth");
-            const features = (tPricing.raw(`plans.${planKey}.features`) as string[]).slice(
-              0,
-              PREVIEW_FEATURE_COUNT,
-            );
 
             return (
-              <article
+              <PricingPlanCard
                 key={planKey}
-                className={`relative flex flex-col rounded-3xl border p-8 bg-card fade-in-up transition-colors ${
-                  isHighlighted
-                    ? "border-primary/40 shadow-xl shadow-primary/5"
-                    : "border-border hover:border-primary/25"
-                }`}
-                style={{ animationDelay: `${index * 70}ms` }}
-              >
-                {isHighlighted && (
-                  <span className="absolute -top-3 left-8 inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 font-mono text-[10px] uppercase tracking-[0.16em] text-primary-foreground">
-                    <Star className="w-3 h-3 fill-current" />
-                    {tPricing("mostPopular")}
-                  </span>
+                plan={planKey}
+                index={index}
+                columnCount={PRICING_PLAN_KEYS.length}
+                name={tPricing(`plans.${planKey}.name`)}
+                description={tPricing(`plans.${planKey}.description`)}
+                monthlyPrice={monthlyPrice}
+                freeLabel={tPricing("free")}
+                periodLabel={monthlyPrice === 0 ? tPricing("forever") : tPricing("perMonth")}
+                trialNote={
+                  PRICING_PLANS_WITH_TRIAL.includes(planKey) ? tPricing("trialNote") : undefined
+                }
+                features={(tPricing.raw(`plans.${planKey}.features`) as string[]).slice(
+                  0,
+                  PREVIEW_FEATURE_COUNT,
                 )}
-
-                <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">
-                  {tPricing(`plans.${planKey}.name`)}
-                </h3>
-
-                <div className="mt-5 flex items-end gap-2">
-                  <span className="font-cormorant text-5xl leading-none text-foreground">
-                    {monthlyPrice === 0 ? tPricing("free") : `${monthlyPrice}€`}
-                  </span>
-                  <span className="mb-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                    /{period}
-                  </span>
-                </div>
-
-                <p className="mt-3 text-sm text-muted-foreground leading-relaxed min-h-[40px]">
-                  {tPricing(`plans.${planKey}.description`)}
-                </p>
-
-                {PRICING_PLANS_WITH_TRIAL.includes(planKey) && (
-                  <p className="mt-2 text-xs text-primary">{tPricing("trialNote")}</p>
-                )}
-
-                <ul className="flex-1 mt-7 pt-6 border-t border-border space-y-3">
-                  {features.map((feature) => (
-                    <li
-                      key={feature}
-                      className="flex items-start gap-2.5 text-sm text-muted-foreground"
-                    >
-                      <Check className="w-4 h-4 mt-0.5 shrink-0 text-primary" strokeWidth={2.5} />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="mt-8">
-                  <PricingPlanCta
-                    plan={planKey}
-                    href={PRICING_PLAN_SIGNUP_HREFS[planKey]}
-                    label={tPricing(`plans.${planKey}.cta`)}
-                    highlighted={isHighlighted}
-                  />
-                </div>
-              </article>
+                ctaLabel={tPricing(`plans.${planKey}.cta`)}
+                ctaHref={PRICING_PLAN_SIGNUP_HREFS[planKey]}
+                isPopular={PRICING_PLAN_HIGHLIGHTED[planKey]}
+                popularLabel={tPricing("mostPopular")}
+              />
             );
           })}
         </div>
