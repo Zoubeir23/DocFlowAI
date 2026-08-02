@@ -970,7 +970,8 @@
         "title": "Booking 24/7",
         "desc": "The AI reads your real availability and writes the booking straight into your calendar.",
         "cta": "Start a simulation"
-      }
+      },
+      "copyFailed": "Copy failed, select the code"
     },
     "pricingPreview": {
       "label": "Pricing",
