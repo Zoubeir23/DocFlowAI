@@ -173,14 +173,6 @@ export function detectRequiredTests(
   return Array.from(tests);
 }
 
-export function checkAllergyConflicts(
-  drugName: string,
-  allergies: string[]
-): boolean {
-  const drug = drugName.toLowerCase();
-  return allergies.some((allergy) => drug.includes(allergy.toLowerCase()));
-}
-
 /**
  * Re-weight ICD-11 candidates using GHO disease prevalence data.
  * Called after the initial scoring to adjust probabilities based on

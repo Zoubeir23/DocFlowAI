@@ -1176,7 +1176,9 @@
       "interactionsClear": "No known interaction between the coded medications.",
       "interactionsFailed": "Interaction check unavailable. Verify manually before prescribing.",
       "interactionsRetry": "Run the check again",
-      "interactionsUncoded": "{count} medication(s) without an RxNorm code are not covered by the check."
+      "interactionsUncoded": "{count} medication(s) without an RxNorm code are not covered by the check.",
+      "allergyWarningClass": "Declared allergy {allergy} — same family as {className}",
+      "allergyWarningCross": "Declared allergy {allergy} — documented cross-reactivity with {className}"
     },
     "patientStep": {
       "nextButton": "Next: Symptoms and vital signs"
