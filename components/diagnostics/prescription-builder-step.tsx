@@ -489,7 +489,7 @@ export function PrescriptionBuilderStep({
           )}
 
           {interactionCheckState === "clear" && (
-            <p className="flex items-center gap-2 text-sm text-emerald-600">
+            <p className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400">
               <Check className="w-4 h-4" />
               {t("prescriptionStep.interactionsClear")}
             </p>
