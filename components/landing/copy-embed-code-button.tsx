@@ -8,6 +8,18 @@ type CopyStatus = "idle" | "copied" | "failed";
 /** Durée d'affichage du retour visuel avant retour à l'état initial. */
 const FEEDBACK_DURATION_MS = 2500;
 
+const STATUS_ICONS: Record<CopyStatus, React.ReactNode> = {
+  idle: <Copy className="w-3.5 h-3.5" />,
+  copied: <Check className="w-3.5 h-3.5 text-primary" />,
+  failed: <TriangleAlert className="w-3.5 h-3.5" />,
+};
+
+const STATUS_CLASSNAMES: Record<CopyStatus, string> = {
+  idle: "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground",
+  copied: "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground",
+  failed: "border-destructive/40 text-destructive",
+};
+
 interface CopyEmbedCodeButtonProps {
   code: string;
   copyLabel: string;
@@ -51,7 +63,7 @@ export function CopyEmbedCodeButton({
     }
   };
 
-  const statusLabel: Record<CopyStatus, string> = {
+  const statusLabels: Record<CopyStatus, string> = {
     idle: copyLabel,
     copied: copiedLabel,
     failed: copyFailedLabel,
@@ -62,16 +74,10 @@ export function CopyEmbedCodeButton({
       type="button"
       onClick={copyEmbedCode}
       aria-live="polite"
-      className={`inline-flex items-center gap-2 rounded-xl border bg-background px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors ${
-        copyStatus === "failed"
-          ? "border-destructive/40 text-destructive"
-          : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
-      }`}
+      className={`inline-flex items-center gap-2 rounded-xl border bg-background px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors ${STATUS_CLASSNAMES[copyStatus]}`}
     >
-      {copyStatus === "copied" && <Check className="w-3.5 h-3.5 text-primary" />}
-      {copyStatus === "failed" && <TriangleAlert className="w-3.5 h-3.5" />}
-      {copyStatus === "idle" && <Copy className="w-3.5 h-3.5" />}
-      {statusLabel[copyStatus]}
+      {STATUS_ICONS[copyStatus]}
+      {statusLabels[copyStatus]}
     </button>
   );
 }
