@@ -263,6 +263,15 @@
       "errorNoCode": "Please enter a record code.",
       "errorImport": "Import failed.",
       "consultation": "Consultation"
+    },
+    "carnetAccess": {
+      "title": "Health book access",
+      "regenerate": "Regenerate code",
+      "noAccess": "No other clinic has linked this health book.",
+      "deletedClinic": "Deleted clinic",
+      "by": "by {name}",
+      "rotationError": "Could not regenerate the code",
+      "notice": "Regenerating the code invalidates the previous one immediately. Clinics already linked keep their access: their link is to the health book, not the code."
     }
   },
   "services": {
