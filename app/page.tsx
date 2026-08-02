@@ -88,7 +88,7 @@ export default async function HomePage() {
       {/* ── HEADER (annonce + navigation) ────────────────────────────────── */}
       <header className="sticky top-0 z-50">
       <AnnouncementBar />
-      <nav className="bg-background/80 backdrop-blur-xl border-b border-border transition-all">
+      <nav className="bg-background border-b border-border">
         <div className="w-full max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
 
           <Link href="/" className="flex items-center group">

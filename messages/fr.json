@@ -922,7 +922,7 @@
       "security": "Sécurité"
     },
     "announcement": {
-      "text": "Nouveau : serveur MCP natif pour Claude Desktop et paiements USDC (Polygon)",
+      "text": "Nouveau : serveur MCP natif pour Claude Desktop et paiement en USDC, en plus de la carte bancaire",
       "cta": "Découvrir"
     },
     "techStack": {

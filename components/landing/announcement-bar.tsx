@@ -10,7 +10,7 @@ export async function AnnouncementBar() {
   const t = await getTranslations("landing.announcement");
 
   return (
-    <div className="bg-primary/10 text-foreground border-b border-primary/15">
+    <div className="bg-primary/10 text-foreground">
       <div className="max-w-7xl mx-auto px-6 py-2.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center">
         <span className="flex items-center gap-2.5 font-sans text-[13px]">
           <span className="pulse-dot shrink-0" aria-hidden="true" />
