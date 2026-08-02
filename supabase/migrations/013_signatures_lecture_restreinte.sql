@@ -1,0 +1,27 @@
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- 013 — Restriction de la lecture des signatures de médecins
+--        (audit signature / carnet / ordonnance 2026-08-02)
+--
+-- CRITICAL : la policy `doctor_signatures_select_clinic` autorisait tout compte
+-- partageant la clinique à lire `signature_data_url`. Une secrétaire ou un
+-- assistant pouvait donc exécuter, depuis son navigateur :
+--
+--     supabase.from('doctor_signatures').select('*')
+--
+-- et récupérer l'image de signature manuscrite de chaque médecin du cabinet,
+-- sans ouvrir le moindre document. Or cette image est le seul élément qui
+-- authentifie une ordonnance imprimée : sa diffusion permet de fabriquer un
+-- document signé hors du produit, sans trace.
+--
+-- La policy est supprimée. Il ne reste que `doctor_signatures_select_own` :
+-- chacun lit sa propre signature, personne ne lit celle d'un confrère.
+--
+-- L'affichage légitime de la signature du validateur sur un document reste
+-- assuré par la Server Action `getSignatureForValidatedDiagnostic`, qui vérifie
+-- la clinique de l'appelant et le statut du diagnostic avant de lire la
+-- signature avec le client d'administration — même schéma que
+-- `importPatientCarnet`. L'autorisation est ainsi décidée par du code relu et
+-- testable, au lieu d'être déléguée à une policy trop large.
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+DROP POLICY IF EXISTS "doctor_signatures_select_clinic" ON doctor_signatures;
