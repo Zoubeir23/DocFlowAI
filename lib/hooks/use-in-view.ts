@@ -11,25 +11,29 @@ interface UseInViewOptions {
 
 interface UseInViewResult<T extends HTMLElement> {
   ref: React.RefObject<T | null>;
+  /** Visibilité courante : repasse à `false` quand l'élément ressort du viewport. */
   isInView: boolean;
+  /** Reste vrai après le premier passage dans le viewport. */
+  hasBeenInView: boolean;
 }
 
 /**
- * Signale qu'un élément est entré dans le viewport, une seule fois.
+ * Observe l'entrée et la sortie d'un élément du viewport.
  *
- * Utilisé pour ne déclencher les animations d'apparition qu'au moment où la
- * section est réellement vue, et pour suspendre les rendus coûteux (shaders
- * WebGL) tant qu'ils sont hors écran.
+ * `hasBeenInView` sert aux animations d'apparition, qui ne doivent jouer qu'une
+ * fois ; `isInView` sert à suspendre les rendus coûteux (shaders WebGL) dès que
+ * l'élément s'éloigne, pour ne pas garder de contexte GPU vivant inutilement.
  *
  * Sans IntersectionObserver, l'élément est considéré visible immédiatement :
  * le contenu reste accessible, seule l'animation est perdue.
  */
 export function useInView<T extends HTMLElement>({
-  rootMargin = "0px 0px -10% 0px",
-  threshold = 0.15,
+  rootMargin = "200px 0px",
+  threshold = 0,
 }: UseInViewOptions = {}): UseInViewResult<T> {
   const ref = useRef<T>(null);
   const [isInView, setIsInView] = useState(false);
+  const [hasBeenInView, setHasBeenInView] = useState(false);
 
   useEffect(() => {
     const element = ref.current;
@@ -37,16 +41,17 @@ export function useInView<T extends HTMLElement>({
 
     if (typeof IntersectionObserver === "undefined") {
       setIsInView(true);
+      setHasBeenInView(true);
       return;
     }
 
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
-        if (entry?.isIntersecting) {
-          setIsInView(true);
-          observer.disconnect();
-        }
+        if (!entry) return;
+
+        setIsInView(entry.isIntersecting);
+        if (entry.isIntersecting) setHasBeenInView(true);
       },
       { rootMargin, threshold },
     );
@@ -55,5 +60,5 @@ export function useInView<T extends HTMLElement>({
     return () => observer.disconnect();
   }, [rootMargin, threshold]);
 
-  return { ref, isInView };
+  return { ref, isInView, hasBeenInView };
 }

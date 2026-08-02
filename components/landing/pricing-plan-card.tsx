@@ -45,18 +45,18 @@ export function PricingPlanCard({
   popularLabel,
   index,
 }: PricingPlanCardProps) {
-  const { ref, isInView } = useInView<HTMLDivElement>();
+  const { hasBeenInView, ref } = useInView<HTMLDivElement>();
 
   return (
     <div
       ref={ref}
       className={cn(
-        "relative flex flex-col overflow-hidden rounded-3xl border bg-card p-8 transition-all duration-700 ease-out",
+        "reveal-on-scroll relative flex flex-col overflow-hidden rounded-3xl border bg-card p-8",
         isPopular
           ? "border-primary shadow-xl shadow-primary/10 z-10 lg:-translate-y-4"
           : "border-border hover:border-primary/30 lg:scale-[0.97]",
-        isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8",
       )}
+      data-in-view={hasBeenInView}
       style={{ transitionDelay: `${index * 90}ms` }}
     >
       {isPopular && (

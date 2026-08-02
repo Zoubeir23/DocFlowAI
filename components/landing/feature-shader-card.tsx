@@ -69,19 +69,20 @@ export function FeatureShaderCard({
   icon,
   index,
 }: FeatureShaderCardProps) {
-  const { ref, isInView } = useInView<HTMLElement>();
+  const { ref, isInView, hasBeenInView } = useInView<HTMLElement>();
   const prefersReducedMotion = usePrefersReducedMotion();
 
   const variant = SHADER_VARIANTS[index % SHADER_VARIANTS.length];
   const fallbackGradient = FALLBACK_GRADIENTS[index % FALLBACK_GRADIENTS.length];
+  // Le contexte WebGL est libéré dès que la carte s'éloigne du viewport : six
+  // canvas actifs en permanence saturent inutilement le GPU et la batterie.
   const shouldRenderShader = isInView && !prefersReducedMotion;
 
   return (
     <article
       ref={ref}
-      className={`group relative rounded-3xl overflow-hidden border border-border transition-all duration-700 hover:-translate-y-1 hover:border-primary/40 ${
-        isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-      }`}
+      className="reveal-on-scroll group relative rounded-3xl overflow-hidden border border-border hover:-translate-y-1 hover:border-primary/40"
+      data-in-view={hasBeenInView}
       style={{ transitionDelay: `${(index % 3) * 90}ms` }}
     >
       <div className="absolute inset-0" style={{ background: fallbackGradient }} aria-hidden="true">
