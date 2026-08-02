@@ -791,7 +791,10 @@
       "howItWorks": "Comment ça marche",
       "reviews": "Avis",
       "signIn": "Connexion",
-      "startFreeTrial": "Essai gratuit"
+      "startFreeTrial": "Essai gratuit",
+      "medicalRecord": "Dossier & IA",
+      "widget": "Widget IA",
+      "security": "Sécurité"
     },
     "hero": {
       "badge": "Propulsé par Claude AI · Assistant de réservation 24h/24",
@@ -841,7 +844,27 @@
       "securityTitle": "Sécurité multi-tenant",
       "securityDesc": "Chaque clinique est totalement isolée. La sécurité par ligne garantit qu'aucune donnée ne fuite entre les cabinets.",
       "analyticsTitle": "Tableau de bord analytique",
-      "analyticsDesc": "Suivez les tendances de réservation, les taux d'occupation, les absences et l'acquisition de patients en un coup d'œil."
+      "analyticsDesc": "Suivez les tendances de réservation, les taux d'occupation, les absences et l'acquisition de patients en un coup d'œil.",
+      "teleconsultationTitle": "Téléconsultation Jitsi",
+      "teleconsultationDesc": "Une salle vidéo sécurisée est générée automatiquement pour chaque rendez-vous à distance. Aucun compte ni installation côté patient.",
+      "websiteBuilderTitle": "Site vitrine no-code",
+      "websiteBuilderDesc": "Créez la page de votre cabinet sans écrire une ligne de code, publiez-la en un clic et laissez le widget de réservation faire le reste.",
+      "paymentsTitle": "Paiements hybrides & MCP",
+      "paymentsDesc": "Encaissez par carte via Stripe ou en USDC sur Polygon. Pilotez votre cabinet depuis Claude Desktop grâce au serveur MCP natif.",
+      "bullets": {
+        "aiWidget": "Widget iframe intégrable partout",
+        "aiPrompts": "Personnalité et prompts médicaux personnalisables",
+        "calendarDragDrop": "Glisser-déposer et vues jour / semaine / mois",
+        "calendarSync": "Export iCal et synchronisation d'agenda",
+        "crmRecords": "Dossiers, ordonnances et carnets numériques",
+        "crmNotifications": "Rappels SMS et email automatiques",
+        "teleconsultationLink": "Lien unique envoyé par SMS ou email",
+        "teleconsultationQuality": "Flux audio et vidéo haute fidélité",
+        "websiteTemplates": "Modèles médicaux prêts à publier",
+        "websiteBranding": "Couleurs, typographie et contenus personnalisables",
+        "paymentsWebhooks": "Webhooks sortants signés en HMAC",
+        "paymentsApi": "API REST publique /api/v1/*"
+      }
     },
     "howItWorks": {
       "sectionLabel": "Processus",
@@ -883,7 +906,91 @@
       "signup": "Inscription",
       "rights": "Tous droits réservés.",
       "terms": "CGU",
-      "privacy": "Confidentialité"
+      "privacy": "Confidentialité",
+      "tagline": "Plateforme de gestion de cabinet médical et agent de prise de rendez-vous par intelligence artificielle.",
+      "productTitle": "Produit",
+      "aiAgent": "Agent IA autonome",
+      "medicalRecord": "Dossier médical & ICD-11",
+      "widget": "Widget & site vitrine",
+      "developersTitle": "Développeurs",
+      "apiDocs": "API REST publique",
+      "mcp": "Serveur MCP",
+      "webhooks": "Webhooks & HMAC",
+      "portalTitle": "Portail patient",
+      "portalDesc": "Retrouvez vos ordonnances et votre historique de consultations.",
+      "portalCta": "Accéder au portail",
+      "security": "Sécurité"
+    },
+    "announcement": {
+      "text": "Nouveau : serveur MCP natif pour Claude Desktop et paiement en USDC, en plus de la carte bancaire",
+      "cta": "Découvrir"
+    },
+    "techStack": {
+      "label": "Construit sur des standards techniques et médicaux exigeants",
+      "items": [
+        "Next.js 15",
+        "Supabase RLS",
+        "Claude · Anthropic",
+        "WHO ICD-11",
+        "OpenFDA",
+        "Stripe + Polygon"
+      ]
+    },
+    "medicalRecord": {
+      "label": "Dossier & IA",
+      "title": "Codage OMS international et sécurité médicamenteuse en temps réel",
+      "subtitle": "L'assistant de diagnostic s'appuie sur les référentiels officiels de l'Organisation mondiale de la santé et de la FDA pour structurer chaque consultation.",
+      "icdTitle": "Codage ICD-11 / ICF / ICHI",
+      "icdDesc": "Standardisation immédiate des pathologies et des interventions directement dans le dossier du patient.",
+      "fdaTitle": "Vérification OpenFDA",
+      "fdaDesc": "Alerte automatique sur les risques d'interaction médicamenteuse au moment de rédiger l'ordonnance.",
+      "carnetTitle": "Carnet numérique partagé",
+      "carnetDesc": "Le patient retrouve ses ordonnances et son historique dans son portail, signés électroniquement.",
+      "mock": {
+        "label": "Assistant diagnostic · Patient #8492",
+        "badge": "WHO ICD-11 connecté",
+        "diagnosisLabel": "Pathologie retenue (ICD-11)",
+        "diagnosisValue": "BA00 — Hypertension essentielle",
+        "prescriptionLabel": "Prescription envisagée",
+        "prescriptionValue": "Lisinopril 10 mg / jour",
+        "safeBadge": "OpenFDA vérifié",
+        "action": "Générer le carnet numérique partagé"
+      }
+    },
+    "widget": {
+      "label": "Prêt en deux minutes",
+      "title": "Intégrez l'agent de réservation sur n'importe quel site existant",
+      "subtitle": "Vous avez déjà un site WordPress, Webflow ou React ? Une seule ligne d'iframe suffit pour ajouter l'agent conversationnel en marque blanche.",
+      "copy": "Copier le code",
+      "copied": "Code copié",
+      "bulletRateLimit": "Anti-spam et limitation de débit intégrés",
+      "bulletBilingual": "Bilingue français / anglais",
+      "bulletBranding": "Couleurs et ton alignés sur votre cabinet",
+      "mock": {
+        "title": "Rendez-vous 24h/24",
+        "desc": "L'IA consulte vos créneaux réels et enregistre la réservation directement dans votre agenda.",
+        "cta": "Démarrer une simulation"
+      }
+    },
+    "pricingPreview": {
+      "label": "Tarification",
+      "title": "Commencez gratuitement, changez de plan quand vous voulez",
+      "subtitle": "Paiement par carte bancaire via Stripe ou en stablecoin USDC sur Polygon. Sans engagement.",
+      "seeAll": "Voir le détail des plans",
+      "note": "14 jours d'essai gratuit sur les plans payants · Sans carte bancaire"
+    },
+    "security": {
+      "label": "Sécurité",
+      "title": "Confidentialité des données de santé en production",
+      "subtitle": "Chaque cabinet est isolé au niveau de la base de données, et chaque appel sortant est filtré.",
+      "rlsTitle": "Row Level Security",
+      "rlsDesc": "Isolation stricte par clinique sur l'ensemble des tables Supabase.",
+      "ssrfTitle": "Protection SSRF",
+      "ssrfDesc": "Filtrage anti DNS-rebinding sur tous les webhooks sortants.",
+      "headersTitle": "En-têtes durcis",
+      "headersDesc": "CSP, HSTS et politiques de permissions activées par défaut.",
+      "rbacTitle": "Rôles et permissions",
+      "rbacDesc": "Accès du personnel limité au strict nécessaire, journalisé."
     }
   },
   "widgetChat": {

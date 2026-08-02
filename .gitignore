@@ -55,3 +55,6 @@ feature.md
 
 # Neon CLI (neonctl) — config locale, peut contenir des credentials
 .neon/
+
+# Playwright MCP artefacts (captures et snapshots de session)
+.playwright-mcp/
