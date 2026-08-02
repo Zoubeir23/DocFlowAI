@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -128,6 +128,10 @@ export function PrescriptionBuilderStep({
   const [drugInteractions, setDrugInteractions] = useState<DrugInteractionPair[]>([]);
   const [interactionCheckState, setInteractionCheckState] = useState<InteractionCheckState>("idle");
   const [uncodedDrugCount, setUncodedDrugCount] = useState(0);
+  // Identifiant monotone : deux contrôles peuvent se chevaucher après des
+  // modifications rapides, et une réponse ancienne ne doit jamais écraser une
+  // plus récente — un « aucune interaction » périmé masquerait une alerte réelle.
+  const latestInteractionCheckId = useRef(0);
   const [vigibaseSignals, setVigibaseSignals] = useState<Map<string, PharmacovigilanceSignal>>(new Map());
 
   const { register, handleSubmit, control, watch, formState: { errors } } = useForm<Omit<PrescriptionInput, "treatments" | "recommendations" | "follow_up_tests" | "icf_codes">>({
@@ -163,6 +167,9 @@ export function PrescriptionBuilderStep({
       return;
     }
 
+    const checkId = ++latestInteractionCheckId.current;
+    const isStale = () => checkId !== latestInteractionCheckId.current;
+
     setInteractionCheckState("checking");
     try {
       const response = await fetch("/api/who/drug-interactions", {
@@ -170,6 +177,7 @@ export function PrescriptionBuilderStep({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rxcuis }),
       });
+      if (isStale()) return;
 
       if (!response.ok) {
         setDrugInteractions([]);
@@ -177,11 +185,22 @@ export function PrescriptionBuilderStep({
         return;
       }
 
-      const result: { interactions: DrugInteractionPair[] } = await response.json();
-      const foundInteractions = result.interactions ?? [];
-      setDrugInteractions(foundInteractions);
+      const result: unknown = await response.json();
+      if (isStale()) return;
+
+      // Une réponse dont la forme est inattendue est traitée comme un échec :
+      // la lire comme une liste vide afficherait une confirmation infondée.
+      const foundInteractions = (result as { interactions?: unknown })?.interactions;
+      if (!Array.isArray(foundInteractions)) {
+        setDrugInteractions([]);
+        setInteractionCheckState("failed");
+        return;
+      }
+
+      setDrugInteractions(foundInteractions as DrugInteractionPair[]);
       setInteractionCheckState(foundInteractions.length > 0 ? "found" : "clear");
     } catch {
+      if (isStale()) return;
       setDrugInteractions([]);
       setInteractionCheckState("failed");
     }
