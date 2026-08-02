@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { z } from "zod";
 
 export interface DoctorSignature {
@@ -89,6 +89,12 @@ export async function deleteDoctorSignature(): Promise<{ success: boolean; error
  * de la clinique puisse récupérer l'image de signature d'un confrère sans
  * passer par un document réel. Tant que le diagnostic n'est pas validé, aucune
  * signature n'est renvoyée.
+ *
+ * Depuis la migration 013, plus aucune policy n'autorise un compte à lire la
+ * signature d'un confrère : la lecture finale passe donc par le client
+ * d'administration, une fois la clinique de l'appelant et le statut du
+ * diagnostic vérifiés ici — c'est cette fonction, et non une policy trop large,
+ * qui porte la décision d'autorisation.
  */
 export async function getSignatureForValidatedDiagnostic(
   diagnosticId: string
@@ -125,7 +131,13 @@ export async function getSignatureForValidatedDiagnostic(
     return null;
   }
 
-  const { data } = await db
+  // Le filtre sur clinic_id reste indispensable : le client d'administration
+  // ignore la RLS, c'est donc cette contrainte qui garantit qu'on ne lit pas la
+  // signature d'un praticien extérieur à la clinique de l'appelant.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const adminDb = (await createAdminClient()) as any;
+
+  const { data } = await adminDb
     .from("doctor_signatures")
     .select("*")
     .eq("user_id", diagnostic.validated_by_user_id)
