@@ -31,6 +31,7 @@ import { InvitePatientButton } from "@/components/portail/invite-patient-button"
 import { StartTeleconsultationButton } from "@/components/teleconsultation/start-teleconsultation-button";
 import { PreconsultationCard, type PreconsultationData } from "@/components/appointments/preconsultation-card";
 import { CarnetNumeriqueSection } from "@/components/patients/carnet-numerique-section";
+import { CarnetAccessPanel } from "@/components/patients/carnet-access-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -540,6 +541,8 @@ export default function PatientDetailPage() {
 
       {/* ─ Carnet Numerique ─ */}
       <CarnetNumeriqueSection patientId={patient.id} />
+
+      {patient.carnet?.public_code && <CarnetAccessPanel patientId={patient.id} />}
 
       {/* ─ Consultation history ─ */}
       <div className="glass-card p-6">

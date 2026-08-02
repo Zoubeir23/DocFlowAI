@@ -263,6 +263,15 @@
       "errorNoCode": "Veuillez saisir un code carnet.",
       "errorImport": "Échec de l'importation.",
       "consultation": "Consultation"
+    },
+    "carnetAccess": {
+      "title": "Accès au carnet",
+      "regenerate": "Régénérer le code",
+      "noAccess": "Aucune autre clinique n'a rattaché ce carnet.",
+      "deletedClinic": "Clinique supprimée",
+      "by": "par {name}",
+      "rotationError": "Échec de la régénération du code",
+      "notice": "Régénérer le code invalide l'ancien immédiatement. Les cliniques déjà rattachées conservent leur accès : leur lien repose sur le carnet, pas sur le code."
     }
   },
   "services": {

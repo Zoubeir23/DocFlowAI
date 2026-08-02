@@ -200,7 +200,30 @@ export async function importPatientCarnet(
     .maybeSingle();
 
   if (error || !patient) return { success: false, error: error?.message ?? "Erreur lors de la création du patient" };
-  
+
+  // Journalisation de l'accès : le code carnet étant un jeton porteur, le
+  // patient doit pouvoir savoir quelles cliniques ont rattaché son dossier et
+  // quand. L'écriture passe par le client d'administration — aucune policy
+  // d'INSERT n'existe sur la table, pour qu'un journal ne puisse pas être
+  // falsifié par celui qu'il décrit.
+  const { data: authData } = await db.auth.getUser();
+  const { error: journalError } = await adminDb.from("carnet_import_events").insert({
+    carnet_id: carnet.id,
+    clinic_id: clinicId,
+    imported_by_user_id: authData?.user?.id ?? null,
+    patient_id: patient.id,
+  });
+
+  // L'import a réussi et le patient existe : échouer ici reviendrait à mentir à
+  // l'appelant. On signale l'anomalie sans annuler l'opération.
+  if (journalError) {
+    console.error("[carnet] échec de journalisation de l'import", {
+      carnetId: carnet.id,
+      clinicId,
+      message: journalError.message,
+    });
+  }
+
   return { success: true, data: { id: patient.id } };
 }
 
@@ -229,6 +252,90 @@ export async function getPatientCarnetHistory(patientId: string) {
     .order("created_at", { ascending: false });
 
   return data || [];
+}
+
+export interface CarnetImportEvent {
+  id: string;
+  created_at: string;
+  clinic: { name: string } | null;
+  imported_by: { full_name: string | null } | null;
+}
+
+/**
+ * Historique des rattachements du carnet d'un patient.
+ *
+ * Répond à « quelles cliniques ont accédé à mon dossier, et quand ? ». Réservé
+ * au rôle médical de la clinique du patient : la liste des cabinets fréquentés
+ * est elle-même une donnée de santé.
+ */
+export async function getCarnetImportHistory(patientId: string): Promise<CarnetImportEvent[]> {
+  const db = await getDB();
+  const clinicId = await getAuthenticatedClinicIdForMedicalRole(db);
+  if (!clinicId) return [];
+
+  const { data: patient } = await db
+    .from("patients")
+    .select("carnet_id")
+    .eq("id", patientId)
+    .eq("clinic_id", clinicId)
+    .maybeSingle();
+
+  if (!patient?.carnet_id) return [];
+
+  const { data } = await db
+    .from("carnet_import_events")
+    .select("id, created_at, clinic:clinics(name), imported_by:users(full_name)")
+    .eq("carnet_id", patient.carnet_id)
+    .order("created_at", { ascending: false });
+
+  return (data ?? []) as CarnetImportEvent[];
+}
+
+/**
+ * Génère un nouveau code porteur pour le carnet d'un patient.
+ *
+ * Un code divulgué donne un accès permanent à l'historique inter-cliniques :
+ * il faut pouvoir le révoquer. La rotation invalide immédiatement l'ancien code,
+ * mais ne détache pas les cliniques déjà rattachées — leur accès repose sur le
+ * `carnet_id`, pas sur le code. C'est volontaire : rompre un suivi médical en
+ * cours serait plus dangereux que la fuite elle-même. Le journal d'imports
+ * permet d'identifier un rattachement illégitime et de le traiter à part.
+ */
+export async function regenerateCarnetCode(
+  patientId: string
+): Promise<ApiResponse<{ publicCode: string }>> {
+  const db = await getDB();
+  const clinicId = await getAuthenticatedClinicIdForMedicalRole(db);
+  if (!clinicId) return { success: false, error: "Unauthorized" };
+
+  if (!(await checkAuthenticatedRateLimit(clinicId, "rotate-carnet"))) {
+    return { success: false, error: "Trop de tentatives. Réessayez dans une minute." };
+  }
+
+  const { data: patient } = await db
+    .from("patients")
+    .select("carnet_id")
+    .eq("id", patientId)
+    .eq("clinic_id", clinicId)
+    .maybeSingle();
+
+  if (!patient?.carnet_id) return { success: false, error: "Carnet introuvable" };
+
+  // Aucune policy d'UPDATE n'existe sur patient_carnets : la rotation passe par
+  // la fonction SECURITY DEFINER, exécutée avec le rôle de service une fois
+  // l'autorisation vérifiée ci-dessus.
+  const { createAdminClient } = await import("@/lib/supabase/server");
+  const adminDb = (await createAdminClient()) as any;
+
+  const { data: newCode, error } = await adminDb.rpc("rotate_patient_carnet_code", {
+    p_carnet_id: patient.carnet_id,
+  });
+
+  if (error || !newCode) {
+    return { success: false, error: error?.message ?? "Échec de la régénération du code" };
+  }
+
+  return { success: true, data: { publicCode: newCode as string } };
 }
 
 export async function getPatientsWithCarnets() {
