@@ -40,9 +40,17 @@ USING (
   )
 );
 
--- Une clinique voit ses propres imports, pour justifier de son accès.
+-- Une clinique voit ses propres imports, pour justifier de son accès — mais
+-- seulement par ses rôles médicaux. La liste des cabinets ayant consulté un
+-- dossier est elle-même une donnée de santé : l'ouvrir à receptionist/assistant
+-- contournerait le contrôle déjà appliqué par getCarnetImportHistory.
 CREATE POLICY "carnet_import_events_select_clinic" ON carnet_import_events FOR SELECT
-USING (clinic_id IN (SELECT clinic_id FROM users WHERE id = auth.uid()));
+USING (
+  clinic_id IN (
+    SELECT clinic_id FROM users
+    WHERE id = auth.uid() AND role IN ('owner', 'super_admin')
+  )
+);
 
 -- Aucune policy d'INSERT, d'UPDATE ni de DELETE : l'écriture passe exclusivement
 -- par le client d'administration depuis `importPatientCarnet`. Un journal que son
@@ -62,6 +70,12 @@ BEGIN
     new_code := 'CAR-' || upper(substr(replace(uuid_generate_v4()::text, '-', ''), 1, 16));
     BEGIN
       UPDATE patient_carnets SET public_code = new_code WHERE id = p_carnet_id;
+      -- Un UPDATE sans correspondance ne lève rien : sans ce contrôle, la
+      -- fonction renverrait un code et l'appelant annoncerait une rotation
+      -- réussie alors que rien n'aurait changé en base.
+      IF NOT FOUND THEN
+        RAISE EXCEPTION 'Carnet % introuvable', p_carnet_id USING ERRCODE = 'no_data_found';
+      END IF;
       success := TRUE;
     EXCEPTION WHEN unique_violation THEN
       -- collision improbable sur 64 bits : on retente avec un nouvel UUID
