@@ -1,0 +1,120 @@
+import { describe, it, expect } from "vitest";
+import {
+  buildDocumentFingerprint,
+  computeDocumentSeal,
+  verifyDocumentSeal,
+  formatSealReference,
+  type SealableDocument,
+} from "@/lib/document-seal";
+
+const BASE_DOCUMENT: SealableDocument = {
+  document_type: "prescription",
+  patient_full_name: "Amina Diallo",
+  patient_age_years: 42,
+  patient_sex: "female",
+  patient_weight_kg: 68,
+  patient_blood_group: "O+",
+  validated_diagnosis_code: "BA00",
+  validated_diagnosis_name: "Hypertension essentielle",
+  chief_complaint: "Céphalées répétées",
+  clinical_notes: "Tension élevée sur trois mesures.",
+  treatments: [{ drug_name: "Lisinopril", dosage_mg: "10 mg", duration_days: 30 }],
+  recommendations: ["Réduire le sel"],
+  follow_up_delay_days: 30,
+  follow_up_tests: ["Ionogramme"],
+  practitioner_name: "Martin",
+  practitioner_title: "Dr.",
+  practitioner_rpps: "10101010101",
+  validated_by: "Dr. Martin",
+  validated_by_user_id: "0f7a1c9e-3c5b-4c1a-9f2d-8e5b6a4c1d2f",
+  validated_at: "2026-08-02T09:30:00.000Z",
+};
+
+function withChange(change: Partial<SealableDocument>): SealableDocument {
+  return { ...BASE_DOCUMENT, ...change };
+}
+
+describe("computeDocumentSeal", () => {
+  it("produit la même empreinte pour un contenu identique", () => {
+    expect(computeDocumentSeal(BASE_DOCUMENT)).toBe(computeDocumentSeal({ ...BASE_DOCUMENT }));
+  });
+
+  it("ne dépend pas de l'ordre d'insertion des clés", () => {
+    // Un objet reconstruit dans un autre ordre décrit le même document : il ne
+    // doit pas déclencher une fausse alerte de falsification.
+    const reordered = Object.fromEntries(
+      Object.entries(BASE_DOCUMENT).reverse()
+    ) as unknown as SealableDocument;
+
+    expect(computeDocumentSeal(reordered)).toBe(computeDocumentSeal(BASE_DOCUMENT));
+  });
+
+  it("produit une empreinte SHA-256 hexadécimale", () => {
+    expect(computeDocumentSeal(BASE_DOCUMENT)).toMatch(/^[0-9a-f]{64}$/);
+  });
+});
+
+describe("détection des modifications", () => {
+  const scenarios: Array<[string, Partial<SealableDocument>]> = [
+    ["la posologie d'un traitement", {
+      treatments: [{ drug_name: "Lisinopril", dosage_mg: "40 mg", duration_days: 30 }],
+    }],
+    ["l'ajout d'un traitement", {
+      treatments: [
+        { drug_name: "Lisinopril", dosage_mg: "10 mg", duration_days: 30 },
+        { drug_name: "Tramadol", dosage_mg: "50 mg", duration_days: 7 },
+      ],
+    }],
+    ["le diagnostic retenu", { validated_diagnosis_code: "5A11" }],
+    ["l'identité du patient", { patient_full_name: "Amina Diallo-Sy" }],
+    ["le numéro RPPS du praticien", { practitioner_rpps: "20202020202" }],
+    ["le nom du validateur", { validated_by: "Dr. Autre" }],
+    ["une recommandation", { recommendations: ["Réduire le sel", "Arrêter le tabac"] }],
+    ["les notes cliniques", { clinical_notes: "Tension normale." }],
+  ];
+
+  for (const [label, change] of scenarios) {
+    it(`rompt le sceau si l'on modifie ${label}`, () => {
+      const seal = computeDocumentSeal(BASE_DOCUMENT);
+      expect(verifyDocumentSeal(withChange(change), seal)).toBe("tampered");
+    });
+  }
+
+  it("confirme un document intact", () => {
+    const seal = computeDocumentSeal(BASE_DOCUMENT);
+    expect(verifyDocumentSeal(BASE_DOCUMENT, seal)).toBe("sealed");
+  });
+
+  it("distingue un document jamais scellé d'un document altéré", () => {
+    expect(verifyDocumentSeal(BASE_DOCUMENT, null)).toBe("unsealed");
+    expect(verifyDocumentSeal(BASE_DOCUMENT, "")).toBe("unsealed");
+  });
+});
+
+describe("buildDocumentFingerprint", () => {
+  it("distingue null d'une chaîne vide", () => {
+    const withNull = buildDocumentFingerprint(withChange({ clinical_notes: null }));
+    const withEmpty = buildDocumentFingerprint(withChange({ clinical_notes: "" }));
+
+    expect(withNull).not.toBe(withEmpty);
+  });
+
+  it("tient compte de l'ordre des traitements", () => {
+    // Deux ordonnances listant les mêmes molécules dans un ordre différent sont
+    // deux documents différents à l'impression : le sceau doit le refléter.
+    const first = buildDocumentFingerprint(
+      withChange({ treatments: [{ drug_name: "A" }, { drug_name: "B" }] })
+    );
+    const second = buildDocumentFingerprint(
+      withChange({ treatments: [{ drug_name: "B" }, { drug_name: "A" }] })
+    );
+
+    expect(first).not.toBe(second);
+  });
+});
+
+describe("formatSealReference", () => {
+  it("met en forme un préfixe lisible pour impression", () => {
+    expect(formatSealReference("a1b2c3d4e5f60718293a4b5c6d7e8f90")).toBe("A1B2-C3D4-E5F6-0718");
+  });
+});
