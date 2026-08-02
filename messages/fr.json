@@ -1167,7 +1167,9 @@
       "interactionsClear": "Aucune interaction connue entre les médicaments codés.",
       "interactionsFailed": "Contrôle des interactions indisponible. Vérifiez manuellement avant de prescrire.",
       "interactionsRetry": "Relancer le contrôle",
-      "interactionsUncoded": "{count} médicament(s) sans code RxNorm ne sont pas couverts par le contrôle."
+      "interactionsUncoded": "{count} médicament(s) sans code RxNorm ne sont pas couverts par le contrôle.",
+      "allergyWarningClass": "Allergie déclarée « {allergy} » — même famille que {className}",
+      "allergyWarningCross": "Allergie déclarée « {allergy} » — réactivité croisée documentée avec {className}"
     },
     "patientStep": {
       "nextButton": "Suivant : Symptômes et signes vitaux"
