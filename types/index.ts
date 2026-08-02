@@ -195,6 +195,12 @@ export interface DiagnosticRecord {
   practitioner_title: string | null;
   practitioner_rpps: string | null;
 
+  // Scellement (migration 015)
+  /** Empreinte SHA-256 du contenu au moment de la production du document. */
+  document_seal: string | null;
+  document_sealed_at: string | null;
+  document_sealed_by_user_id: string | null;
+
   created_at: string;
   updated_at: string;
 }

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft, FileEdit, Stethoscope } from "lucide-react";
 import { getDiagnosticById } from "@/actions/diagnostics";
 import { getSignatureForValidatedDiagnostic } from "@/actions/doctor-signature";
+import { verifyDocumentSeal, formatSealReference } from "@/lib/document-seal";
 import { PrescriptionPrintDocument } from "@/components/diagnostics/prescription-print-document";
 import { DiagnosticValidationPanel } from "@/components/diagnostics/diagnostic-validation-panel";
 import { ComorbiditiesPanel } from "@/components/diagnostics/comorbidities-panel";
@@ -23,6 +24,11 @@ export default async function DiagnosticDetailPage({ params }: DiagnosticDetailP
   // L'action résout elle-même le validateur et ne renvoie rien tant que le
   // diagnostic n'est pas validé.
   const signature = await getSignatureForValidatedDiagnostic(diagnostic.id);
+
+  // L'empreinte est recalculée à chaque affichage : une modification du contenu
+  // postérieure à la production du document devient visible, au lieu de passer
+  // sous une signature qui ne l'engage plus.
+  const sealStatus = verifyDocumentSeal(diagnostic, diagnostic.document_seal);
 
   const STATUS_STYLES: Record<string, string> = {
     draft: "bg-gray-100 text-gray-600",
@@ -107,6 +113,10 @@ export default async function DiagnosticDetailPage({ params }: DiagnosticDetailP
         <PrescriptionPrintDocument
           diagnostic={diagnostic}
           signatureDataUrl={signature?.signature_data_url}
+          sealStatus={sealStatus}
+          sealReference={
+            diagnostic.document_seal ? formatSealReference(diagnostic.document_seal) : undefined
+          }
         />
       </div>
     </div>
