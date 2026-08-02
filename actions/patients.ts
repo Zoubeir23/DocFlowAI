@@ -200,7 +200,30 @@ export async function importPatientCarnet(
     .maybeSingle();
 
   if (error || !patient) return { success: false, error: error?.message ?? "Erreur lors de la création du patient" };
-  
+
+  // Journalisation de l'accès : le code carnet étant un jeton porteur, le
+  // patient doit pouvoir savoir quelles cliniques ont rattaché son dossier et
+  // quand. L'écriture passe par le client d'administration — aucune policy
+  // d'INSERT n'existe sur la table, pour qu'un journal ne puisse pas être
+  // falsifié par celui qu'il décrit.
+  const { data: authData } = await db.auth.getUser();
+  const { error: journalError } = await adminDb.from("carnet_import_events").insert({
+    carnet_id: carnet.id,
+    clinic_id: clinicId,
+    imported_by_user_id: authData?.user?.id ?? null,
+    patient_id: patient.id,
+  });
+
+  // L'import a réussi et le patient existe : échouer ici reviendrait à mentir à
+  // l'appelant. On signale l'anomalie sans annuler l'opération.
+  if (journalError) {
+    console.error("[carnet] échec de journalisation de l'import", {
+      carnetId: carnet.id,
+      clinicId,
+      message: journalError.message,
+    });
+  }
+
   return { success: true, data: { id: patient.id } };
 }
 
