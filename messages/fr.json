@@ -1161,7 +1161,13 @@
       "back": "Retour",
       "generating": "Génération...",
       "generateAndSave": "Générer et enregistrer l'ordonnance",
-      "allergyWarning": "Allergie détectée — vérifiez ce médicament"
+      "allergyWarning": "Allergie détectée — vérifiez ce médicament",
+      "interactionsTitle": "Interactions médicamenteuses",
+      "interactionsChecking": "Contrôle en cours…",
+      "interactionsClear": "Aucune interaction connue entre les médicaments codés.",
+      "interactionsFailed": "Contrôle des interactions indisponible. Vérifiez manuellement avant de prescrire.",
+      "interactionsRetry": "Relancer le contrôle",
+      "interactionsUncoded": "{count} médicament(s) sans code RxNorm ne sont pas couverts par le contrôle."
     },
     "patientStep": {
       "nextButton": "Suivant : Symptômes et signes vitaux"
