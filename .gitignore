@@ -58,3 +58,6 @@ feature.md
 
 # Playwright MCP artefacts (captures et snapshots de session)
 .playwright-mcp/
+
+# Notes de travail locales (skill senior-engineer)
+tasks/
