@@ -179,6 +179,8 @@ export interface DiagnosticRecord {
   validated_diagnosis_code: string | null;
   validated_diagnosis_name: string | null;
   validated_by: string | null;
+  /** Compte réellement à l'origine de la validation (migration 010). */
+  validated_by_user_id: string | null;
   validated_at: string | null;
   rejection_reason: string | null;
 

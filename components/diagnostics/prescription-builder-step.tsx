@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Trash2, AlertTriangle, Pill, ClipboardList, ActivitySquare, Loader2 } from "lucide-react";
+import { Plus, Trash2, AlertTriangle, Pill, ClipboardList, ActivitySquare, Loader2, Check } from "lucide-react";
 import { AtcDrugSearch } from "@/components/diagnostics/atc-drug-search";
 import { IcfSearchField } from "@/components/diagnostics/icf-search-field";
 import { DrugInteractionWarning } from "@/components/diagnostics/drug-interaction-warning";
@@ -98,6 +98,9 @@ function VigibaseSignalBadge({ signal }: { signal: PharmacovigilanceSignal }) {
   );
 }
 
+/** Issue du contrôle d'interactions, rendue visible dans tous les cas. */
+type InteractionCheckState = "idle" | "checking" | "clear" | "found" | "failed";
+
 interface PrescriptionBuilderStepProps {
   validatedDiagnosisName: string;
   patientAllergies: string[];
@@ -123,7 +126,12 @@ export function PrescriptionBuilderStep({
 
   const [icfCodes, setIcfCodes] = useState<IcfCode[]>([]);
   const [drugInteractions, setDrugInteractions] = useState<DrugInteractionPair[]>([]);
-  const [interactionLoading, setInteractionLoading] = useState(false);
+  const [interactionCheckState, setInteractionCheckState] = useState<InteractionCheckState>("idle");
+  const [uncodedDrugCount, setUncodedDrugCount] = useState(0);
+  // Identifiant monotone : deux contrôles peuvent se chevaucher après des
+  // modifications rapides, et une réponse ancienne ne doit jamais écraser une
+  // plus récente — un « aucune interaction » périmé masquerait une alerte réelle.
+  const latestInteractionCheckId = useRef(0);
   const [vigibaseSignals, setVigibaseSignals] = useState<Map<string, PharmacovigilanceSignal>>(new Map());
 
   const { register, handleSubmit, control, watch, formState: { errors } } = useForm<Omit<PrescriptionInput, "treatments" | "recommendations" | "follow_up_tests" | "icf_codes">>({
@@ -137,32 +145,64 @@ export function PrescriptionBuilderStep({
 
   const selectedDocumentType = watch("document_type");
 
-  // Check drug-drug interactions whenever treatments with rxcui change
+  // Contrôle des interactions à chaque changement de traitement.
+  //
+  // Chaque issue est rendue visible : un échec réseau ne doit jamais ressembler
+  // à « aucune interaction », sans quoi le prescripteur lit l'absence d'alerte
+  // comme un feu vert. Les médicaments sans code RxNorm sortent du contrôle et
+  // sont comptés pour être signalés explicitement.
   const checkInteractions = useCallback(async (currentTreatments: PrescriptionTreatment[]) => {
-    const rxcuis = currentTreatments
+    const namedTreatments = currentTreatments.filter(
+      (treatment) => treatment.drug_name && treatment.drug_name.trim() !== ""
+    );
+    const rxcuis = namedTreatments
       .map((treatment) => treatment.rxcui)
-      .filter((code) => code && code.trim() !== "" && /^\d+$/.test(code));
+      .filter((code): code is string => Boolean(code) && /^\d+$/.test(code!));
+
+    setUncodedDrugCount(namedTreatments.length - rxcuis.length);
 
     if (rxcuis.length < 2) {
       setDrugInteractions([]);
+      setInteractionCheckState("idle");
       return;
     }
 
-    setInteractionLoading(true);
+    const checkId = ++latestInteractionCheckId.current;
+    const isStale = () => checkId !== latestInteractionCheckId.current;
+
+    setInteractionCheckState("checking");
     try {
       const response = await fetch("/api/who/drug-interactions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rxcuis }),
       });
-      if (response.ok) {
-        const result: { interactions: DrugInteractionPair[] } = await response.json();
-        setDrugInteractions(result.interactions ?? []);
+      if (isStale()) return;
+
+      if (!response.ok) {
+        setDrugInteractions([]);
+        setInteractionCheckState("failed");
+        return;
       }
+
+      const result: unknown = await response.json();
+      if (isStale()) return;
+
+      // Une réponse dont la forme est inattendue est traitée comme un échec :
+      // la lire comme une liste vide afficherait une confirmation infondée.
+      const foundInteractions = (result as { interactions?: unknown })?.interactions;
+      if (!Array.isArray(foundInteractions)) {
+        setDrugInteractions([]);
+        setInteractionCheckState("failed");
+        return;
+      }
+
+      setDrugInteractions(foundInteractions as DrugInteractionPair[]);
+      setInteractionCheckState(foundInteractions.length > 0 ? "found" : "clear");
     } catch {
-      // Silently ignore network errors — interactions are advisory only
-    } finally {
-      setInteractionLoading(false);
+      if (isStale()) return;
+      setDrugInteractions([]);
+      setInteractionCheckState("failed");
     }
   }, []);
 
@@ -419,17 +459,62 @@ export function PrescriptionBuilderStep({
         ))}
       </section>
 
-      {/* Drug-drug interactions */}
-      {(drugInteractions.length > 0 || interactionLoading) && (
+      {/* Contrôle des interactions : chaque issue est affichée, y compris l'échec */}
+      {(interactionCheckState !== "idle" || uncodedDrugCount > 0) && (
         <section className="space-y-3 border-t border-border pt-6">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-amber-500" />
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-amber-600">
-              Interactions médicamenteuses
-              {interactionLoading && <Loader2 className="inline ml-2 w-3 h-3 animate-spin" />}
+            <AlertTriangle
+              className={`w-4 h-4 ${interactionCheckState === "failed" ? "text-destructive" : "text-amber-500"}`}
+            />
+            <h3
+              className={`text-sm font-semibold uppercase tracking-wide ${
+                interactionCheckState === "failed" ? "text-destructive" : "text-amber-600"
+              }`}
+            >
+              {t("prescriptionStep.interactionsTitle")}
+              {interactionCheckState === "checking" && (
+                <Loader2 className="inline ml-2 w-3 h-3 animate-spin" />
+              )}
             </h3>
           </div>
-          <DrugInteractionWarning interactions={drugInteractions} />
+
+          {interactionCheckState === "checking" && (
+            <p className="text-sm text-muted-foreground">
+              {t("prescriptionStep.interactionsChecking")}
+            </p>
+          )}
+
+          {interactionCheckState === "found" && (
+            <DrugInteractionWarning interactions={drugInteractions} />
+          )}
+
+          {interactionCheckState === "clear" && (
+            <p className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400">
+              <Check className="w-4 h-4" />
+              {t("prescriptionStep.interactionsClear")}
+            </p>
+          )}
+
+          {interactionCheckState === "failed" && (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 space-y-3">
+              <p className="text-sm text-destructive">
+                {t("prescriptionStep.interactionsFailed")}
+              </p>
+              <button
+                type="button"
+                onClick={() => checkInteractions(treatments)}
+                className="text-xs font-semibold uppercase tracking-wide text-destructive underline underline-offset-4"
+              >
+                {t("prescriptionStep.interactionsRetry")}
+              </button>
+            </div>
+          )}
+
+          {uncodedDrugCount > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {t("prescriptionStep.interactionsUncoded", { count: uncodedDrugCount })}
+            </p>
+          )}
         </section>
       )}
 

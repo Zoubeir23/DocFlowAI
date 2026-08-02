@@ -81,14 +81,28 @@ export async function deleteDoctorSignature(): Promise<{ success: boolean; error
   return { success: true };
 }
 
-export async function getDoctorSignatureByUserId(
-  userId: string
+/**
+ * Signature à apposer sur le document d'un diagnostic validé.
+ *
+ * Le validateur est résolu côté serveur à partir du diagnostic : aucune Server
+ * Action ne prend d'identifiant d'utilisateur libre, ce qui évite qu'un membre
+ * de la clinique puisse récupérer l'image de signature d'un confrère sans
+ * passer par un document réel. Tant que le diagnostic n'est pas validé, aucune
+ * signature n'est renvoyée.
+ */
+export async function getSignatureForValidatedDiagnostic(
+  diagnosticId: string
 ): Promise<DoctorSignature | null> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data: callerData } = await (supabase as any)
+  // Les tables métier ne figurent pas dans les types générés : un seul cast
+  // local plutôt qu'un par requête.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
+
+  const { data: callerData } = await db
     .from("users")
     .select("clinic_id")
     .eq("id", user.id)
@@ -96,10 +110,25 @@ export async function getDoctorSignatureByUserId(
 
   if (!callerData) return null;
 
-  const { data } = await (supabase as any)
+  // Le diagnostic est lu dans la clinique de l'appelant : un identifiant
+  // appartenant à une autre clinique ne remonte rien.
+  const { data: diagnostic } = await db
+    .from("diagnostics")
+    .select("validated_by_user_id, validation_status")
+    .eq("id", diagnosticId)
+    .eq("clinic_id", callerData.clinic_id)
+    .maybeSingle() as {
+      data: { validated_by_user_id: string | null; validation_status: string } | null;
+    };
+
+  if (!diagnostic?.validated_by_user_id || diagnostic.validation_status !== "validated") {
+    return null;
+  }
+
+  const { data } = await db
     .from("doctor_signatures")
     .select("*")
-    .eq("user_id", userId)
+    .eq("user_id", diagnostic.validated_by_user_id)
     .eq("clinic_id", callerData.clinic_id)
     .maybeSingle() as { data: DoctorSignature | null };
 

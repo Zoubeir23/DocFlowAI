@@ -11,10 +11,26 @@
 
 import type { DrugInteractionPair } from "@/types";
 
+/**
+ * Issue du contrôle d'interactions.
+ *
+ * `unavailable` doit rester distinct d'une liste vide : renvoyer « aucune
+ * interaction » quand RxNav est injoignable ferait lire au prescripteur une
+ * confirmation rassurante alors qu'aucun contrôle n'a eu lieu.
+ */
+export type DrugInteractionStatus = "checked" | "unavailable";
+
 export interface DrugInteractionResult {
+  status: DrugInteractionStatus;
   hasCritical: boolean;
   interactions: DrugInteractionPair[];
 }
+
+const UNAVAILABLE_RESULT: DrugInteractionResult = {
+  status: "unavailable",
+  hasCritical: false,
+  interactions: [],
+};
 
 const RXNAV_BASE_URL = "https://rxnav.nlm.nih.gov/REST";
 
@@ -49,7 +65,7 @@ export async function checkDrugInteractions(
 ): Promise<DrugInteractionResult> {
   const validRxcuis = rxcuis.filter((id) => id && id.trim() !== "" && /^\d+$/.test(id));
   if (validRxcuis.length < 2) {
-    return { hasCritical: false, interactions: [] };
+    return { status: "checked", hasCritical: false, interactions: [] };
   }
 
   try {
@@ -60,7 +76,7 @@ export async function checkDrugInteractions(
     });
 
     if (!response.ok) {
-      return { hasCritical: false, interactions: [] };
+      return UNAVAILABLE_RESULT;
     }
 
     const data: RxNormInteractionResponse = await response.json();
@@ -91,8 +107,8 @@ export async function checkDrugInteractions(
     }
 
     const hasCritical = interactions.some((i) => i.severity === "high");
-    return { hasCritical, interactions };
+    return { status: "checked", hasCritical, interactions };
   } catch {
-    return { hasCritical: false, interactions: [] };
+    return UNAVAILABLE_RESULT;
   }
 }
