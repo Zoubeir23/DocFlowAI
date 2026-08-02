@@ -4,9 +4,43 @@ import { SectionLabel } from "@/components/landing/section-label";
 import { CopyEmbedCodeButton } from "@/components/landing/copy-embed-code-button";
 
 const DEMO_CLINIC_SLUG = "cabinet-dr-martin";
+const DEFAULT_APP_URL = "https://docflow.ia";
+const ALLOWED_APP_URL_PROTOCOLS = ["http:", "https:"];
 
+/**
+ * Résout l'URL publique servant de base au snippet.
+ *
+ * Ce snippet quitte le produit pour être collé sur le site du praticien : une
+ * valeur vide donnerait une URL relative inexploitable chez lui, et un schéma
+ * inattendu s'y retrouverait tel quel. On retombe donc sur l'URL par défaut dès
+ * que la variable n'est pas une URL http(s) exploitable. `http` reste accepté
+ * car l'environnement de développement tourne sur `http://localhost:3000`.
+ */
+function resolvePublicAppUrl(): string {
+  const configuredUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (!configuredUrl) return DEFAULT_APP_URL;
+
+  try {
+    const parsedUrl = new URL(configuredUrl);
+    return ALLOWED_APP_URL_PROTOCOLS.includes(parsedUrl.protocol)
+      ? configuredUrl
+      : DEFAULT_APP_URL;
+  } catch {
+    return DEFAULT_APP_URL;
+  }
+}
+
+/**
+ * Construit le snippet d'intégration copié par le praticien sur son propre site.
+ *
+ * L'URL est normalisée : `NEXT_PUBLIC_APP_URL` peut finir par une barre oblique
+ * et produirait alors `https://exemple.fr//widget/…`. L'attribut `frameborder`
+ * ayant disparu du standard HTML, la bordure est retirée en CSS.
+ */
 function buildEmbedCode(appUrl: string): string {
-  return `<iframe src="${appUrl}/widget/${DEMO_CLINIC_SLUG}" width="100%" height="600" frameborder="0"></iframe>`;
+  const normalizedAppUrl = appUrl.replace(/\/+$/, "");
+
+  return `<iframe src="${normalizedAppUrl}/widget/${DEMO_CLINIC_SLUG}" width="100%" height="600" style="border:0"></iframe>`;
 }
 
 /**
@@ -15,8 +49,7 @@ function buildEmbedCode(appUrl: string): string {
  */
 export async function EmbedWidgetSection() {
   const t = await getTranslations("landing.widget");
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://docflow.ia";
-  const embedCode = buildEmbedCode(appUrl);
+  const embedCode = buildEmbedCode(resolvePublicAppUrl());
   const bullets = [t("bulletRateLimit"), t("bulletBilingual"), t("bulletBranding")];
 
   return (
@@ -49,6 +82,7 @@ export async function EmbedWidgetSection() {
                   code={embedCode}
                   copyLabel={t("copy")}
                   copiedLabel={t("copied")}
+                  copyFailedLabel={t("copyFailed")}
                 />
               </div>
             </div>

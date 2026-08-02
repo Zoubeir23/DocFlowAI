@@ -34,24 +34,24 @@ export async function SecuritySection() {
           <p className="mt-5 text-lg text-muted-foreground leading-relaxed">{t("subtitle")}</p>
         </div>
 
-        <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-border border border-border rounded-3xl overflow-hidden">
+        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-border border border-border rounded-3xl overflow-hidden">
           {guarantees.map((guarantee) => {
             const Icon = guarantee.icon;
 
             return (
-              <div
+              <li
                 key={guarantee.key}
                 className="bg-card p-8 hover:bg-primary/[0.03] transition-colors"
               >
                 <Icon className="w-6 h-6 text-primary mb-6" strokeWidth={1.5} />
-                <dt className="font-bold text-foreground">{guarantee.title}</dt>
-                <dd className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                <h3 className="font-bold text-foreground">{guarantee.title}</h3>
+                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
                   {guarantee.description}
-                </dd>
-              </div>
+                </p>
+              </li>
             );
           })}
-        </dl>
+        </ul>
       </div>
     </section>
   );

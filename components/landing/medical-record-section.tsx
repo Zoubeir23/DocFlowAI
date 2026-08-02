@@ -42,25 +42,25 @@ export async function MedicalRecordSection() {
             </h2>
             <p className="mt-5 text-lg text-muted-foreground leading-relaxed">{t("subtitle")}</p>
 
-            <dl className="mt-10 space-y-7">
+            <ul className="mt-10 space-y-7">
               {highlights.map((highlight) => {
                 const Icon = highlight.icon;
 
                 return (
-                  <div key={highlight.key} className="flex items-start gap-5">
+                  <li key={highlight.key} className="flex items-start gap-5">
                     <div className="w-11 h-11 shrink-0 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
                       <Icon className="w-5 h-5" strokeWidth={1.75} />
                     </div>
                     <div>
-                      <dt className="font-bold text-foreground">{highlight.title}</dt>
-                      <dd className="mt-1 text-muted-foreground leading-relaxed">
+                      <h3 className="font-bold text-foreground">{highlight.title}</h3>
+                      <p className="mt-1 text-muted-foreground leading-relaxed">
                         {highlight.description}
-                      </dd>
+                      </p>
                     </div>
-                  </div>
+                  </li>
                 );
               })}
-            </dl>
+            </ul>
           </div>
 
           <div className="lg:col-span-6 fade-in-up" style={{ animationDelay: "0.15s" }}>

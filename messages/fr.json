@@ -970,7 +970,8 @@
         "title": "Rendez-vous 24h/24",
         "desc": "L'IA consulte vos créneaux réels et enregistre la réservation directement dans votre agenda.",
         "cta": "Démarrer une simulation"
-      }
+      },
+      "copyFailed": "Copie impossible, sélectionnez le code"
     },
     "pricingPreview": {
       "label": "Tarification",
