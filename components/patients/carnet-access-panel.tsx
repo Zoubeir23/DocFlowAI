@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { History, RefreshCw, ShieldAlert, Loader2 } from "lucide-react";
@@ -22,6 +23,7 @@ interface CarnetAccessPanelProps {
  * illégitime.
  */
 export function CarnetAccessPanel({ patientId }: CarnetAccessPanelProps) {
+  const t = useTranslations("patients.carnetAccess");
   const queryClient = useQueryClient();
   const [isRotating, setIsRotating] = useState(false);
   const [rotationError, setRotationError] = useState<string | null>(null);
@@ -35,17 +37,23 @@ export function CarnetAccessPanel({ patientId }: CarnetAccessPanelProps) {
     setIsRotating(true);
     setRotationError(null);
 
-    const result = await regenerateCarnetCode(patientId);
+    // `finally` indispensable : si l'action serveur rejette, le bouton resterait
+    // désactivé et le spinner tournerait indéfiniment, sans message.
+    try {
+      const result = await regenerateCarnetCode(patientId);
 
-    if (result.success) {
-      // La fiche patient porte l'ancien code : elle doit être rechargée.
-      queryClient.invalidateQueries({ queryKey: ["patient", patientId] });
-      queryClient.invalidateQueries({ queryKey: ["patients-with-carnets"] });
-    } else {
-      setRotationError(result.error ?? "Échec de la régénération du code");
+      if (result.success) {
+        // La fiche patient porte l'ancien code : elle doit être rechargée.
+        queryClient.invalidateQueries({ queryKey: ["patient", patientId] });
+        queryClient.invalidateQueries({ queryKey: ["patients-with-carnets"] });
+      } else {
+        setRotationError(result.error ?? t("rotationError"));
+      }
+    } catch {
+      setRotationError(t("rotationError"));
+    } finally {
+      setIsRotating(false);
     }
-
-    setIsRotating(false);
   };
 
   return (
@@ -53,7 +61,7 @@ export function CarnetAccessPanel({ patientId }: CarnetAccessPanelProps) {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2.5">
           <History className="w-4 h-4 text-primary" />
-          <h3 className="font-semibold text-foreground">Accès au carnet</h3>
+          <h3 className="font-semibold text-foreground">{t("title")}</h3>
         </div>
         <Button
           size="sm"
@@ -67,7 +75,7 @@ export function CarnetAccessPanel({ patientId }: CarnetAccessPanelProps) {
           ) : (
             <RefreshCw className="w-3.5 h-3.5" />
           )}
-          Régénérer le code
+          {t("regenerate")}
         </Button>
       </div>
 
@@ -81,9 +89,7 @@ export function CarnetAccessPanel({ patientId }: CarnetAccessPanelProps) {
       {isLoading ? (
         <Skeleton className="h-16 w-full rounded-xl" />
       ) : !importEvents || importEvents.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          Aucune autre clinique n&apos;a rattaché ce carnet.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("noAccess")}</p>
       ) : (
         <ul className="space-y-2">
           {importEvents.map((event) => (
@@ -93,11 +99,11 @@ export function CarnetAccessPanel({ patientId }: CarnetAccessPanelProps) {
             >
               <div>
                 <p className="text-sm font-medium text-foreground">
-                  {event.clinic?.name ?? "Clinique supprimée"}
+                  {event.clinic?.name ?? t("deletedClinic")}
                 </p>
                 {event.imported_by?.full_name && (
                   <p className="text-xs text-muted-foreground">
-                    par {event.imported_by.full_name}
+                    {t("by", { name: event.imported_by.full_name })}
                   </p>
                 )}
               </div>
@@ -109,10 +115,7 @@ export function CarnetAccessPanel({ patientId }: CarnetAccessPanelProps) {
         </ul>
       )}
 
-      <p className="text-xs text-muted-foreground border-t border-border pt-3">
-        Régénérer le code invalide l&apos;ancien immédiatement. Les cliniques déjà rattachées
-        conservent leur accès : leur lien repose sur le carnet, pas sur le code.
-      </p>
+      <p className="text-xs text-muted-foreground border-t border-border pt-3">{t("notice")}</p>
     </div>
   );
 }
