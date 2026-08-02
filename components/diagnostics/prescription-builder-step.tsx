@@ -12,7 +12,7 @@ import { DrugInteractionWarning } from "@/components/diagnostics/drug-interactio
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { checkAllergyConflicts } from "@/lib/diagnostic-scoring";
+import { detectAllergyConflict, type AllergyConflict } from "@/lib/allergy-conflicts";
 import type { PrescriptionInput, PrescriptionTreatment, DiagnosticDocumentType, IcfCode, DrugInteractionPair, PharmacovigilanceSignal } from "@/types";
 
 const prescriptionSchema = z.object({
@@ -122,7 +122,9 @@ export function PrescriptionBuilderStep({
   const [customRecommendation, setCustomRecommendation] = useState("");
   const [followUpTests, setFollowUpTests] = useState<string[]>([]);
   const [customTest, setCustomTest] = useState("");
-  const [allergyWarnings, setAllergyWarnings] = useState<Set<number>>(new Set());
+  // Indexé par position du traitement : on conserve le motif, pas seulement le fait
+  // qu'il y ait conflit, pour que le prescripteur puisse juger sur pièce.
+  const [allergyConflicts, setAllergyConflicts] = useState<Map<number, AllergyConflict>>(new Map());
 
   const [icfCodes, setIcfCodes] = useState<IcfCode[]>([]);
   const [drugInteractions, setDrugInteractions] = useState<DrugInteractionPair[]>([]);
@@ -223,21 +225,29 @@ export function PrescriptionBuilderStep({
     }
   }
 
+  // Recalcul complet plutôt que mise à jour par index : supprimer un traitement
+  // décale tous les suivants, et une alerte d'allergie collée à la mauvaise
+  // ligne serait pire que pas d'alerte du tout.
+  const recomputeAllergyConflicts = useCallback(
+    (currentTreatments: PrescriptionTreatment[]) => {
+      const conflicts = new Map<number, AllergyConflict>();
+      currentTreatments.forEach((treatment, index) => {
+        const conflict = detectAllergyConflict(
+          treatment.drug_name,
+          treatment.atc_code,
+          patientAllergies
+        );
+        if (conflict) conflicts.set(index, conflict);
+      });
+      setAllergyConflicts(conflicts);
+    },
+    [patientAllergies]
+  );
+
   function updateTreatment(index: number, field: keyof PrescriptionTreatment, value: string | number | boolean) {
     const updated = treatments.map((treatment, idx) => {
       if (idx !== index) return treatment;
       const newTreatment = { ...treatment, [field]: value };
-
-      // Check allergy conflict
-      if (field === "drug_name") {
-        const hasConflict = checkAllergyConflicts(value as string, patientAllergies);
-        setAllergyWarnings((prev) => {
-          const next = new Set(prev);
-          if (hasConflict) next.add(index);
-          else next.delete(index);
-          return next;
-        });
-      }
 
       // Fetch vigibase signal when a valid rxcui is set
       if (field === "rxcui" && value) {
@@ -247,6 +257,9 @@ export function PrescriptionBuilderStep({
       return newTreatment;
     });
     setTreatments(updated);
+    // Le conflit dépend du nom comme du code ATC : c'est le code qui rattache le
+    // médicament à une famille thérapeutique.
+    recomputeAllergyConflicts(updated);
     // Re-check interactions when rxcui changes
     if (field === "rxcui") {
       checkInteractions(updated);
@@ -260,11 +273,7 @@ export function PrescriptionBuilderStep({
   function removeTreatment(index: number) {
     const updated = treatments.filter((_, idx) => idx !== index);
     setTreatments(updated);
-    setAllergyWarnings((prev) => {
-      const next = new Set(prev);
-      next.delete(index);
-      return next;
-    });
+    recomputeAllergyConflicts(updated);
     checkInteractions(updated);
   }
 
@@ -289,7 +298,7 @@ export function PrescriptionBuilderStep({
   }
 
   async function handleFormSubmit(formData: Omit<PrescriptionInput, "treatments" | "recommendations" | "follow_up_tests" | "icf_codes">) {
-    if (allergyWarnings.size > 0) return;
+    if (allergyConflicts.size > 0) return;
 
     // Les traitements sont optionnels : les lignes sans médicament renseigné
     // sont simplement omises plutôt que de bloquer la soumission (ex: reçu,
@@ -361,14 +370,32 @@ export function PrescriptionBuilderStep({
 
         {treatments.map((treatment, index) => (
           <div key={index} className={`space-y-4 p-5 rounded-xl border-2 transition-all ${
-            allergyWarnings.has(index)
+            allergyConflicts.has(index)
               ? "border-destructive bg-destructive/5"
               : "border-border bg-card"
           }`}>
-            {allergyWarnings.has(index) && (
-              <div className="flex items-center gap-2 text-destructive text-sm font-medium">
-                <AlertTriangle className="w-4 h-4" />
-                {t("prescriptionStep.allergyWarning")}
+            {allergyConflicts.has(index) && (
+              <div className="flex items-start gap-2 text-destructive text-sm font-medium">
+                <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>
+                  {t("prescriptionStep.allergyWarning")}
+                  {(() => {
+                    const conflict = allergyConflicts.get(index)!;
+                    if (!conflict.className) return null;
+                    const messageKey =
+                      conflict.kind === "cross_reactivity"
+                        ? "prescriptionStep.allergyWarningCross"
+                        : "prescriptionStep.allergyWarningClass";
+                    return (
+                      <span className="block font-normal mt-0.5">
+                        {t(messageKey, {
+                          allergy: conflict.allergy,
+                          className: conflict.className,
+                        })}
+                      </span>
+                    );
+                  })()}
+                </span>
               </div>
             )}
 
@@ -618,7 +645,7 @@ export function PrescriptionBuilderStep({
 
       <div className="flex gap-3 pt-2">
         <Button type="button" onClick={onBack} variant="outline" className="rounded-xl border-border">{t("prescriptionStep.back")}</Button>
-        <Button type="submit" disabled={isSubmitting || allergyWarnings.size > 0}
+        <Button type="submit" disabled={isSubmitting || allergyConflicts.size > 0}
           className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-medium flex-1">
           {isSubmitting ? t("prescriptionStep.generating") : t("prescriptionStep.generateAndSave")}
         </Button>
