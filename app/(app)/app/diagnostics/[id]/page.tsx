@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, FileEdit, Stethoscope } from "lucide-react";
 import { getDiagnosticById } from "@/actions/diagnostics";
-import { getDoctorSignatureByUserId } from "@/actions/doctor-signature";
+import { getSignatureForValidatedDiagnostic } from "@/actions/doctor-signature";
 import { PrescriptionPrintDocument } from "@/components/diagnostics/prescription-print-document";
 import { DiagnosticValidationPanel } from "@/components/diagnostics/diagnostic-validation-panel";
 import { ComorbiditiesPanel } from "@/components/diagnostics/comorbidities-panel";
@@ -20,11 +20,9 @@ export default async function DiagnosticDetailPage({ params }: DiagnosticDetailP
   // Le document porte la signature du médecin qui a validé le diagnostic, et non
   // celle de la personne qui consulte la page : afficher la signature du lecteur
   // sous le nom et le n° RPPS d'un autre praticien produirait un document faux.
-  // Tant que la validation n'a pas eu lieu, aucune signature n'est apposée.
-  const signature =
-    diagnostic.validation_status === "validated" && diagnostic.validated_by_user_id
-      ? await getDoctorSignatureByUserId(diagnostic.validated_by_user_id)
-      : null;
+  // L'action résout elle-même le validateur et ne renvoie rien tant que le
+  // diagnostic n'est pas validé.
+  const signature = await getSignatureForValidatedDiagnostic(diagnostic.id);
 
   const STATUS_STYLES: Record<string, string> = {
     draft: "bg-gray-100 text-gray-600",
