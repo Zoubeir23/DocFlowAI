@@ -4,6 +4,31 @@ import { SectionLabel } from "@/components/landing/section-label";
 import { CopyEmbedCodeButton } from "@/components/landing/copy-embed-code-button";
 
 const DEMO_CLINIC_SLUG = "cabinet-dr-martin";
+const DEFAULT_APP_URL = "https://docflow.ia";
+const ALLOWED_APP_URL_PROTOCOLS = ["http:", "https:"];
+
+/**
+ * Résout l'URL publique servant de base au snippet.
+ *
+ * Ce snippet quitte le produit pour être collé sur le site du praticien : une
+ * valeur vide donnerait une URL relative inexploitable chez lui, et un schéma
+ * inattendu s'y retrouverait tel quel. On retombe donc sur l'URL par défaut dès
+ * que la variable n'est pas une URL http(s) exploitable. `http` reste accepté
+ * car l'environnement de développement tourne sur `http://localhost:3000`.
+ */
+function resolvePublicAppUrl(): string {
+  const configuredUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (!configuredUrl) return DEFAULT_APP_URL;
+
+  try {
+    const parsedUrl = new URL(configuredUrl);
+    return ALLOWED_APP_URL_PROTOCOLS.includes(parsedUrl.protocol)
+      ? configuredUrl
+      : DEFAULT_APP_URL;
+  } catch {
+    return DEFAULT_APP_URL;
+  }
+}
 
 /**
  * Construit le snippet d'intégration copié par le praticien sur son propre site.
@@ -24,8 +49,7 @@ function buildEmbedCode(appUrl: string): string {
  */
 export async function EmbedWidgetSection() {
   const t = await getTranslations("landing.widget");
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://docflow.ia";
-  const embedCode = buildEmbedCode(appUrl);
+  const embedCode = buildEmbedCode(resolvePublicAppUrl());
   const bullets = [t("bulletRateLimit"), t("bulletBilingual"), t("bulletBranding")];
 
   return (
