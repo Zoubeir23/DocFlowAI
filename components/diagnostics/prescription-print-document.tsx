@@ -2,9 +2,12 @@
 
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Printer } from "lucide-react";
+import { Printer, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { DiagnosticRecord } from "@/types";
+
+/** Statut du sceau, calculé côté serveur : ce composant ne recalcule rien. */
+type DocumentSealStatus = "sealed" | "unsealed" | "tampered";
 
 const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   consultation: "Compte rendu de consultation",
@@ -36,6 +39,10 @@ interface PrescriptionPrintDocumentProps {
   clinicName?: string;
   clinicAddress?: string;
   signatureDataUrl?: string;
+  /** Résultat de la vérification du sceau, calculée côté serveur. */
+  sealStatus?: DocumentSealStatus;
+  /** Référence courte imprimable du sceau, mise en forme côté serveur. */
+  sealReference?: string;
 }
 
 export function PrescriptionPrintDocument({
@@ -43,6 +50,8 @@ export function PrescriptionPrintDocument({
   clinicName = "Cabinet médical",
   clinicAddress,
   signatureDataUrl,
+  sealStatus = "unsealed",
+  sealReference,
 }: PrescriptionPrintDocumentProps) {
   const documentTitle = (diagnostic.document_type ? DOCUMENT_TYPE_LABELS[diagnostic.document_type] : null) ?? "Document médical";
   const formattedDate = format(parseISO(diagnostic.created_at), "d MMMM yyyy", { locale: fr });
@@ -55,6 +64,20 @@ export function PrescriptionPrintDocument({
           <Printer className="w-4 h-4" /> Imprimer
         </Button>
       </div>
+
+      {sealStatus === "tampered" && (
+        <div className="flex items-start gap-3 rounded-2xl border-2 border-red-300 bg-red-50 p-4">
+          <ShieldAlert className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+          <div className="text-sm text-red-800">
+            <p className="font-bold">Document modifié après signature</p>
+            <p className="mt-0.5">
+              Le contenu ne correspond plus à celui scellé lors de la production du document. La
+              signature affichée ne l&apos;engage pas. Régénérez le document avant toute remise au
+              patient.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Document */}
       <div className="bg-white text-gray-900 rounded-2xl border border-gray-200 shadow-sm print:shadow-none print:border-none print:rounded-none">
@@ -266,6 +289,9 @@ export function PrescriptionPrintDocument({
             <div className="text-xs text-gray-600 space-y-1">
               <p>Document généré le {formattedDate}</p>
               <p className="font-mono">Réf: {diagnostic.id.slice(0, 8).toUpperCase()}</p>
+              {sealStatus === "sealed" && sealReference && (
+                <p className="font-mono text-gray-500">Sceau: {sealReference}</p>
+              )}
             </div>
             <div className="text-center space-y-2">
               <p className="text-xs text-gray-600">Signature et cachet</p>
