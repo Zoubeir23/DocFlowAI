@@ -6,7 +6,6 @@ import {
   Video,
   LayoutTemplate,
   CreditCard,
-  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 import { SectionLabel } from "@/components/landing/section-label";
@@ -69,13 +68,6 @@ export async function FeaturesSection() {
       title: t("paymentsTitle"),
       description: t("paymentsDesc"),
       bullets: [t("bullets.paymentsWebhooks"), t("bullets.paymentsApi")],
-    },
-    {
-      key: "security",
-      icon: ShieldCheck,
-      title: t("securityTitle"),
-      description: t("securityDesc"),
-      bullets: [],
     },
   ];
 
