@@ -19,17 +19,16 @@ interface PricingPlanCardProps {
   plan: string;
   isPopular: boolean;
   popularLabel: string;
-  /** Position dans la grille : donne la profondeur et le délai d'apparition. */
+  /** Position dans la grille : donne le délai d'apparition. */
   index: number;
-  columnCount: number;
 }
 
 /**
  * Carte tarifaire de la landing.
  *
- * Les cartes latérales sont légèrement reculées et réduites pour donner de la
- * profondeur à la carte mise en avant ; l'effet ne s'applique qu'à partir du
- * grand écran, où les colonnes sont côte à côte.
+ * La carte mise en avant est surélevée et les autres légèrement reculées pour
+ * créer de la profondeur ; l'effet ne s'applique qu'à partir du grand écran, où
+ * les colonnes sont côte à côte.
  */
 export function PricingPlanCard({
   name,
@@ -45,24 +44,18 @@ export function PricingPlanCard({
   isPopular,
   popularLabel,
   index,
-  columnCount,
 }: PricingPlanCardProps) {
   const { ref, isInView } = useInView<HTMLDivElement>();
-
-  const isFirstColumn = index === 0;
-  const isLastColumn = index === columnCount - 1;
 
   return (
     <div
       ref={ref}
       className={cn(
-        "relative flex flex-col rounded-3xl border bg-card p-8 transition-all duration-700 ease-out",
+        "relative flex flex-col overflow-hidden rounded-3xl border bg-card p-8 transition-all duration-700 ease-out",
         isPopular
-          ? "border-primary shadow-xl shadow-primary/10 lg:-translate-y-5 z-10"
-          : "border-border hover:border-primary/30",
+          ? "border-primary shadow-xl shadow-primary/10 z-10 lg:-translate-y-4"
+          : "border-border hover:border-primary/30 lg:scale-[0.97]",
         isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8",
-        !isPopular && isFirstColumn && "lg:scale-[0.97] lg:origin-right",
-        !isPopular && isLastColumn && "lg:scale-[0.97] lg:origin-left",
       )}
       style={{ transitionDelay: `${index * 90}ms` }}
     >

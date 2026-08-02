@@ -33,7 +33,7 @@ export async function PricingPreviewSection() {
           <p className="mt-5 text-lg text-muted-foreground leading-relaxed">{t("subtitle")}</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 items-stretch lg:items-center">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 items-stretch">
           {PRICING_PLAN_KEYS.map((planKey, index) => {
             const monthlyPrice = PRICING_PLAN_MONTHLY_PRICES[planKey];
 
@@ -42,7 +42,6 @@ export async function PricingPreviewSection() {
                 key={planKey}
                 plan={planKey}
                 index={index}
-                columnCount={PRICING_PLAN_KEYS.length}
                 name={tPricing(`plans.${planKey}.name`)}
                 description={tPricing(`plans.${planKey}.description`)}
                 monthlyPrice={monthlyPrice}
