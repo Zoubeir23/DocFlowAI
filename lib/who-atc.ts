@@ -1,7 +1,32 @@
+import { z } from "zod";
+
 const RXNAV_BASE = "https://rxnav.nlm.nih.gov/REST";
 
 /** Code ATC de niveau 3 (4 car.), 4 (5 car.) ou 5 (7 car.) — ex: J01C, J01CA, J01CA04. */
 const ATC_CLASS_ID_PATTERN = /^[A-Z]\d{2}[A-Z]([A-Z]\d{2}|[A-Z])?$/;
+
+// La réponse RxNav est une source externe non fiable : classId est déjà filtré
+// par ATC_CLASS_ID_PATTERN plus bas, mais className n'était que typé (`as`),
+// jamais vérifié — une valeur non textuelle aurait pu atteindre le rendu
+// (atc-drug-search.tsx) et faire planter la recherche.
+const rxClassResponseSchema = z.object({
+  rxclassDrugInfoList: z
+    .object({
+      rxclassDrugInfo: z
+        .array(
+          z.object({
+            rxclassMinConceptItem: z
+              .object({
+                classId: z.string().optional(),
+                className: z.string().optional(),
+              })
+              .optional(),
+          })
+        )
+        .optional(),
+    })
+    .optional(),
+});
 
 export interface AtcDrugResult {
   rxcui: string;
@@ -45,13 +70,8 @@ export async function searchDrugsWithAtc(query: string, limit = 8): Promise<AtcD
         );
         if (!atcResponse.ok) return { rxcui, name, atcCode: null, atcName: null };
 
-        const atcData = (await atcResponse.json()) as {
-          rxclassDrugInfoList?: {
-            rxclassDrugInfo?: Array<{
-              rxclassMinConceptItem?: { classId?: string; className?: string };
-            }>;
-          };
-        };
+        const parsedAtcData = rxClassResponseSchema.safeParse(await atcResponse.json());
+        if (!parsedAtcData.success) return { rxcui, name, atcCode: null, atcName: null };
 
         // RxNav ne renvoie quasiment jamais le code ATC de niveau 5 (7 caractères,
         // ex: "J01CA04") : "byRxcui" retourne le plus souvent le sous-groupe
@@ -60,7 +80,7 @@ export async function searchDrugsWithAtc(query: string, limit = 8): Promise<AtcD
         // null, rendant la détection d'allergie par classe thérapeutique inopérante
         // (voir tasks/audit-2026-08-23-full-codebase.md, H1). On accepte donc les
         // niveaux 3 à 5 et on retient le plus spécifique disponible.
-        const atcCandidates = (atcData.rxclassDrugInfoList?.rxclassDrugInfo ?? [])
+        const atcCandidates = (parsedAtcData.data.rxclassDrugInfoList?.rxclassDrugInfo ?? [])
           .map((item) => item.rxclassMinConceptItem)
           .filter(
             (concept): concept is { classId: string; className?: string } =>
