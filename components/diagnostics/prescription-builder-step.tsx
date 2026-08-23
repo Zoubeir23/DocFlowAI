@@ -244,14 +244,18 @@ export function PrescriptionBuilderStep({
     [patientAllergies]
   );
 
-  function updateTreatment(index: number, field: keyof PrescriptionTreatment, value: string | number | boolean) {
+  // Applique un ou plusieurs champs en une seule mise à jour d'état. `AtcDrugSearch`
+  // sélectionne nom, code ATC et rxcui ensemble : trois appels distincts à partir
+  // de la même fermeture (`treatments`) s'écraseraient l'un l'autre et ne
+  // laisseraient survivre que le dernier champ — c'est ce bug qui rendait la
+  // détection d'allergie par classe ATC inopérante (voir tasks/audit-2026-08-23).
+  function applyTreatmentPatch(index: number, patch: Partial<PrescriptionTreatment>) {
     const updated = treatments.map((treatment, idx) => {
       if (idx !== index) return treatment;
-      const newTreatment = { ...treatment, [field]: value };
+      const newTreatment = { ...treatment, ...patch };
 
-      // Fetch vigibase signal when a valid rxcui is set
-      if (field === "rxcui" && value) {
-        fetchVigibaseSignal(value as string, newTreatment.drug_name);
+      if (patch.rxcui) {
+        fetchVigibaseSignal(patch.rxcui, newTreatment.drug_name);
       }
 
       return newTreatment;
@@ -261,9 +265,13 @@ export function PrescriptionBuilderStep({
     // médicament à une famille thérapeutique.
     recomputeAllergyConflicts(updated);
     // Re-check interactions when rxcui changes
-    if (field === "rxcui") {
+    if ("rxcui" in patch) {
       checkInteractions(updated);
     }
+  }
+
+  function updateTreatment(index: number, field: keyof PrescriptionTreatment, value: string | number | boolean) {
+    applyTreatmentPatch(index, { [field]: value } as Partial<PrescriptionTreatment>);
   }
 
   function addTreatment() {
@@ -405,11 +413,9 @@ export function PrescriptionBuilderStep({
                 <AtcDrugSearch
                   value={treatment.drug_name}
                   atcCode={treatment.atc_code}
-                  onSelect={(name, atcCode, rxcui) => {
-                    updateTreatment(index, "drug_name", name);
-                    updateTreatment(index, "atc_code", atcCode);
-                    updateTreatment(index, "rxcui", rxcui);
-                  }}
+                  onSelect={(name, atcCode, rxcui) =>
+                    applyTreatmentPatch(index, { drug_name: name, atc_code: atcCode, rxcui })
+                  }
                 />
               </div>
               <div className="space-y-1.5">
