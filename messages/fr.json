@@ -1177,6 +1177,7 @@
       "interactionsFailed": "Contrôle des interactions indisponible. Vérifiez manuellement avant de prescrire.",
       "interactionsRetry": "Relancer le contrôle",
       "interactionsUncoded": "{count} médicament(s) sans code RxNorm ne sont pas couverts par le contrôle.",
+      "interactionsAcknowledge": "Je confirme avoir pris connaissance de ce résultat du contrôle d'interactions avant de générer le document.",
       "allergyWarningClass": "Allergie déclarée « {allergy} » — même famille que {className}",
       "allergyWarningCross": "Allergie déclarée « {allergy} » — réactivité croisée documentée avec {className}"
     },

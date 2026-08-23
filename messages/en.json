@@ -1177,6 +1177,7 @@
       "interactionsFailed": "Interaction check unavailable. Verify manually before prescribing.",
       "interactionsRetry": "Run the check again",
       "interactionsUncoded": "{count} medication(s) without an RxNorm code are not covered by the check.",
+      "interactionsAcknowledge": "I confirm I have reviewed this interaction check result before generating the document.",
       "allergyWarningClass": "Declared allergy {allergy} — same family as {className}",
       "allergyWarningCross": "Declared allergy {allergy} — documented cross-reactivity with {className}"
     },
