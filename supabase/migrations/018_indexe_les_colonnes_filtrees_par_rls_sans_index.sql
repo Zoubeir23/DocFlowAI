@@ -10,15 +10,21 @@
 -- cascade d'un compte force un balayage complet de la table concernée.
 -- doctor_signatures.clinic_id, référencée par ON DELETE CASCADE depuis
 -- 001_schema.sql, a la même lacune.
+--
+-- CONCURRENTLY : une création d'index bloquante pose un verrou qui empêche
+-- les écritures sur la table le temps de la construction — acceptable sur
+-- une table vide aujourd'hui, mais pas une fois en production sous trafic.
+-- Vérifié : le CLI Supabase n'enveloppe pas l'exécution d'une migration dans
+-- une transaction implicite, CONCURRENTLY s'applique donc sans adaptation.
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-CREATE INDEX IF NOT EXISTS idx_diagnostics_carnet_id ON diagnostics (carnet_id) WHERE carnet_id IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_diagnostics_validated_by_user_id ON diagnostics (validated_by_user_id) WHERE validated_by_user_id IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_diagnostics_prescribed_by_user_id ON diagnostics (prescribed_by_user_id) WHERE prescribed_by_user_id IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_diagnostics_document_sealed_by_user_id ON diagnostics (document_sealed_by_user_id) WHERE document_sealed_by_user_id IS NOT NULL;
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_diagnostics_carnet_id ON diagnostics (carnet_id) WHERE carnet_id IS NOT NULL;
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_diagnostics_validated_by_user_id ON diagnostics (validated_by_user_id) WHERE validated_by_user_id IS NOT NULL;
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_diagnostics_prescribed_by_user_id ON diagnostics (prescribed_by_user_id) WHERE prescribed_by_user_id IS NOT NULL;
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_diagnostics_document_sealed_by_user_id ON diagnostics (document_sealed_by_user_id) WHERE document_sealed_by_user_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_patients_carnet_id ON patients (carnet_id) WHERE carnet_id IS NOT NULL;
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_patients_carnet_id ON patients (carnet_id) WHERE carnet_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_carnet_import_events_imported_by_user_id ON carnet_import_events (imported_by_user_id) WHERE imported_by_user_id IS NOT NULL;
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_carnet_import_events_imported_by_user_id ON carnet_import_events (imported_by_user_id) WHERE imported_by_user_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_doctor_signatures_clinic_id ON doctor_signatures (clinic_id);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_doctor_signatures_clinic_id ON doctor_signatures (clinic_id);
