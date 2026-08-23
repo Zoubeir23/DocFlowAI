@@ -124,9 +124,20 @@ function normalize(value: string): string {
     .trim();
 }
 
+/**
+ * Compare deux codes ATC en s'arrêtant à la longueur du plus court des deux :
+ * RxNav ne renvoie pas toujours le niveau le plus spécifique (niveau 5, 7
+ * caractères), et certains préfixes de cette table sont eux-mêmes de niveau 5
+ * (ex: "B01AC06"). Comparer strictement `code.startsWith(prefix)` ferait
+ * échouer la correspondance dès que le code renvoyé est moins spécifique que
+ * le préfixe — le cas le plus fréquent en pratique.
+ */
 function matchesAnyPrefix(atcCode: string, prefixes: readonly string[]): boolean {
   const upperCode = atcCode.toUpperCase();
-  return prefixes.some((prefix) => upperCode.startsWith(prefix));
+  return prefixes.some((prefix) => {
+    const length = Math.min(upperCode.length, prefix.length);
+    return length > 0 && upperCode.slice(0, length) === prefix.slice(0, length);
+  });
 }
 
 function findClassForAllergy(normalizedAllergy: string): AllergyClass | undefined {

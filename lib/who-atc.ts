@@ -1,5 +1,8 @@
 const RXNAV_BASE = "https://rxnav.nlm.nih.gov/REST";
 
+/** Code ATC de niveau 3 (4 car.), 4 (5 car.) ou 5 (7 car.) — ex: J01C, J01CA, J01CA04. */
+const ATC_CLASS_ID_PATTERN = /^[A-Z]\d{2}[A-Z]([A-Z]\d{2}|[A-Z])?$/;
+
 export interface AtcDrugResult {
   rxcui: string;
   name: string;
@@ -50,15 +53,27 @@ export async function searchDrugsWithAtc(query: string, limit = 8): Promise<AtcD
           };
         };
 
-        const atcInfo = atcData.rxclassDrugInfoList?.rxclassDrugInfo?.find(
-          (item) => item.rxclassMinConceptItem?.classId?.match(/^[A-Z]\d{2}[A-Z]{2}\d{2}$/)
-        );
+        // RxNav ne renvoie quasiment jamais le code ATC de niveau 5 (7 caractères,
+        // ex: "J01CA04") : "byRxcui" retourne le plus souvent le sous-groupe
+        // pharmacologique (niveau 3, 4 caractères, "J01C") ou chimique (niveau 4,
+        // 5 caractères, "J01CA"). Exiger le niveau 5 laissait atcCode toujours
+        // null, rendant la détection d'allergie par classe thérapeutique inopérante
+        // (voir tasks/audit-2026-08-23-full-codebase.md, H1). On accepte donc les
+        // niveaux 3 à 5 et on retient le plus spécifique disponible.
+        const atcCandidates = (atcData.rxclassDrugInfoList?.rxclassDrugInfo ?? [])
+          .map((item) => item.rxclassMinConceptItem)
+          .filter(
+            (concept): concept is { classId: string; className?: string } =>
+              Boolean(concept?.classId && ATC_CLASS_ID_PATTERN.test(concept.classId))
+          )
+          .sort((a, b) => b.classId.length - a.classId.length);
+        const atcInfo = atcCandidates[0];
 
         return {
           rxcui,
           name: candidates.find((c) => c.rxcui === rxcui)?.name ?? name,
-          atcCode: atcInfo?.rxclassMinConceptItem?.classId ?? null,
-          atcName: atcInfo?.rxclassMinConceptItem?.className ?? null,
+          atcCode: atcInfo?.classId ?? null,
+          atcName: atcInfo?.className ?? null,
         };
       } catch {
         return { rxcui, name, atcCode: null, atcName: null };

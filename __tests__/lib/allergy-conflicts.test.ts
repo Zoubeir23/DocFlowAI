@@ -75,4 +75,21 @@ describe("detectAllergyConflict", () => {
       expect(conflict?.className, `${drugName} / ${allergy}`).toBe(expectedClass);
     }
   });
+
+  it("détecte une correspondance même quand le code renvoyé est moins spécifique qu'un préfixe de 7 caractères", () => {
+    // RxNav renvoie le plus souvent un code de niveau 4 (5 caractères, "B01AC")
+    // plutôt que le niveau 5 complet ("B01AC06") utilisé par la réactivité
+    // croisée AINS/salicylés. Avant le correctif, code.startsWith(prefix) ne
+    // pouvait jamais matcher un préfixe plus long que le code.
+    const conflict = detectAllergyConflict("AspirineX", "B01AC", ["AINS"]);
+
+    expect(conflict?.kind).toBe("cross_reactivity");
+    expect(conflict?.className).toBe("Anti-inflammatoires non stéroïdiens");
+  });
+
+  it("détecte une correspondance même quand le code renvoyé n'est que le sous-groupe pharmacologique (niveau 3)", () => {
+    const conflict = detectAllergyConflict("Amoxicilline", "J01C", ["pénicilline"]);
+
+    expect(conflict).toMatchObject({ kind: "same_class", className: "Pénicillines" });
+  });
 });
