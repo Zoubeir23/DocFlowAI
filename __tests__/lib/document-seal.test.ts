@@ -18,7 +18,10 @@ beforeAll(async () => {
 });
 
 afterAll(() => {
-  process.env.DOCUMENT_SEAL_SECRET = originalSecret;
+  // `process.env.KEY = undefined` coercerait en la chaîne "undefined" plutôt
+  // que de retirer la variable — restaurer l'absence d'origine exige delete.
+  if (originalSecret === undefined) delete process.env.DOCUMENT_SEAL_SECRET;
+  else process.env.DOCUMENT_SEAL_SECRET = originalSecret;
 });
 
 const BASE_DOCUMENT: SealableDocument = {
@@ -63,8 +66,8 @@ describe("computeDocumentSeal", () => {
     expect(computeDocumentSeal(reordered)).toBe(computeDocumentSeal(BASE_DOCUMENT));
   });
 
-  it("produit une empreinte SHA-256 hexadécimale", () => {
-    expect(computeDocumentSeal(BASE_DOCUMENT)).toMatch(/^[0-9a-f]{64}$/);
+  it("produit une empreinte HMAC-SHA256 hexadécimale, préfixée du marqueur de format", () => {
+    expect(computeDocumentSeal(BASE_DOCUMENT)).toMatch(/^hmac:[0-9a-f]{64}$/);
   });
 });
 
@@ -103,6 +106,15 @@ describe("détection des modifications", () => {
     expect(verifyDocumentSeal(BASE_DOCUMENT, null)).toBe("unsealed");
     expect(verifyDocumentSeal(BASE_DOCUMENT, "")).toBe("unsealed");
   });
+
+  it("traite un sceau d'un format antérieur au HMAC comme non vérifiable, jamais comme altéré", () => {
+    // Un sceau produit avant ce format (SHA-256 non gardé) ne recalculera
+    // jamais la même valeur que le HMAC actuel : le classer "tampered"
+    // accuserait à tort un document jamais modifié. Le revérifier avec
+    // l'ancien algorithme rouvrirait la forgeabilité que le HMAC corrige.
+    const legacySha256Seal = "3f9a1c2b0d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e";
+    expect(verifyDocumentSeal(BASE_DOCUMENT, legacySha256Seal)).toBe("unsealed");
+  });
 });
 
 describe("buildDocumentFingerprint", () => {
@@ -140,7 +152,8 @@ describe("secret HMAC", () => {
     try {
       expect(() => computeDocumentSeal(BASE_DOCUMENT)).toThrow(/DOCUMENT_SEAL_SECRET/);
     } finally {
-      process.env.DOCUMENT_SEAL_SECRET = previous;
+      if (previous === undefined) delete process.env.DOCUMENT_SEAL_SECRET;
+      else process.env.DOCUMENT_SEAL_SECRET = previous;
     }
   });
 
@@ -153,7 +166,8 @@ describe("secret HMAC", () => {
       const sealB = computeDocumentSeal(BASE_DOCUMENT);
       expect(sealA).not.toBe(sealB);
     } finally {
-      process.env.DOCUMENT_SEAL_SECRET = previous;
+      if (previous === undefined) delete process.env.DOCUMENT_SEAL_SECRET;
+      else process.env.DOCUMENT_SEAL_SECRET = previous;
     }
   });
 });
