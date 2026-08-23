@@ -258,7 +258,26 @@ export default function DiagnosticEditPage() {
             />
           )}
 
-          {currentStep === 5 && patientProfile && (
+          {currentStep === 5 && diagnostic?.document_seal && (
+            // Le document a déjà été généré et scellé : réafficher un formulaire
+            // vide à cette étape produirait un nouveau sceau silencieux en cas
+            // de soumission, masquant une modification post-signature au lieu
+            // de la signaler (tasks/audit-2026-08-23-full-codebase.md, C3).
+            // L'action serveur refuse désormais aussi ce réenregistrement.
+            <div className="text-center py-8 space-y-3">
+              <p className="text-sm text-muted-foreground">
+                L&apos;ordonnance a déjà été générée et scellée pour ce diagnostic.
+              </p>
+              <button
+                onClick={() => router.push(`/app/diagnostics/${diagnosticId}`)}
+                className="text-primary text-sm underline"
+              >
+                Voir le document
+              </button>
+            </div>
+          )}
+
+          {currentStep === 5 && patientProfile && !diagnostic?.document_seal && (
             <PrescriptionBuilderStep
               validatedDiagnosisName={validatedDiagnosisName}
               patientAllergies={patientProfile.allergies ?? []}
