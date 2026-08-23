@@ -256,8 +256,8 @@ export function PrescriptionBuilderStep({
   // laisseraient survivre que le dernier champ — c'est ce bug qui rendait la
   // détection d'allergie par classe ATC inopérante (voir tasks/audit-2026-08-23).
   function applyTreatmentPatch(index: number, patch: Partial<PrescriptionTreatment>) {
-    const updated = treatments.map((treatment, idx) => {
-      if (idx !== index) return treatment;
+    const updated = treatments.map((treatment, treatmentIndex) => {
+      if (treatmentIndex !== index) return treatment;
       const newTreatment = { ...treatment, ...patch };
 
       if (patch.rxcui) {
@@ -561,16 +561,16 @@ export function PrescriptionBuilderStep({
           )}
 
           {interactionRequiresAcknowledgement && (
-            <label className="flex items-start gap-2 text-sm cursor-pointer p-3 rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/20">
+            // Réutilise le token de statut "no-show" (teinte ambre, clair/sombre) :
+            // le projet n'a pas de token "warning" générique dédié.
+            <label className="status-noshow flex items-start gap-2 text-sm cursor-pointer p-3 rounded-xl">
               <input
                 type="checkbox"
                 checked={interactionAcknowledged}
                 onChange={(e) => setInteractionAcknowledged(e.target.checked)}
                 className="mt-0.5 rounded border-border accent-primary"
               />
-              <span className="text-amber-800 dark:text-amber-300">
-                {t("prescriptionStep.interactionsAcknowledge")}
-              </span>
+              <span>{t("prescriptionStep.interactionsAcknowledge")}</span>
             </label>
           )}
         </section>
