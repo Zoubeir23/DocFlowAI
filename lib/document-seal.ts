@@ -25,6 +25,19 @@ import { createHmac } from "node:crypto";
  * `sealed_by_user_id`, complétée par `validated_by_user_id`.
  */
 
+/**
+ * Marque le format HMAC : un sceau produit avant ce format (SHA-256 non
+ * gardé) ne porte pas ce préfixe. Sans lui, un document scellé avant ce
+ * changement recalculerait toujours un sceau différent et serait signalé
+ * « altéré » à tort — une fausse accusation sur un document jamais modifié.
+ * Un ancien sceau reste néanmoins traité comme non vérifiable plutôt que
+ * revérifié avec l'ancien algorithme : celui-ci n'étant pas gardé par clé,
+ * le revérifier indéfiniment laisserait un chemin de contournement permanent
+ * (omettre le préfixe) au correctif de forgeabilité (voir
+ * tasks/audit-2026-08-23-full-codebase.md, C2).
+ */
+const SEAL_FORMAT_PREFIX = "hmac:";
+
 function getDocumentSealSecret(): string {
   const secret = process.env.DOCUMENT_SEAL_SECRET;
   if (!secret) {
@@ -114,11 +127,12 @@ export function buildDocumentFingerprint(document: SealableDocument): string {
   });
 }
 
-/** Empreinte HMAC-SHA256 du document, en hexadécimal minuscule. */
+/** Empreinte HMAC-SHA256 du document, préfixée du marqueur de format. */
 export function computeDocumentSeal(document: SealableDocument): string {
-  return createHmac("sha256", getDocumentSealSecret())
+  const digest = createHmac("sha256", getDocumentSealSecret())
     .update(buildDocumentFingerprint(document), "utf8")
     .digest("hex");
+  return `${SEAL_FORMAT_PREFIX}${digest}`;
 }
 
 export type DocumentSealStatus = "sealed" | "unsealed" | "tampered";
@@ -126,18 +140,21 @@ export type DocumentSealStatus = "sealed" | "unsealed" | "tampered";
 /**
  * Compare l'empreinte conservée au contenu actuel.
  *
- * `unsealed` couvre les documents produits avant la mise en place du scellement :
- * ils ne sont pas suspects, ils sont simplement non vérifiables.
+ * `unsealed` couvre les documents produits avant la mise en place du
+ * scellement, ou avec un format de sceau antérieur au HMAC (voir
+ * SEAL_FORMAT_PREFIX) : ils ne sont pas suspects, ils sont simplement non
+ * vérifiables avec le schéma actuel.
  */
 export function verifyDocumentSeal(
   document: SealableDocument,
   storedSeal: string | null | undefined
 ): DocumentSealStatus {
-  if (!storedSeal) return "unsealed";
+  if (!storedSeal || !storedSeal.startsWith(SEAL_FORMAT_PREFIX)) return "unsealed";
   return computeDocumentSeal(document) === storedSeal ? "sealed" : "tampered";
 }
 
 /** Référence courte imprimable, pour rapprocher un document papier de son sceau. */
 export function formatSealReference(seal: string): string {
-  return seal.slice(0, 16).toUpperCase().replace(/(.{4})(?=.)/g, "$1-");
+  const digest = seal.startsWith(SEAL_FORMAT_PREFIX) ? seal.slice(SEAL_FORMAT_PREFIX.length) : seal;
+  return digest.slice(0, 16).toUpperCase().replace(/(.{4})(?=.)/g, "$1-");
 }
