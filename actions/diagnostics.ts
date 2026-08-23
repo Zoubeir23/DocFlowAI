@@ -2,6 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { computeDocumentSeal } from "@/lib/document-seal";
+import { detectAllergyConflict } from "@/lib/allergy-conflicts";
+import { checkDrugInteractions } from "@/lib/who-drug-interactions";
 import type {
   DiagnosticRecord,
   PatientProfileInput,
@@ -323,13 +325,73 @@ export async function updateDiagnosticPrescription(
   const { data: existing } = await db
     .from("diagnostics")
     .select(
-      "patient_full_name, patient_age_years, patient_sex, patient_weight_kg, patient_blood_group, validated_diagnosis_code, validated_diagnosis_name, chief_complaint, clinical_notes, validated_by, validated_by_user_id, validated_at"
+      "patient_full_name, patient_age_years, patient_sex, patient_weight_kg, patient_blood_group, validated_diagnosis_code, validated_diagnosis_name, chief_complaint, clinical_notes, validated_by, validated_by_user_id, validated_at, document_seal, allergies"
     )
     .eq("id", diagnosticId)
     .eq("clinic_id", clinicId)
     .maybeSingle();
 
   if (!existing) return { success: false, error: "Diagnostic introuvable" };
+
+  // Une fois scellé, le document ne se réenregistre plus par ce chemin : sans
+  // ce garde-fou, rouvrir l'étape 5 recalculait un nouveau sceau en silence —
+  // masquant une modification post-signature au lieu de la signaler comme
+  // altération (tasks/audit-2026-08-23-full-codebase.md, C3). Une future
+  // fonctionnalité d'avenant devra créer un nouveau document plutôt que de
+  // réécrire celui-ci.
+  if (existing.document_seal) {
+    return {
+      success: false,
+      error: "Ce document a déjà été généré et scellé. Il ne peut plus être modifié par cette voie.",
+    };
+  }
+
+  // Contrôle serveur des allergies : le blocage côté client est une aide à la
+  // saisie, pas une garantie — un appel direct à cette action le contournerait
+  // entièrement (tasks/audit-2026-08-23-full-codebase.md, C4).
+  const patientAllergies: string[] = Array.isArray(existing.allergies) ? existing.allergies : [];
+  for (const treatment of prescription.treatments) {
+    const conflict = detectAllergyConflict(treatment.drug_name, treatment.atc_code, patientAllergies);
+    if (conflict) {
+      return {
+        success: false,
+        error: `Conflit d'allergie détecté : ${treatment.drug_name} (allergie connue : ${conflict.allergy}). Retirez ce traitement ou corrigez l'allergie enregistrée.`,
+      };
+    }
+  }
+
+  // Contrôle serveur des interactions : le client affiche déjà ce résultat,
+  // mais rien n'empêchait jusqu'ici la soumission en cas d'échec ou
+  // d'interaction trouvée, et rien n'en gardait trace
+  // (tasks/audit-2026-08-23-full-codebase.md, H2). Le résultat est recalculé
+  // ici — jamais accepté tel quel depuis le client — et persisté.
+  const rxcuisForInteractionCheck = prescription.treatments
+    .map((treatment) => treatment.rxcui)
+    .filter((code): code is string => Boolean(code) && /^\d+$/.test(code));
+
+  let interactionCheckStatus: "not_applicable" | "checked_clear" | "checked_found" | "unavailable" =
+    "not_applicable";
+  if (rxcuisForInteractionCheck.length >= 2) {
+    const interactionResult = await checkDrugInteractions(rxcuisForInteractionCheck);
+    interactionCheckStatus =
+      interactionResult.status === "unavailable"
+        ? "unavailable"
+        : interactionResult.interactions.length > 0
+          ? "checked_found"
+          : "checked_clear";
+  }
+
+  const interactionRequiresAcknowledgement =
+    interactionCheckStatus === "unavailable" || interactionCheckStatus === "checked_found";
+  if (interactionRequiresAcknowledgement && prescription.interaction_check_acknowledged !== true) {
+    return {
+      success: false,
+      error:
+        interactionCheckStatus === "unavailable"
+          ? "Le contrôle d'interactions médicamenteuses est indisponible. Confirmez avoir vérifié les interactions avant de continuer."
+          : "Une interaction médicamenteuse a été détectée. Confirmez l'avoir prise en compte avant de continuer.",
+    };
+  }
 
   // Le sceau est calculé sur le contenu tel qu'il sera enregistré, jamais sur ce
   // que le client prétend avoir produit : une empreinte fournie par l'appelant
@@ -364,6 +426,9 @@ export async function updateDiagnosticPrescription(
       document_seal: documentSeal,
       document_sealed_at: new Date().toISOString(),
       document_sealed_by_user_id: userId,
+      interaction_check_status: interactionCheckStatus,
+      interaction_check_acknowledged_at: interactionRequiresAcknowledgement ? new Date().toISOString() : null,
+      interaction_check_acknowledged_by_user_id: interactionRequiresAcknowledgement ? userId : null,
       current_step: nextStep(state.current_step, 6),
     })
     .eq("id", diagnosticId)
