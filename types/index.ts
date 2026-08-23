@@ -1,4 +1,8 @@
 import type { Database } from "./supabase";
+import type {
+  PrescriptionTreatmentInput,
+  PrescriptionInput as ValidatedPrescriptionInput,
+} from "@/lib/validations";
 
 export type Clinic = Database["public"]["Tables"]["clinics"]["Row"];
 export type User = Database["public"]["Tables"]["users"]["Row"];
@@ -113,17 +117,9 @@ export interface IcdCandidate extends IcdCode {
   is_serious: boolean;
 }
 
-export interface PrescriptionTreatment {
-  drug_name: string;
-  rxcui: string;
-  atc_code: string;
-  dosage_mg: string;
-  frequency: string;
-  duration_days: number;
-  route: "oral" | "iv" | "im" | "topical" | "inhaled" | "sublingual";
-  precautions: string;
-  is_generic: boolean;
-}
+// Dérivé de prescriptionTreatmentSchema (lib/validations.ts) : le schéma de
+// validation est la source de vérité, ce type n'en est qu'un miroir.
+export type PrescriptionTreatment = PrescriptionTreatmentInput;
 
 export interface VitalSigns {
   temperature: number | null;
@@ -251,23 +247,10 @@ export interface SymptomsInput {
   vital_oxygen_saturation?: number | null;
 }
 
-export interface PrescriptionInput {
-  document_type: DiagnosticDocumentType;
-  treatments: PrescriptionTreatment[];
-  recommendations: string[];
-  follow_up_delay_days: number | null;
-  follow_up_tests: string[];
-  practitioner_name: string;
-  practitioner_title: string;
-  practitioner_rpps: string;
-  icf_codes?: IcfCode[];
-  /**
-   * Acquittement explicite du prescripteur lorsque le contrôle d'interactions
-   * a échoué ou a trouvé une interaction : le serveur rejette l'enregistrement
-   * dans ce cas tant que cet acquittement n'est pas fourni (migration 016).
-   */
-  interaction_check_acknowledged?: boolean;
-}
+// Dérivé de prescriptionInputSchema (lib/validations.ts), revalidé côté
+// serveur dans updateDiagnosticPrescription (actions/diagnostics.ts) — le
+// schéma de validation est la source de vérité, ce type n'en est qu'un miroir.
+export type PrescriptionInput = ValidatedPrescriptionInput;
 
 // ── WHO API Types ─────────────────────────────────────────────────────────────
 
