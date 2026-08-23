@@ -92,4 +92,11 @@ describe("detectAllergyConflict", () => {
 
     expect(conflict).toMatchObject({ kind: "same_class", className: "Pénicillines" });
   });
+
+  it("ne matche pas un code ATC trop court (niveau 1) contre un préfixe de niveau 3", () => {
+    // La comparaison sur la longueur du plus court des deux ne doit pas
+    // produire l'effet inverse : "J" (anti-infectieux, niveau 1) ne dit rien
+    // de l'appartenance à la classe des pénicillines ("J01C").
+    expect(detectAllergyConflict("MedicamentX", "J", ["pénicilline"])).toBeNull();
+  });
 });
