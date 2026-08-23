@@ -1130,6 +1130,10 @@
     "rejected": "Rejeté",
     "noResults": "Aucun diagnostic",
     "searchPlaceholder": "Rechercher un patient, diagnostic...",
+    "editPage": {
+      "alreadySealedMessage": "L'ordonnance a déjà été générée et scellée pour ce diagnostic.",
+      "viewDocument": "Voir le document"
+    },
     "validation": {
       "panelTitle": "Validation médicale requise",
       "obligatoryTitle": "Validation médicale obligatoire",

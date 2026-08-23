@@ -1130,6 +1130,10 @@
     "rejected": "Rejected",
     "noResults": "No diagnostics",
     "searchPlaceholder": "Search patient, diagnosis...",
+    "editPage": {
+      "alreadySealedMessage": "The prescription has already been generated and sealed for this diagnostic.",
+      "viewDocument": "View document"
+    },
     "validation": {
       "panelTitle": "Medical validation required",
       "obligatoryTitle": "Mandatory medical validation",

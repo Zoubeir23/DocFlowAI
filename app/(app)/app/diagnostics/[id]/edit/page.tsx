@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Stethoscope, CheckCircle2, Save } from "lucide-react";
 import { SymptomsVitalsStep } from "@/components/diagnostics/symptoms-vitals-step";
@@ -35,6 +36,7 @@ const STEPS = [
 ];
 
 export default function DiagnosticEditPage() {
+  const t = useTranslations("diagnostics.editPage");
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
@@ -265,14 +267,12 @@ export default function DiagnosticEditPage() {
             // de la signaler (tasks/audit-2026-08-23-full-codebase.md, C3).
             // L'action serveur refuse désormais aussi ce réenregistrement.
             <div className="text-center py-8 space-y-3">
-              <p className="text-sm text-muted-foreground">
-                L&apos;ordonnance a déjà été générée et scellée pour ce diagnostic.
-              </p>
+              <p className="text-sm text-muted-foreground">{t("alreadySealedMessage")}</p>
               <button
                 onClick={() => router.push(`/app/diagnostics/${diagnosticId}`)}
                 className="text-primary text-sm underline"
               >
-                Voir le document
+                {t("viewDocument")}
               </button>
             </div>
           )}
