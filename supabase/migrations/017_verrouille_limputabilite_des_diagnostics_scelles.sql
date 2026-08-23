@@ -44,26 +44,42 @@ BEGIN
     RAISE EXCEPTION 'validation_requires_medical_role';
   END IF;
 
-  IF NEW.validated_by_user_id IS DISTINCT FROM OLD.validated_by_user_id
-     AND NEW.validated_by_user_id IS NOT NULL
+  -- Chaque colonne d'imputabilité est en écriture unique : une fois posée,
+  -- elle ne peut plus être ni réattribuée à un autre compte, ni effacée
+  -- (NEW ... IS NOT NULL gardait jusqu'ici la comparaison à auth.uid(), donc
+  -- ne rejetait que la réattribution — la mise à NULL, elle, passait).
+  IF OLD.validated_by_user_id IS NOT NULL
+     AND NEW.validated_by_user_id IS DISTINCT FROM OLD.validated_by_user_id THEN
+    RAISE EXCEPTION 'validated_by_user_id_is_immutable_once_set';
+  END IF;
+  IF NEW.validated_by_user_id IS NOT NULL
      AND NEW.validated_by_user_id IS DISTINCT FROM auth.uid() THEN
     RAISE EXCEPTION 'validated_by_user_id_must_be_self';
   END IF;
 
-  IF NEW.prescribed_by_user_id IS DISTINCT FROM OLD.prescribed_by_user_id
-     AND NEW.prescribed_by_user_id IS NOT NULL
+  IF OLD.prescribed_by_user_id IS NOT NULL
+     AND NEW.prescribed_by_user_id IS DISTINCT FROM OLD.prescribed_by_user_id THEN
+    RAISE EXCEPTION 'prescribed_by_user_id_is_immutable_once_set';
+  END IF;
+  IF NEW.prescribed_by_user_id IS NOT NULL
      AND NEW.prescribed_by_user_id IS DISTINCT FROM auth.uid() THEN
     RAISE EXCEPTION 'prescribed_by_user_id_must_be_self';
   END IF;
 
-  IF NEW.document_sealed_by_user_id IS DISTINCT FROM OLD.document_sealed_by_user_id
-     AND NEW.document_sealed_by_user_id IS NOT NULL
+  IF OLD.document_sealed_by_user_id IS NOT NULL
+     AND NEW.document_sealed_by_user_id IS DISTINCT FROM OLD.document_sealed_by_user_id THEN
+    RAISE EXCEPTION 'document_sealed_by_user_id_is_immutable_once_set';
+  END IF;
+  IF NEW.document_sealed_by_user_id IS NOT NULL
      AND NEW.document_sealed_by_user_id IS DISTINCT FROM auth.uid() THEN
     RAISE EXCEPTION 'document_sealed_by_user_id_must_be_self';
   END IF;
 
-  IF NEW.interaction_check_acknowledged_by_user_id IS DISTINCT FROM OLD.interaction_check_acknowledged_by_user_id
-     AND NEW.interaction_check_acknowledged_by_user_id IS NOT NULL
+  IF OLD.interaction_check_acknowledged_by_user_id IS NOT NULL
+     AND NEW.interaction_check_acknowledged_by_user_id IS DISTINCT FROM OLD.interaction_check_acknowledged_by_user_id THEN
+    RAISE EXCEPTION 'interaction_check_acknowledged_by_user_id_is_immutable_once_set';
+  END IF;
+  IF NEW.interaction_check_acknowledged_by_user_id IS NOT NULL
      AND NEW.interaction_check_acknowledged_by_user_id IS DISTINCT FROM auth.uid() THEN
     RAISE EXCEPTION 'interaction_check_acknowledged_by_user_id_must_be_self';
   END IF;
