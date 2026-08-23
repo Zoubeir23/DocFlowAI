@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHmac } from "node:crypto";
 
 /**
  * Scellement des documents médicaux.
@@ -11,12 +11,29 @@ import { createHash } from "node:crypto";
  * et on la conserve. À l'affichage, l'empreinte est recalculée : toute
  * divergence prouve une modification postérieure au scellement.
  *
+ * Le sceau est un HMAC-SHA256, pas un simple SHA-256 : un hachage non gardé
+ * par une clé serait recalculable par quiconque connaît l'algorithme (public,
+ * ce fichier), ce qui permettrait de forger un sceau valide pour un contenu
+ * modifié sans jamais passer par cette fonction (voir
+ * tasks/audit-2026-08-23-full-codebase.md, C2). Seul le serveur, détenteur de
+ * `DOCUMENT_SEAL_SECRET`, peut produire un sceau qui vérifie.
+ *
  * PORTÉE : c'est un contrôle d'intégrité, pas une signature électronique au sens
  * eIDAS. Il détecte une modification du contenu après coup ; il ne prouve pas
  * l'identité du signataire par un certificat, et l'horodatage est celui du
  * serveur, non celui d'une autorité de temps. L'imputabilité repose sur
  * `sealed_by_user_id`, complétée par `validated_by_user_id`.
  */
+
+function getDocumentSealSecret(): string {
+  const secret = process.env.DOCUMENT_SEAL_SECRET;
+  if (!secret) {
+    throw new Error(
+      "DOCUMENT_SEAL_SECRET n'est pas configuré : le scellement des documents médicaux est indisponible."
+    );
+  }
+  return secret;
+}
 
 /** Champs du diagnostic qui figurent sur le document imprimé. */
 export interface SealableDocument {
@@ -97,9 +114,11 @@ export function buildDocumentFingerprint(document: SealableDocument): string {
   });
 }
 
-/** Empreinte SHA-256 du document, en hexadécimal minuscule. */
+/** Empreinte HMAC-SHA256 du document, en hexadécimal minuscule. */
 export function computeDocumentSeal(document: SealableDocument): string {
-  return createHash("sha256").update(buildDocumentFingerprint(document), "utf8").digest("hex");
+  return createHmac("sha256", getDocumentSealSecret())
+    .update(buildDocumentFingerprint(document), "utf8")
+    .digest("hex");
 }
 
 export type DocumentSealStatus = "sealed" | "unsealed" | "tampered";

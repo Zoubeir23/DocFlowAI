@@ -1,11 +1,25 @@
-import { describe, it, expect } from "vitest";
-import {
-  buildDocumentFingerprint,
-  computeDocumentSeal,
-  verifyDocumentSeal,
-  formatSealReference,
-  type SealableDocument,
-} from "@/lib/document-seal";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+
+let buildDocumentFingerprint: typeof import("@/lib/document-seal").buildDocumentFingerprint;
+let computeDocumentSeal: typeof import("@/lib/document-seal").computeDocumentSeal;
+let verifyDocumentSeal: typeof import("@/lib/document-seal").verifyDocumentSeal;
+let formatSealReference: typeof import("@/lib/document-seal").formatSealReference;
+type SealableDocument = import("@/lib/document-seal").SealableDocument;
+
+const originalSecret = process.env.DOCUMENT_SEAL_SECRET;
+
+beforeAll(async () => {
+  // computeDocumentSeal exige un secret serveur (HMAC) — sans lui, le module
+  // lève dès le premier appel. Import différé pour isoler cette valeur du
+  // reste de la suite.
+  process.env.DOCUMENT_SEAL_SECRET = "test-secret-do-not-use-in-production";
+  ({ buildDocumentFingerprint, computeDocumentSeal, verifyDocumentSeal, formatSealReference } =
+    await import("@/lib/document-seal"));
+});
+
+afterAll(() => {
+  process.env.DOCUMENT_SEAL_SECRET = originalSecret;
+});
 
 const BASE_DOCUMENT: SealableDocument = {
   document_type: "prescription",
@@ -116,5 +130,30 @@ describe("buildDocumentFingerprint", () => {
 describe("formatSealReference", () => {
   it("met en forme un préfixe lisible pour impression", () => {
     expect(formatSealReference("a1b2c3d4e5f60718293a4b5c6d7e8f90")).toBe("A1B2-C3D4-E5F6-0718");
+  });
+});
+
+describe("secret HMAC", () => {
+  it("refuse de sceller un document sans DOCUMENT_SEAL_SECRET configuré", () => {
+    const previous = process.env.DOCUMENT_SEAL_SECRET;
+    delete process.env.DOCUMENT_SEAL_SECRET;
+    try {
+      expect(() => computeDocumentSeal(BASE_DOCUMENT)).toThrow(/DOCUMENT_SEAL_SECRET/);
+    } finally {
+      process.env.DOCUMENT_SEAL_SECRET = previous;
+    }
+  });
+
+  it("produit des sceaux différents pour des secrets différents", () => {
+    const previous = process.env.DOCUMENT_SEAL_SECRET;
+    try {
+      process.env.DOCUMENT_SEAL_SECRET = "secret-a";
+      const sealA = computeDocumentSeal(BASE_DOCUMENT);
+      process.env.DOCUMENT_SEAL_SECRET = "secret-b";
+      const sealB = computeDocumentSeal(BASE_DOCUMENT);
+      expect(sealA).not.toBe(sealB);
+    } finally {
+      process.env.DOCUMENT_SEAL_SECRET = previous;
+    }
   });
 });
