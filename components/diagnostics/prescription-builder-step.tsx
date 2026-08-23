@@ -135,6 +135,11 @@ export function PrescriptionBuilderStep({
   // plus récente — un « aucune interaction » périmé masquerait une alerte réelle.
   const latestInteractionCheckId = useRef(0);
   const [vigibaseSignals, setVigibaseSignals] = useState<Map<string, PharmacovigilanceSignal>>(new Map());
+  // Un échec ou une interaction trouvée n'empêchait rien : la soumission
+  // n'exigeait ni lecture ni décision consciente du prescripteur. Exige
+  // désormais un acquittement explicite, remis à zéro à chaque nouveau
+  // contrôle (tasks/audit-2026-08-23-full-codebase.md, H2).
+  const [interactionAcknowledged, setInteractionAcknowledged] = useState(false);
 
   const { register, handleSubmit, control, watch, formState: { errors } } = useForm<Omit<PrescriptionInput, "treatments" | "recommendations" | "follow_up_tests" | "icf_codes">>({
     resolver: zodResolver(prescriptionSchema.omit({ treatments: true, recommendations: true, follow_up_tests: true })),
@@ -154,6 +159,7 @@ export function PrescriptionBuilderStep({
   // comme un feu vert. Les médicaments sans code RxNorm sortent du contrôle et
   // sont comptés pour être signalés explicitement.
   const checkInteractions = useCallback(async (currentTreatments: PrescriptionTreatment[]) => {
+    setInteractionAcknowledged(false);
     const namedTreatments = currentTreatments.filter(
       (treatment) => treatment.drug_name && treatment.drug_name.trim() !== ""
     );
@@ -305,8 +311,12 @@ export function PrescriptionBuilderStep({
     setCustomTest("");
   }
 
+  const interactionRequiresAcknowledgement =
+    interactionCheckState === "found" || interactionCheckState === "failed";
+
   async function handleFormSubmit(formData: Omit<PrescriptionInput, "treatments" | "recommendations" | "follow_up_tests" | "icf_codes">) {
     if (allergyConflicts.size > 0) return;
+    if (interactionRequiresAcknowledgement && !interactionAcknowledged) return;
 
     // Les traitements sont optionnels : les lignes sans médicament renseigné
     // sont simplement omises plutôt que de bloquer la soumission (ex: reçu,
@@ -325,6 +335,7 @@ export function PrescriptionBuilderStep({
       recommendations: selectedRecommendations,
       follow_up_tests: followUpTests,
       icf_codes: icfCodes,
+      interaction_check_acknowledged: interactionAcknowledged,
     });
   }
 
@@ -548,6 +559,20 @@ export function PrescriptionBuilderStep({
               {t("prescriptionStep.interactionsUncoded", { count: uncodedDrugCount })}
             </p>
           )}
+
+          {interactionRequiresAcknowledgement && (
+            <label className="flex items-start gap-2 text-sm cursor-pointer p-3 rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/20">
+              <input
+                type="checkbox"
+                checked={interactionAcknowledged}
+                onChange={(e) => setInteractionAcknowledged(e.target.checked)}
+                className="mt-0.5 rounded border-border accent-primary"
+              />
+              <span className="text-amber-800 dark:text-amber-300">
+                {t("prescriptionStep.interactionsAcknowledge")}
+              </span>
+            </label>
+          )}
         </section>
       )}
 
@@ -651,7 +676,13 @@ export function PrescriptionBuilderStep({
 
       <div className="flex gap-3 pt-2">
         <Button type="button" onClick={onBack} variant="outline" className="rounded-xl border-border">{t("prescriptionStep.back")}</Button>
-        <Button type="submit" disabled={isSubmitting || allergyConflicts.size > 0}
+        <Button
+          type="submit"
+          disabled={
+            isSubmitting ||
+            allergyConflicts.size > 0 ||
+            (interactionRequiresAcknowledgement && !interactionAcknowledged)
+          }
           className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-medium flex-1">
           {isSubmitting ? t("prescriptionStep.generating") : t("prescriptionStep.generateAndSave")}
         </Button>
