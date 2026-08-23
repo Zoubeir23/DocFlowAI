@@ -1,15 +1,18 @@
 "use server";
 
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { computeDocumentSeal } from "@/lib/document-seal";
 import { detectAllergyConflict } from "@/lib/allergy-conflicts";
 import { checkDrugInteractions } from "@/lib/who-drug-interactions";
+import { prescriptionInputSchema } from "@/lib/validations";
 import type {
   DiagnosticRecord,
   PatientProfileInput,
   SymptomsInput,
   IcdCandidate,
   PrescriptionInput,
+  PrescriptionTreatment,
   DiagnosticValidationStatus,
 } from "@/types";
 
@@ -17,6 +20,59 @@ interface ActionResult<T = void> {
   success: boolean;
   data?: T;
   error?: string;
+}
+
+// Revalide côté serveur le premier conflit d'allergie détecté parmi les
+// traitements soumis — le blocage côté client (prescription-builder-step.tsx)
+// est une aide à la saisie, pas une garantie ; un appel direct à cette Server
+// Action le contournerait entièrement (tasks/audit-2026-08-23-full-codebase.md, C4).
+function findAllergyConflictError(
+  treatments: PrescriptionTreatment[],
+  patientAllergies: string[]
+): string | null {
+  for (const treatment of treatments) {
+    const conflict = detectAllergyConflict(treatment.drug_name, treatment.atc_code, patientAllergies);
+    if (conflict) {
+      return `Conflit d'allergie détecté : ${treatment.drug_name} (allergie connue : ${conflict.allergy}). Retirez ce traitement ou corrigez l'allergie enregistrée.`;
+    }
+  }
+  return null;
+}
+
+type InteractionCheckStatus = "not_applicable" | "checked_clear" | "checked_found" | "unavailable";
+
+interface InteractionCheckOutcome {
+  status: InteractionCheckStatus;
+  requiresAcknowledgement: boolean;
+}
+
+// Recalcule le contrôle d'interactions côté serveur — jamais accepté tel que
+// fourni par le client — et distingue « rien à vérifier » (moins de deux
+// médicaments réels) de « impossible à vérifier » (deux médicaments réels ou
+// plus, mais pas assez de codes RxNorm pour lancer le contrôle)
+// (tasks/audit-2026-08-23-full-codebase.md, H2).
+async function resolveInteractionCheckStatus(
+  treatments: PrescriptionTreatment[]
+): Promise<InteractionCheckOutcome> {
+  const namedTreatments = treatments.filter((treatment) => treatment.drug_name.trim() !== "");
+  const rxcuis = namedTreatments
+    .map((treatment) => treatment.rxcui)
+    .filter((code): code is string => Boolean(code) && /^\d+$/.test(code));
+
+  let status: InteractionCheckStatus = "not_applicable";
+  if (rxcuis.length >= 2) {
+    const result = await checkDrugInteractions(rxcuis);
+    status =
+      result.status === "unavailable"
+        ? "unavailable"
+        : result.interactions.length > 0
+          ? "checked_found"
+          : "checked_clear";
+  } else if (namedTreatments.length >= 2) {
+    status = "unavailable";
+  }
+
+  return { status, requiresAcknowledgement: status === "unavailable" || status === "checked_found" };
 }
 
 interface UserContext {
@@ -300,8 +356,23 @@ export async function validateDiagnostic(
 
 export async function updateDiagnosticPrescription(
   diagnosticId: string,
-  prescription: PrescriptionInput
+  prescriptionInput: PrescriptionInput
 ): Promise<ActionResult> {
+  // Une Server Action reste un point d'entrée HTTP direct : un appel malformé
+  // (treatments absent, champ non textuel...) doit être rejeté proprement,
+  // pas planter au premier .trim() sur une valeur inattendue
+  // (tasks/audit-2026-08-23-full-codebase.md, H10). Tout le corps de la
+  // fonction n'utilise ensuite que les données validées.
+  const parsedDiagnosticId = z.string().uuid().safeParse(diagnosticId);
+  if (!parsedDiagnosticId.success) {
+    return { success: false, error: "Identifiant de diagnostic invalide." };
+  }
+  const parsedPrescription = prescriptionInputSchema.safeParse(prescriptionInput);
+  if (!parsedPrescription.success) {
+    return { success: false, error: "Données de prescription invalides." };
+  }
+  const prescription = parsedPrescription.data;
+
   const supabase = await createClient();
   const context = await resolveUserContext();
   if (!context) return { success: false, error: "Non autorisé" };
@@ -346,43 +417,12 @@ export async function updateDiagnosticPrescription(
     };
   }
 
-  // Contrôle serveur des allergies : le blocage côté client est une aide à la
-  // saisie, pas une garantie — un appel direct à cette action le contournerait
-  // entièrement (tasks/audit-2026-08-23-full-codebase.md, C4).
   const patientAllergies: string[] = Array.isArray(existing.allergies) ? existing.allergies : [];
-  for (const treatment of prescription.treatments) {
-    const conflict = detectAllergyConflict(treatment.drug_name, treatment.atc_code, patientAllergies);
-    if (conflict) {
-      return {
-        success: false,
-        error: `Conflit d'allergie détecté : ${treatment.drug_name} (allergie connue : ${conflict.allergy}). Retirez ce traitement ou corrigez l'allergie enregistrée.`,
-      };
-    }
-  }
+  const allergyError = findAllergyConflictError(prescription.treatments, patientAllergies);
+  if (allergyError) return { success: false, error: allergyError };
 
-  // Contrôle serveur des interactions : le client affiche déjà ce résultat,
-  // mais rien n'empêchait jusqu'ici la soumission en cas d'échec ou
-  // d'interaction trouvée, et rien n'en gardait trace
-  // (tasks/audit-2026-08-23-full-codebase.md, H2). Le résultat est recalculé
-  // ici — jamais accepté tel quel depuis le client — et persisté.
-  const rxcuisForInteractionCheck = prescription.treatments
-    .map((treatment) => treatment.rxcui)
-    .filter((code): code is string => Boolean(code) && /^\d+$/.test(code));
-
-  let interactionCheckStatus: "not_applicable" | "checked_clear" | "checked_found" | "unavailable" =
-    "not_applicable";
-  if (rxcuisForInteractionCheck.length >= 2) {
-    const interactionResult = await checkDrugInteractions(rxcuisForInteractionCheck);
-    interactionCheckStatus =
-      interactionResult.status === "unavailable"
-        ? "unavailable"
-        : interactionResult.interactions.length > 0
-          ? "checked_found"
-          : "checked_clear";
-  }
-
-  const interactionRequiresAcknowledgement =
-    interactionCheckStatus === "unavailable" || interactionCheckStatus === "checked_found";
+  const { status: interactionCheckStatus, requiresAcknowledgement: interactionRequiresAcknowledgement } =
+    await resolveInteractionCheckStatus(prescription.treatments);
   if (interactionRequiresAcknowledgement && prescription.interaction_check_acknowledged !== true) {
     return {
       success: false,
