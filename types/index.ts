@@ -1,4 +1,8 @@
 import type { Database } from "./supabase";
+import type {
+  PrescriptionTreatmentInput,
+  PrescriptionInput as ValidatedPrescriptionInput,
+} from "@/lib/validations";
 
 export type Clinic = Database["public"]["Tables"]["clinics"]["Row"];
 export type User = Database["public"]["Tables"]["users"]["Row"];
@@ -17,7 +21,12 @@ export type PatientCarnet = {
   created_at: string;
 };
 
-export type AppointmentStatus = Appointment["status"];
+// `appointments.status` est une colonne TEXT contrainte par un CHECK
+// (supabase/migrations/001_schema.sql), pas un ENUM Postgres natif : `supabase
+// gen types` ne peut pas en déduire une union littérale et la déclare `string`.
+// On la redéclare ici pour ne pas perdre cette contrainte métier réelle au
+// niveau TypeScript (tasks/audit-2026-08-23-full-codebase.md, H6).
+export type AppointmentStatus = "booked" | "confirmed" | "completed" | "cancelled" | "no_show";
 export type UserRole = User["role"];
 export type SubscriptionPlan = Subscription["plan"];
 
@@ -27,7 +36,8 @@ export interface PractitionerSummary {
   email: string;
 }
 
-export interface AppointmentWithRelations extends Appointment {
+export interface AppointmentWithRelations extends Omit<Appointment, "status"> {
+  status: AppointmentStatus;
   patient: Patient;
   service: Service;
   practitioner?: PractitionerSummary | null;
@@ -107,17 +117,9 @@ export interface IcdCandidate extends IcdCode {
   is_serious: boolean;
 }
 
-export interface PrescriptionTreatment {
-  drug_name: string;
-  rxcui: string;
-  atc_code: string;
-  dosage_mg: string;
-  frequency: string;
-  duration_days: number;
-  route: "oral" | "iv" | "im" | "topical" | "inhaled" | "sublingual";
-  precautions: string;
-  is_generic: boolean;
-}
+// Dérivé de prescriptionTreatmentSchema (lib/validations.ts) : le schéma de
+// validation est la source de vérité, ce type n'en est qu'un miroir.
+export type PrescriptionTreatment = PrescriptionTreatmentInput;
 
 export interface VitalSigns {
   temperature: number | null;
@@ -201,6 +203,14 @@ export interface DiagnosticRecord {
   document_sealed_at: string | null;
   document_sealed_by_user_id: string | null;
 
+  // Contrôle d'interactions (migration 016) — statut du dernier contrôle
+  // exécuté côté serveur au moment de la génération du document, et
+  // acquittement explicite lorsque le contrôle a échoué ou trouvé une
+  // interaction.
+  interaction_check_status: "not_applicable" | "checked_clear" | "checked_found" | "unavailable" | null;
+  interaction_check_acknowledged_at: string | null;
+  interaction_check_acknowledged_by_user_id: string | null;
+
   created_at: string;
   updated_at: string;
 }
@@ -237,17 +247,10 @@ export interface SymptomsInput {
   vital_oxygen_saturation?: number | null;
 }
 
-export interface PrescriptionInput {
-  document_type: DiagnosticDocumentType;
-  treatments: PrescriptionTreatment[];
-  recommendations: string[];
-  follow_up_delay_days: number | null;
-  follow_up_tests: string[];
-  practitioner_name: string;
-  practitioner_title: string;
-  practitioner_rpps: string;
-  icf_codes?: IcfCode[];
-}
+// Dérivé de prescriptionInputSchema (lib/validations.ts), revalidé côté
+// serveur dans updateDiagnosticPrescription (actions/diagnostics.ts) — le
+// schéma de validation est la source de vérité, ce type n'en est qu'un miroir.
+export type PrescriptionInput = ValidatedPrescriptionInput;
 
 // ── WHO API Types ─────────────────────────────────────────────────────────────
 

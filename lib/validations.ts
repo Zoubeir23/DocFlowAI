@@ -88,6 +88,42 @@ export const widgetChatSchema = z.object({
   clinicSlug: z.string(),
 });
 
+export const prescriptionTreatmentSchema = z.object({
+  drug_name: z.string(),
+  rxcui: z.string(),
+  atc_code: z.string(),
+  dosage_mg: z.string(),
+  frequency: z.string(),
+  duration_days: z.coerce.number(),
+  route: z.enum(["oral", "iv", "im", "topical", "inhaled", "sublingual"]),
+  precautions: z.string(),
+  is_generic: z.boolean(),
+});
+
+export const icfCodeSchema = z.object({
+  id: z.string(),
+  code: z.string(),
+  title: z.string(),
+  definition: z.string().optional(),
+});
+
+// Le formulaire (prescription-builder-step.tsx) applique déjà ce contrôle,
+// mais une Server Action reste un point d'entrée HTTP direct — un appel
+// malformé qui contournerait le client doit être rejeté proprement plutôt
+// que de lever une exception non gérée (tasks/audit-2026-08-23-full-codebase.md, H10).
+export const prescriptionInputSchema = z.object({
+  document_type: z.enum(["consultation", "prescription", "receipt", "medical_report", "sick_leave"]),
+  treatments: z.array(prescriptionTreatmentSchema),
+  recommendations: z.array(z.string()),
+  follow_up_delay_days: z.coerce.number().nullable(),
+  follow_up_tests: z.array(z.string()),
+  practitioner_name: z.string(),
+  practitioner_title: z.string(),
+  practitioner_rpps: z.string(),
+  icf_codes: z.array(icfCodeSchema).optional(),
+  interaction_check_acknowledged: z.boolean().optional(),
+});
+
 export const createBookingFromWidgetSchema = z.object({
   clinicId: z.string().uuid(),
   patientName: z.string().min(2),
@@ -110,3 +146,6 @@ export type PatientInput = z.infer<typeof patientSchema>;
 export type ClinicSettingsInput = z.infer<typeof clinicSettingsSchema>;
 export type WidgetChatInput = z.infer<typeof widgetChatSchema>;
 export type CreateBookingFromWidgetInput = z.infer<typeof createBookingFromWidgetSchema>;
+export type PrescriptionTreatmentInput = z.infer<typeof prescriptionTreatmentSchema>;
+export type IcfCodeInput = z.infer<typeof icfCodeSchema>;
+export type PrescriptionInput = z.infer<typeof prescriptionInputSchema>;

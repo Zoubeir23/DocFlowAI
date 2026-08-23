@@ -135,6 +135,11 @@ export function PrescriptionBuilderStep({
   // plus récente — un « aucune interaction » périmé masquerait une alerte réelle.
   const latestInteractionCheckId = useRef(0);
   const [vigibaseSignals, setVigibaseSignals] = useState<Map<string, PharmacovigilanceSignal>>(new Map());
+  // Un échec ou une interaction trouvée n'empêchait rien : la soumission
+  // n'exigeait ni lecture ni décision consciente du prescripteur. Exige
+  // désormais un acquittement explicite, remis à zéro à chaque nouveau
+  // contrôle (tasks/audit-2026-08-23-full-codebase.md, H2).
+  const [interactionAcknowledged, setInteractionAcknowledged] = useState(false);
 
   const { register, handleSubmit, control, watch, formState: { errors } } = useForm<Omit<PrescriptionInput, "treatments" | "recommendations" | "follow_up_tests" | "icf_codes">>({
     resolver: zodResolver(prescriptionSchema.omit({ treatments: true, recommendations: true, follow_up_tests: true })),
@@ -154,6 +159,7 @@ export function PrescriptionBuilderStep({
   // comme un feu vert. Les médicaments sans code RxNorm sortent du contrôle et
   // sont comptés pour être signalés explicitement.
   const checkInteractions = useCallback(async (currentTreatments: PrescriptionTreatment[]) => {
+    setInteractionAcknowledged(false);
     const namedTreatments = currentTreatments.filter(
       (treatment) => treatment.drug_name && treatment.drug_name.trim() !== ""
     );
@@ -244,14 +250,18 @@ export function PrescriptionBuilderStep({
     [patientAllergies]
   );
 
-  function updateTreatment(index: number, field: keyof PrescriptionTreatment, value: string | number | boolean) {
-    const updated = treatments.map((treatment, idx) => {
-      if (idx !== index) return treatment;
-      const newTreatment = { ...treatment, [field]: value };
+  // Applique un ou plusieurs champs en une seule mise à jour d'état. `AtcDrugSearch`
+  // sélectionne nom, code ATC et rxcui ensemble : trois appels distincts à partir
+  // de la même fermeture (`treatments`) s'écraseraient l'un l'autre et ne
+  // laisseraient survivre que le dernier champ — c'est ce bug qui rendait la
+  // détection d'allergie par classe ATC inopérante (voir tasks/audit-2026-08-23).
+  function applyTreatmentPatch(index: number, patch: Partial<PrescriptionTreatment>) {
+    const updated = treatments.map((treatment, treatmentIndex) => {
+      if (treatmentIndex !== index) return treatment;
+      const newTreatment = { ...treatment, ...patch };
 
-      // Fetch vigibase signal when a valid rxcui is set
-      if (field === "rxcui" && value) {
-        fetchVigibaseSignal(value as string, newTreatment.drug_name);
+      if (patch.rxcui) {
+        fetchVigibaseSignal(patch.rxcui, newTreatment.drug_name);
       }
 
       return newTreatment;
@@ -261,9 +271,13 @@ export function PrescriptionBuilderStep({
     // médicament à une famille thérapeutique.
     recomputeAllergyConflicts(updated);
     // Re-check interactions when rxcui changes
-    if (field === "rxcui") {
+    if ("rxcui" in patch) {
       checkInteractions(updated);
     }
+  }
+
+  function updateTreatment(index: number, field: keyof PrescriptionTreatment, value: string | number | boolean) {
+    applyTreatmentPatch(index, { [field]: value } as Partial<PrescriptionTreatment>);
   }
 
   function addTreatment() {
@@ -297,8 +311,12 @@ export function PrescriptionBuilderStep({
     setCustomTest("");
   }
 
+  const interactionRequiresAcknowledgement =
+    interactionCheckState === "found" || interactionCheckState === "failed";
+
   async function handleFormSubmit(formData: Omit<PrescriptionInput, "treatments" | "recommendations" | "follow_up_tests" | "icf_codes">) {
     if (allergyConflicts.size > 0) return;
+    if (interactionRequiresAcknowledgement && !interactionAcknowledged) return;
 
     // Les traitements sont optionnels : les lignes sans médicament renseigné
     // sont simplement omises plutôt que de bloquer la soumission (ex: reçu,
@@ -317,6 +335,7 @@ export function PrescriptionBuilderStep({
       recommendations: selectedRecommendations,
       follow_up_tests: followUpTests,
       icf_codes: icfCodes,
+      interaction_check_acknowledged: interactionAcknowledged,
     });
   }
 
@@ -405,11 +424,9 @@ export function PrescriptionBuilderStep({
                 <AtcDrugSearch
                   value={treatment.drug_name}
                   atcCode={treatment.atc_code}
-                  onSelect={(name, atcCode, rxcui) => {
-                    updateTreatment(index, "drug_name", name);
-                    updateTreatment(index, "atc_code", atcCode);
-                    updateTreatment(index, "rxcui", rxcui);
-                  }}
+                  onSelect={(name, atcCode, rxcui) =>
+                    applyTreatmentPatch(index, { drug_name: name, atc_code: atcCode, rxcui })
+                  }
                 />
               </div>
               <div className="space-y-1.5">
@@ -542,6 +559,20 @@ export function PrescriptionBuilderStep({
               {t("prescriptionStep.interactionsUncoded", { count: uncodedDrugCount })}
             </p>
           )}
+
+          {interactionRequiresAcknowledgement && (
+            // Réutilise le token de statut "no-show" (teinte ambre, clair/sombre) :
+            // le projet n'a pas de token "warning" générique dédié.
+            <label className="status-noshow flex items-start gap-2 text-sm cursor-pointer p-3 rounded-xl">
+              <input
+                type="checkbox"
+                checked={interactionAcknowledged}
+                onChange={(e) => setInteractionAcknowledged(e.target.checked)}
+                className="mt-0.5 rounded border-border accent-primary"
+              />
+              <span>{t("prescriptionStep.interactionsAcknowledge")}</span>
+            </label>
+          )}
         </section>
       )}
 
@@ -645,7 +676,13 @@ export function PrescriptionBuilderStep({
 
       <div className="flex gap-3 pt-2">
         <Button type="button" onClick={onBack} variant="outline" className="rounded-xl border-border">{t("prescriptionStep.back")}</Button>
-        <Button type="submit" disabled={isSubmitting || allergyConflicts.size > 0}
+        <Button
+          type="submit"
+          disabled={
+            isSubmitting ||
+            allergyConflicts.size > 0 ||
+            (interactionRequiresAcknowledgement && !interactionAcknowledged)
+          }
           className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-medium flex-1">
           {isSubmitting ? t("prescriptionStep.generating") : t("prescriptionStep.generateAndSave")}
         </Button>

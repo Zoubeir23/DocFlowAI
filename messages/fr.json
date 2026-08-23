@@ -1130,6 +1130,10 @@
     "rejected": "Rejeté",
     "noResults": "Aucun diagnostic",
     "searchPlaceholder": "Rechercher un patient, diagnostic...",
+    "editPage": {
+      "alreadySealedMessage": "L'ordonnance a déjà été générée et scellée pour ce diagnostic.",
+      "viewDocument": "Voir le document"
+    },
     "validation": {
       "panelTitle": "Validation médicale requise",
       "obligatoryTitle": "Validation médicale obligatoire",
@@ -1177,6 +1181,7 @@
       "interactionsFailed": "Contrôle des interactions indisponible. Vérifiez manuellement avant de prescrire.",
       "interactionsRetry": "Relancer le contrôle",
       "interactionsUncoded": "{count} médicament(s) sans code RxNorm ne sont pas couverts par le contrôle.",
+      "interactionsAcknowledge": "Je confirme avoir pris connaissance de ce résultat du contrôle d'interactions avant de générer le document.",
       "allergyWarningClass": "Allergie déclarée « {allergy} » — même famille que {className}",
       "allergyWarningCross": "Allergie déclarée « {allergy} » — réactivité croisée documentée avec {className}"
     },

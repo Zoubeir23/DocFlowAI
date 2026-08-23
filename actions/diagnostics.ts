@@ -1,13 +1,18 @@
 "use server";
 
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { computeDocumentSeal } from "@/lib/document-seal";
+import { detectAllergyConflict } from "@/lib/allergy-conflicts";
+import { checkDrugInteractions } from "@/lib/who-drug-interactions";
+import { prescriptionInputSchema } from "@/lib/validations";
 import type {
   DiagnosticRecord,
   PatientProfileInput,
   SymptomsInput,
   IcdCandidate,
   PrescriptionInput,
+  PrescriptionTreatment,
   DiagnosticValidationStatus,
 } from "@/types";
 
@@ -15,6 +20,59 @@ interface ActionResult<T = void> {
   success: boolean;
   data?: T;
   error?: string;
+}
+
+// Revalide côté serveur le premier conflit d'allergie détecté parmi les
+// traitements soumis — le blocage côté client (prescription-builder-step.tsx)
+// est une aide à la saisie, pas une garantie ; un appel direct à cette Server
+// Action le contournerait entièrement (tasks/audit-2026-08-23-full-codebase.md, C4).
+function findAllergyConflictError(
+  treatments: PrescriptionTreatment[],
+  patientAllergies: string[]
+): string | null {
+  for (const treatment of treatments) {
+    const conflict = detectAllergyConflict(treatment.drug_name, treatment.atc_code, patientAllergies);
+    if (conflict) {
+      return `Conflit d'allergie détecté : ${treatment.drug_name} (allergie connue : ${conflict.allergy}). Retirez ce traitement ou corrigez l'allergie enregistrée.`;
+    }
+  }
+  return null;
+}
+
+type InteractionCheckStatus = "not_applicable" | "checked_clear" | "checked_found" | "unavailable";
+
+interface InteractionCheckOutcome {
+  status: InteractionCheckStatus;
+  requiresAcknowledgement: boolean;
+}
+
+// Recalcule le contrôle d'interactions côté serveur — jamais accepté tel que
+// fourni par le client — et distingue « rien à vérifier » (moins de deux
+// médicaments réels) de « impossible à vérifier » (deux médicaments réels ou
+// plus, mais pas assez de codes RxNorm pour lancer le contrôle)
+// (tasks/audit-2026-08-23-full-codebase.md, H2).
+async function resolveInteractionCheckStatus(
+  treatments: PrescriptionTreatment[]
+): Promise<InteractionCheckOutcome> {
+  const namedTreatments = treatments.filter((treatment) => treatment.drug_name.trim() !== "");
+  const rxcuis = namedTreatments
+    .map((treatment) => treatment.rxcui)
+    .filter((code): code is string => Boolean(code) && /^\d+$/.test(code));
+
+  let status: InteractionCheckStatus = "not_applicable";
+  if (rxcuis.length >= 2) {
+    const result = await checkDrugInteractions(rxcuis);
+    status =
+      result.status === "unavailable"
+        ? "unavailable"
+        : result.interactions.length > 0
+          ? "checked_found"
+          : "checked_clear";
+  } else if (namedTreatments.length >= 2) {
+    status = "unavailable";
+  }
+
+  return { status, requiresAcknowledgement: status === "unavailable" || status === "checked_found" };
 }
 
 interface UserContext {
@@ -298,8 +356,23 @@ export async function validateDiagnostic(
 
 export async function updateDiagnosticPrescription(
   diagnosticId: string,
-  prescription: PrescriptionInput
+  prescriptionInput: PrescriptionInput
 ): Promise<ActionResult> {
+  // Une Server Action reste un point d'entrée HTTP direct : un appel malformé
+  // (treatments absent, champ non textuel...) doit être rejeté proprement,
+  // pas planter au premier .trim() sur une valeur inattendue
+  // (tasks/audit-2026-08-23-full-codebase.md, H10). Tout le corps de la
+  // fonction n'utilise ensuite que les données validées.
+  const parsedDiagnosticId = z.string().uuid().safeParse(diagnosticId);
+  if (!parsedDiagnosticId.success) {
+    return { success: false, error: "Identifiant de diagnostic invalide." };
+  }
+  const parsedPrescription = prescriptionInputSchema.safeParse(prescriptionInput);
+  if (!parsedPrescription.success) {
+    return { success: false, error: "Données de prescription invalides." };
+  }
+  const prescription = parsedPrescription.data;
+
   const supabase = await createClient();
   const context = await resolveUserContext();
   if (!context) return { success: false, error: "Non autorisé" };
@@ -323,13 +396,42 @@ export async function updateDiagnosticPrescription(
   const { data: existing } = await db
     .from("diagnostics")
     .select(
-      "patient_full_name, patient_age_years, patient_sex, patient_weight_kg, patient_blood_group, validated_diagnosis_code, validated_diagnosis_name, chief_complaint, clinical_notes, validated_by, validated_by_user_id, validated_at"
+      "patient_full_name, patient_age_years, patient_sex, patient_weight_kg, patient_blood_group, validated_diagnosis_code, validated_diagnosis_name, chief_complaint, clinical_notes, validated_by, validated_by_user_id, validated_at, document_seal, allergies"
     )
     .eq("id", diagnosticId)
     .eq("clinic_id", clinicId)
     .maybeSingle();
 
   if (!existing) return { success: false, error: "Diagnostic introuvable" };
+
+  // Une fois scellé, le document ne se réenregistre plus par ce chemin : sans
+  // ce garde-fou, rouvrir l'étape 5 recalculait un nouveau sceau en silence —
+  // masquant une modification post-signature au lieu de la signaler comme
+  // altération (tasks/audit-2026-08-23-full-codebase.md, C3). Une future
+  // fonctionnalité d'avenant devra créer un nouveau document plutôt que de
+  // réécrire celui-ci.
+  if (existing.document_seal) {
+    return {
+      success: false,
+      error: "Ce document a déjà été généré et scellé. Il ne peut plus être modifié par cette voie.",
+    };
+  }
+
+  const patientAllergies: string[] = Array.isArray(existing.allergies) ? existing.allergies : [];
+  const allergyError = findAllergyConflictError(prescription.treatments, patientAllergies);
+  if (allergyError) return { success: false, error: allergyError };
+
+  const { status: interactionCheckStatus, requiresAcknowledgement: interactionRequiresAcknowledgement } =
+    await resolveInteractionCheckStatus(prescription.treatments);
+  if (interactionRequiresAcknowledgement && prescription.interaction_check_acknowledged !== true) {
+    return {
+      success: false,
+      error:
+        interactionCheckStatus === "unavailable"
+          ? "Le contrôle d'interactions médicamenteuses est indisponible. Confirmez avoir vérifié les interactions avant de continuer."
+          : "Une interaction médicamenteuse a été détectée. Confirmez l'avoir prise en compte avant de continuer.",
+    };
+  }
 
   // Le sceau est calculé sur le contenu tel qu'il sera enregistré, jamais sur ce
   // que le client prétend avoir produit : une empreinte fournie par l'appelant
@@ -364,6 +466,9 @@ export async function updateDiagnosticPrescription(
       document_seal: documentSeal,
       document_sealed_at: new Date().toISOString(),
       document_sealed_by_user_id: userId,
+      interaction_check_status: interactionCheckStatus,
+      interaction_check_acknowledged_at: interactionRequiresAcknowledgement ? new Date().toISOString() : null,
+      interaction_check_acknowledged_by_user_id: interactionRequiresAcknowledgement ? userId : null,
       current_step: nextStep(state.current_step, 6),
     })
     .eq("id", diagnosticId)
