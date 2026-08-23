@@ -16,3 +16,19 @@ ALTER TABLE diagnostics ADD COLUMN IF NOT EXISTS interaction_check_status TEXT
 ALTER TABLE diagnostics ADD COLUMN IF NOT EXISTS interaction_check_acknowledged_at TIMESTAMPTZ;
 ALTER TABLE diagnostics ADD COLUMN IF NOT EXISTS interaction_check_acknowledged_by_user_id UUID
   REFERENCES users(id) ON DELETE SET NULL;
+
+-- actions/diagnostics.ts ne renseigne les deux champs d'acquittement qu'ensemble,
+-- et seulement quand le contrôle a échoué ou trouvé une interaction — cette
+-- cohérence n'était garantie que côté application. NOT VALID + VALIDATE
+-- CONSTRAINT évite de bloquer les écritures le temps de valider les lignes
+-- existantes (ici vides, mais la table n'est pas toujours restée petite).
+ALTER TABLE diagnostics ADD CONSTRAINT diagnostics_interaction_ack_coherent
+  CHECK (
+    (interaction_check_acknowledged_at IS NULL) = (interaction_check_acknowledged_by_user_id IS NULL)
+    AND (
+      interaction_check_acknowledged_at IS NULL
+      OR interaction_check_status IN ('checked_found', 'unavailable')
+    )
+  ) NOT VALID;
+
+ALTER TABLE diagnostics VALIDATE CONSTRAINT diagnostics_interaction_ack_coherent;
